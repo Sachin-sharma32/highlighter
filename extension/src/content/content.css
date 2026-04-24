@@ -11,7 +11,7 @@
 
 @layer components {
   .marginalia-toolbar {
-    @apply fixed flex -translate-y-2 items-center gap-[3px] rounded bg-ink p-[5px] shadow-paper-3 select-none;
+    @apply fixed flex -translate-y-2 items-center gap-[3px] rounded bg-ink p-[5px] shadow-paper-2 select-none;
     pointer-events: all;
   }
 
@@ -28,8 +28,9 @@
   }
 
   .marginalia-popover {
-    @apply fixed min-w-[220px] rounded border border-rule bg-paper p-3 shadow-paper-3;
+    @apply fixed min-w-[220px] rounded border border-rule bg-paper-2 p-3 shadow-paper-2;
     pointer-events: all;
+    box-shadow: 0 8px 24px rgba(18, 14, 10, 0.18);
   }
 
   .marginalia-pop-label {
@@ -53,8 +54,25 @@
   }
 
   .marginalia-pop-note {
-    @apply mb-2 w-full rounded-sm border border-rule border-l-2 border-l-accent bg-paper-2 px-2.5 py-2 text-xs italic leading-6 text-ink-2 outline-none;
+    @apply mb-2 w-full rounded-sm border border-rule border-l-2 border-l-accent bg-paper-3 px-2.5 py-2 font-mono text-xs leading-6 text-ink-2 outline-none;
     resize: none;
+    box-shadow: none;
+  }
+
+  .marginalia-tag-editor {
+    @apply mb-2 flex flex-wrap items-center gap-1.5;
+  }
+
+  .marginalia-tag-chip {
+    @apply inline-flex h-[22px] items-center gap-1 rounded-full border border-rule bg-paper px-2 font-mono text-[11px] text-ink-2;
+  }
+
+  .marginalia-tag-chip button {
+    @apply font-mono text-[10px] text-ink-4 hover:text-red-600;
+  }
+
+  .marginalia-tag-input {
+    @apply h-[22px] w-[86px] rounded-full border border-accent bg-paper px-2 font-mono text-[11px] text-ink outline-none;
   }
 
   .marginalia-pop-row {
@@ -62,7 +80,7 @@
   }
 
   .marginalia-pop-btn {
-    @apply h-[26px] rounded-[5px] border border-rule bg-transparent px-2.5 text-[11px] text-ink;
+    @apply h-[26px] rounded-[5px] border border-rule bg-transparent px-2.5 font-mono text-[11px] text-ink;
   }
 
   .marginalia-pop-btn-danger {
