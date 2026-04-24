@@ -17,6 +17,18 @@ import {
 import { Sparkles, FileText, Folder } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
+type CommandHighlight = {
+  _id: Id<"highlights">;
+  title: string;
+  text: string;
+  color: string;
+};
+
+type CommandCollection = {
+  _id: Id<"collections">;
+  name: string;
+};
+
 const COLOR_DOT: Record<string, string> = {
   amber: "var(--hl-amber)",
   rose: "var(--hl-rose)",
@@ -26,11 +38,11 @@ const COLOR_DOT: Record<string, string> = {
 };
 
 export function CommandPalette() {
-  const { commandPaletteOpen, setCommandPaletteOpen, setSelectedHighlight, setActiveCollection, searchQuery, setSearchQuery } = useAppStore();
+  const { commandPaletteOpen, setCommandPaletteOpen, setSelectedHighlight, setActiveCollection, searchQuery } = useAppStore();
   const [query, setQuery] = useState(searchQuery);
 
-  const highlights = useQuery(api.highlights.list, { search: query || undefined }) ?? [];
-  const collections = useQuery(api.collections.list) ?? [];
+  const highlights = (useQuery(api.highlights.list, { search: query || undefined }) ?? []) as CommandHighlight[];
+  const collections = (useQuery(api.collections.list) ?? []) as CommandCollection[];
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -80,7 +92,7 @@ export function CommandPalette() {
 
             {highlights.length > 0 && (
               <CommandGroup heading="Highlights" style={{ padding: 6 }}>
-                {highlights.slice(0, 6).map((h) => (
+                {highlights.slice(0, 6).map((h: CommandHighlight) => (
                   <CommandItem
                     key={h._id}
                     value={h._id}
@@ -104,7 +116,7 @@ export function CommandPalette() {
 
             {collections.length > 0 && query.length === 0 && (
               <CommandGroup heading="Collections" style={{ padding: 6 }}>
-                {collections.map((c) => (
+                {collections.map((c: CommandCollection) => (
                   <CommandItem
                     key={c._id}
                     value={`col-${c._id}`}

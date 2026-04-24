@@ -4,6 +4,16 @@ import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import type { Id } from "../../../convex/_generated/dataModel";
 
+type ListHighlight = {
+  _id: Id<"highlights">;
+  collectionId?: Id<"collections">;
+  title: string;
+  text: string;
+  color: string;
+  note?: string;
+  createdAt: number;
+};
+
 const COLOR_BAR: Record<string, string> = {
   amber: "var(--hl-amber)",
   rose: "var(--hl-rose)",
@@ -37,14 +47,14 @@ export function HighlightList() {
 
   const isSpecial = ["inbox", "all", "notes", "review"].includes(activeCollectionId as string);
 
-  const highlights = useQuery(api.highlights.list, {
+  const highlights = (useQuery(api.highlights.list, {
     collectionId: isSpecial ? undefined : (activeCollectionId as Id<"collections">),
     filter: activeCollectionId === "notes" ? "notes" : activeCollectionId === "review" ? undefined : undefined,
     search: searchQuery || undefined,
-  }) ?? [];
+  }) ?? []) as ListHighlight[];
 
   const filtered = activeCollectionId === "inbox"
-    ? highlights.filter((h) => !h.collectionId)
+    ? highlights.filter((h: ListHighlight) => !h.collectionId)
     : highlights;
 
   const title = collectionLabel(activeCollectionId) ?? "Collection";
@@ -77,7 +87,7 @@ export function HighlightList() {
             </p>
           </div>
         ) : (
-          filtered.map((h) => (
+          filtered.map((h: ListHighlight) => (
             <button
               key={h._id}
               onClick={() => setSelectedHighlight(h._id)}

@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { ChevronLeft, ChevronRight, Copy, Share2, Link, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,9 +11,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
 type HighlightColor = typeof COLORS[number];
+
+type DetailHighlight = {
+  _id: Id<"highlights">;
+  title: string;
+  author?: string;
+  url: string;
+  text: string;
+  color: HighlightColor;
+  note?: string;
+  tags: string[];
+};
 
 const HL_COLORS: Record<HighlightColor, string> = {
   amber: "var(--hl-amber)",
@@ -36,24 +47,59 @@ function IconBtn({ onClick, children }: { onClick?: () => void; children: React.
   );
 }
 
+function NoteEditor({
+  highlightId,
+  initialNote,
+  onSave,
+}: {
+  highlightId: Id<"highlights">;
+  initialNote: string;
+  onSave: (args: { id: Id<"highlights">; note: string }) => Promise<unknown>;
+}) {
+  const [note, setNote] = useState(initialNote);
+
+  async function handleBlur() {
+    await onSave({ id: highlightId, note });
+    toast.success("Note saved");
+  }
+
+  return (
+    <Textarea
+      data-testid="highlight-note-input"
+      value={note}
+      onChange={(e) => setNote(e.target.value)}
+      onBlur={() => void handleBlur()}
+      placeholder="Add a note…"
+      rows={4}
+      style={{
+        padding: "14px 16px",
+        border: "1px solid var(--rule)",
+        borderLeft: "2px solid var(--accent-color)",
+        borderRadius: 8,
+        background: "var(--paper-2)",
+        fontSize: 14,
+        lineHeight: 1.55,
+        color: "var(--ink-2)",
+        fontStyle: "italic",
+        resize: "vertical",
+      }}
+    />
+  );
+}
+
 export function HighlightDetail() {
   const { selectedHighlightId, setSelectedHighlight } = useAppStore();
   const highlight = useQuery(
     api.highlights.byId,
     selectedHighlightId ? { id: selectedHighlightId } : "skip"
-  );
+  ) as DetailHighlight | null | undefined;
   const setNote = useMutation(api.highlights.setNote);
   const setColor = useMutation(api.highlights.setColor);
   const update = useMutation(api.highlights.update);
   const remove = useMutation(api.highlights.remove);
 
-  const [note, setNote_] = useState("");
   const [newTag, setNewTag] = useState("");
   const [addingTag, setAddingTag] = useState(false);
-
-  useEffect(() => {
-    setNote_(highlight?.note ?? "");
-  }, [highlight?._id, highlight?.note]);
 
   if (!selectedHighlightId) {
     return (
@@ -69,13 +115,6 @@ export function HighlightDetail() {
         <p data-testid="highlight-detail-loading" style={{ fontSize: 13, color: "var(--ink-4)" }}>Loading…</p>
       </div>
     );
-  }
-
-  async function handleNoteBlur() {
-    if (!highlight) return;
-    if (note === (highlight.note ?? "")) return;
-    await setNote({ id: highlight._id, note });
-    toast.success("Note saved");
   }
 
   async function handleColorChange(color: HighlightColor) {
@@ -94,7 +133,7 @@ export function HighlightDetail() {
 
   async function handleRemoveTag(tag: string) {
     if (!highlight) return;
-    await update({ id: highlight._id, tags: highlight.tags.filter((t) => t !== tag) });
+    await update({ id: highlight._id, tags: highlight.tags.filter((t: string) => t !== tag) });
   }
 
   async function handleDelete() {
@@ -195,7 +234,7 @@ export function HighlightDetail() {
 
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5 mt-5">
-            {highlight.tags.map((tag) => (
+            {highlight.tags.map((tag: string) => (
               <span
                 key={tag}
                 className="flex items-center gap-1"
@@ -234,25 +273,11 @@ export function HighlightDetail() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
               Your note
             </div>
-            <Textarea
-              data-testid="highlight-note-input"
-              value={note}
-              onChange={(e) => setNote_(e.target.value)}
-              onBlur={() => void handleNoteBlur()}
-              placeholder="Add a note…"
-              rows={4}
-              style={{
-                padding: "14px 16px",
-                border: "1px solid var(--rule)",
-                borderLeft: "2px solid var(--accent-color)",
-                borderRadius: 8,
-                background: "var(--paper-2)",
-                fontSize: 14,
-                lineHeight: 1.55,
-                color: "var(--ink-2)",
-                fontStyle: "italic",
-                resize: "vertical",
-              }}
+            <NoteEditor
+              key={highlight._id}
+              highlightId={highlight._id}
+              initialNote={highlight.note ?? ""}
+              onSave={setNote}
             />
           </div>
 

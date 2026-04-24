@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { Highlighter, BookOpen, StickyNote, LayoutGrid, Folder, Plus, RefreshCw } from "lucide-react";
+import { Highlighter, BookOpen, StickyNote, Folder, Plus, RefreshCw } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,21 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-type ActiveCollection = Id<"collections"> | "inbox" | "all" | "notes" | "review";
+type SidebarCollection = {
+  _id: Id<"collections">;
+  name: string;
+};
+
+type SidebarHighlight = {
+  _id: Id<"highlights">;
+  collectionId?: Id<"collections">;
+  note?: string;
+};
+
+type SidebarTag = {
+  tag: string;
+  count: number;
+};
 
 function SectionLabel({ label }: { label: string }) {
   return (
@@ -65,16 +79,16 @@ function NavItem({
 
 export function Sidebar() {
   const { activeCollectionId, setActiveCollection } = useAppStore();
-  const collections = useQuery(api.collections.list) ?? [];
-  const allTags = useQuery(api.highlights.allTags) ?? [];
-  const allHighlights = useQuery(api.highlights.list, {}) ?? [];
+  const collections = (useQuery(api.collections.list) ?? []) as SidebarCollection[];
+  const allTags = (useQuery(api.highlights.allTags) ?? []) as SidebarTag[];
+  const allHighlights = (useQuery(api.highlights.list, {}) ?? []) as SidebarHighlight[];
 
   const createCollection = useMutation(api.collections.create);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
 
-  const inboxCount = allHighlights.filter((h) => !h.collectionId).length;
-  const notesCount = allHighlights.filter((h) => h.note && h.note.trim()).length;
+  const inboxCount = allHighlights.filter((h: SidebarHighlight) => !h.collectionId).length;
+  const notesCount = allHighlights.filter((h: SidebarHighlight) => h.note && h.note.trim()).length;
 
   async function handleCreateCollection() {
     if (!newName.trim()) return;
@@ -116,12 +130,12 @@ export function Sidebar() {
         {collections.length > 0 && (
           <>
             <SectionLabel label="Collections" />
-            {collections.map((col) => (
+            {collections.map((col: SidebarCollection) => (
               <NavItem
                 key={col._id}
                 icon={<Folder size={13} />}
                 label={col.name}
-                count={allHighlights.filter((h) => h.collectionId === col._id).length || undefined}
+                count={allHighlights.filter((h: SidebarHighlight) => h.collectionId === col._id).length || undefined}
                 active={activeCollectionId === col._id}
                 onClick={() => setActiveCollection(col._id)}
                 testId={`collection-item-${col._id}`}
@@ -134,7 +148,7 @@ export function Sidebar() {
           <>
             <SectionLabel label="Tags" />
             <div className="px-3.5 pb-3 flex flex-wrap gap-1">
-              {allTags.slice(0, 12).map(({ tag, count }) => (
+              {allTags.slice(0, 12).map(({ tag, count }: SidebarTag) => (
                 <span
                   key={tag}
                   style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)", padding: "2px 6px", borderRadius: 3, background: "var(--paper)", border: "1px solid var(--rule)" }}
