@@ -1,0 +1,43 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background: oklch(98.5% 0.006 85);
+  color: oklch(18% 0.01 60);
+  letter-spacing: -0.005em;
+  font-feature-settings: "ss01", "cv11";
+}
+
+:root {
+  --paper: oklch(98.5% 0.006 85);
+  --paper-2: oklch(96.5% 0.008 85);
+  --paper-3: oklch(93.5% 0.01 85);
+  --rule: oklch(88% 0.012 85);
+  --rule-2: oklch(82% 0.014 85);
+  --ink: oklch(18% 0.01 60);
+  --ink-2: oklch(32% 0.012 60);
+  --ink-3: oklch(48% 0.014 60);
+  --ink-4: oklch(62% 0.014 60);
+  --accent: oklch(62% 0.16 40);
+  --accent-2: oklch(52% 0.17 40);
+  --hl-amber: oklch(90% 0.10 85);
+  --hl-rose: oklch(88% 0.08 20);
+  --hl-sage: oklch(90% 0.07 145);
+  --hl-sky: oklch(90% 0.06 230);
+  --hl-violet: oklch(88% 0.07 305);
+  --shadow-2: 0 2px 4px rgba(50,30,10,0.05), 0 8px 24px rgba(50,30,10,0.08);
+  --shadow-3: 0 4px 12px rgba(50,30,10,0.08), 0 24px 60px rgba(50,30,10,0.12);
+}
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+.noscroll::-webkit-scrollbar { display: none; }
+.noscroll { scrollbar-width: none; }
+
+.serif { font-family: "Fraunces", Georgia, serif; letter-spacing: -0.02em; }
+.mono  { font-family: "JetBrains Mono", monospace; }
