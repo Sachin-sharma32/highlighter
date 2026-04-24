@@ -1,7 +1,23 @@
-import { useEffect, useState, useCallback } from "react";
-import { BookOpen, RefreshCw, Loader2, ExternalLink } from "lucide-react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  BookOpen,
+  RefreshCw,
+  Loader2,
+  ExternalLink,
+  Trash2,
+  Globe,
+  ChevronDown,
+  Folder,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
 
 const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
@@ -27,12 +43,10 @@ const PANEL_ROOT_CLASS =
   "flex h-screen flex-col overflow-hidden bg-paper font-ui";
 const BRAND_BADGE_CLASS =
   "flex size-[22px] items-center justify-center rounded-[5px] bg-ink font-display text-[13px] font-medium text-paper ring-[1.5px] ring-accent";
-const HEADER_ICON_BUTTON_CLASS =
-  "size-8 rounded p-1";
+const HEADER_ICON_BUTTON_CLASS = "size-8 rounded p-1";
 const TAB_TRIGGER_BASE_CLASS =
   "h-9 flex-1 rounded-none border-b-2 px-0 font-mono text-[10px] font-medium uppercase tracking-[0.06em]";
-const FOOTER_ACTION_CLASS =
-  "h-8 w-full rounded-[7px] text-xs";
+const FOOTER_ACTION_CLASS = "h-8 w-full rounded-[7px] text-xs";
 const SECTION_CARD_CLASS = "rounded border border-rule bg-paper-2 p-[14px]";
 
 interface Highlight {
@@ -43,9 +57,15 @@ interface Highlight {
   url: string;
   title: string;
   createdAt: number;
+  collectionId?: string;
 }
 
-type Tab = "highlights" | "notes" | "all" | "stats";
+interface Collection {
+  _id: string;
+  name: string;
+}
+
+type Tab = "highlights" | "collections" | "all" | "stats";
 
 function hostnameOf(url: string): string {
   try {
@@ -67,7 +87,10 @@ async function navigateToHighlight(
   currentUrl: string,
   currentTabId: number | null,
 ) {
-  if (stripMarginaliaTarget(highlight.url) === currentUrl && currentTabId != null) {
+  if (
+    stripMarginaliaTarget(highlight.url) === currentUrl &&
+    currentTabId != null
+  ) {
     try {
       await chrome.tabs.sendMessage(currentTabId, {
         type: "SCROLL_TO_HIGHLIGHT",
@@ -78,18 +101,26 @@ async function navigateToHighlight(
     }
     return;
   }
-  await chrome.tabs.create({ url: withMarginaliaTarget(highlight.url, highlight._id) });
+  await chrome.tabs.create({
+    url: withMarginaliaTarget(highlight.url, highlight._id),
+  });
 }
 
 export default function SidePanel() {
   const [pageHighlights, setPageHighlights] = useState<Highlight[]>([]);
   const [allHighlights, setAllHighlights] = useState<Highlight[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [tabUrl, setTabUrl] = useState("");
   const [tabTitle, setTabTitle] = useState("");
   const [tabId, setTabId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [paired, setPaired] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("highlights");
+  const [domainFilter, setDomainFilter] = useState<string>("__current__");
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(
+    null,
+  );
+  const [statsDomain, setStatsDomain] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,7 +142,7 @@ export default function SidePanel() {
     setTabTitle(tab?.title ?? "");
     setTabId(tab?.id ?? null);
 
-    const [pageRes, allRes] = await Promise.all([
+    const [pageRes, allRes, collectionsRes] = await Promise.all([
       url
         ? chrome.runtime.sendMessage({
             type: "LIST_FOR_URL",
@@ -119,6 +150,7 @@ export default function SidePanel() {
           })
         : Promise.resolve({ ok: true, data: [] }),
       chrome.runtime.sendMessage({ type: "LIST_ALL_HIGHLIGHTS" }),
+      chrome.runtime.sendMessage({ type: "LIST_COLLECTIONS" }),
     ]);
 
     if (pageRes?.ok && Array.isArray(pageRes.data)) {
@@ -126,6 +158,9 @@ export default function SidePanel() {
     }
     if (allRes?.ok && Array.isArray(allRes.data)) {
       setAllHighlights(allRes.data as Highlight[]);
+    }
+    if (collectionsRes?.ok && Array.isArray(collectionsRes.data)) {
+      setCollections(collectionsRes.data as Collection[]);
     }
     setLoading(false);
   }, []);
@@ -156,13 +191,59 @@ export default function SidePanel() {
     };
   }, [load, tabId]);
 
-  const withNotes = pageHighlights.filter((highlight) => highlight.note);
+  // Compute all unique domains
+  const allDomains = useMemo(() => {
+    const domains = new Map<string, number>();
+    for (const h of allHighlights) {
+      const d = hostnameOf(h.url);
+      domains.set(d, (domains.get(d) ?? 0) + 1);
+    }
+    return Array.from(domains.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([domain, count]) => ({ domain, count }));
+  }, [allHighlights]);
+
+  const currentHostname = hostnameOf(tabUrl);
+
+  // Filter highlights by domain for Highlights tab
+  const filteredHighlights = useMemo(() => {
+    if (domainFilter === "__all__") return allHighlights;
+    const domain =
+      domainFilter === "__current__" ? currentHostname : domainFilter;
+    return allHighlights.filter((h) => hostnameOf(h.url) === domain);
+  }, [domainFilter, currentHostname, allHighlights]);
+
+  // Stats - either overall or per-domain
+  const statsHighlights = useMemo(() => {
+    if (!statsDomain) return allHighlights;
+    return allHighlights.filter((h) => hostnameOf(h.url) === statsDomain);
+  }, [statsDomain, allHighlights]);
+
   const colorCounts = COLORS.map((color) => ({
     color,
-    count: pageHighlights.filter((highlight) => highlight.color === color).length,
+    count: statsHighlights.filter((h) => h.color === color).length,
   }));
 
   const hostname = hostnameOf(tabUrl);
+
+  async function deleteHighlight(h: Highlight) {
+    await chrome.runtime.sendMessage({
+      type: "DELETE_HIGHLIGHT",
+      payload: { id: h._id },
+    });
+    if (tabId != null && stripMarginaliaTarget(h.url) === tabUrl) {
+      try {
+        await chrome.tabs.sendMessage(tabId, {
+          type: "DELETE_HIGHLIGHT_MARK",
+          payload: { id: h._id },
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+    setPageHighlights((prev) => prev.filter((x) => x._id !== h._id));
+    setAllHighlights((prev) => prev.filter((x) => x._id !== h._id));
+  }
 
   const onRowClick = (h: Highlight) =>
     void navigateToHighlight(h, tabUrl, tabId);
@@ -224,7 +305,9 @@ export default function SidePanel() {
         )}
         <div className="mt-2.5 flex items-center justify-between">
           <span className="text-xs text-ink-3">
-            {pageHighlights.length} highlight{pageHighlights.length !== 1 ? "s" : ""} here · {allHighlights.length} total
+            {pageHighlights.length} highlight
+            {pageHighlights.length !== 1 ? "s" : ""} here ·{" "}
+            {allHighlights.length} total
           </span>
           {pageHighlights.length > 0 && (
             <div className="flex h-1 w-20 gap-px overflow-hidden rounded-full">
@@ -240,7 +323,7 @@ export default function SidePanel() {
       </div>
 
       <div className="flex shrink-0 border-b border-rule">
-        {(["highlights", "notes", "all", "stats"] as Tab[]).map((tab) => (
+        {(["highlights", "collections", "all", "stats"] as Tab[]).map((tab) => (
           <Button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -267,23 +350,39 @@ export default function SidePanel() {
           </div>
         ) : activeTab === "highlights" ? (
           <HighlightsTab
-            highlights={pageHighlights}
+            highlights={filteredHighlights}
             onRowClick={onRowClick}
+            onDelete={deleteHighlight}
+            domains={allDomains}
+            domainFilter={domainFilter}
+            setDomainFilter={setDomainFilter}
+            currentHostname={currentHostname}
           />
-        ) : activeTab === "notes" ? (
-          <NotesTab
-            highlights={withNotes}
+        ) : activeTab === "collections" ? (
+          <CollectionsTab
+            collections={collections}
+            highlights={allHighlights}
             onRowClick={onRowClick}
+            onDelete={deleteHighlight}
+            selectedCollection={selectedCollection}
+            setSelectedCollection={setSelectedCollection}
           />
         ) : activeTab === "all" ? (
           <AllPagesTab
             highlights={allHighlights}
             onRowClick={onRowClick}
+            onDelete={deleteHighlight}
           />
         ) : (
           <StatsTab
-            highlights={pageHighlights}
+            highlights={statsHighlights}
+            allHighlights={allHighlights}
             colorCounts={colorCounts}
+            domains={allDomains}
+            statsDomain={statsDomain}
+            setStatsDomain={setStatsDomain}
+            setActiveTab={setActiveTab}
+            setDomainFilter={setDomainFilter}
           />
         )}
       </div>
@@ -307,80 +406,216 @@ export default function SidePanel() {
 interface RowProps {
   highlights: Highlight[];
   onRowClick: (h: Highlight) => void;
+  onDelete: (h: Highlight) => void;
 }
 
-function HighlightsTab({ highlights, onRowClick }: RowProps) {
-  if (!highlights.length) {
-    return (
-      <EmptyState
-        text="No highlights on this page yet."
-        sub="Select text to start highlighting."
-      />
-    );
-  }
+function HighlightsTab({
+  highlights,
+  onRowClick,
+  onDelete,
+  domains,
+  domainFilter,
+  setDomainFilter,
+  currentHostname,
+}: RowProps & {
+  domains: { domain: string; count: number }[];
+  domainFilter: string;
+  setDomainFilter: (f: string) => void;
+  currentHostname: string;
+}) {
+  return (
+    <div>
+      {/* Domain filter dropdown */}
+      <div className="px-4 py-2.5 border-b border-rule ">
+        <div className="flex items-center gap-2">
+          <Globe
+            size={12}
+            className="text-ink-4"
+          />
+          <Select
+            value={domainFilter}
+            onValueChange={setDomainFilter}
+          >
+            <SelectTrigger className="flex-1 h-8 bg-transparent text-xs text-ink outline-none font-mono cursor-pointer border-none shadow-none focus:ring-0 px-0">
+              <SelectValue placeholder="Current page" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="__current__">
+                Current page ({currentHostname})
+              </SelectItem>
+              <SelectItem value="__all__">All domains</SelectItem>
+              {domains.map(({ domain, count }) => (
+                <SelectItem
+                  key={domain}
+                  value={domain}
+                >
+                  {domain} ({count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {highlights.length === 0 ? (
+        <EmptyState
+          text="No highlights for this filter."
+          sub="Try selecting a different domain."
+        />
+      ) : (
+        highlights.map((highlight, index) => (
+          <div
+            key={highlight._id}
+            className={`flex w-full gap-2.5 px-4 py-3 group ${index < highlights.length - 1 ? "border-b border-rule" : ""}`}
+          >
+            <button
+              onClick={() => onRowClick(highlight)}
+              className="flex gap-2.5 flex-1 text-left hover:bg-paper-2 min-w-0"
+            >
+              <div
+                className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
+              />
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`font-display text-[13px] leading-6 text-ink ${highlight.note ? "mb-1" : "mb-0"}`}
+                >
+                  {highlight.text}
+                </p>
+                {highlight.note && (
+                  <p className="text-[11px] italic leading-[1.4] text-ink-3">
+                    "{highlight.note}"
+                  </p>
+                )}
+                <div className="mt-1 font-mono text-[10px] text-ink-4">
+                  {timeAgo(highlight.createdAt)}
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => void onDelete(highlight)}
+              title="Delete highlight"
+              className="flex items-center justify-center rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity text-ink-4 hover:text-red-500"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function CollectionsTab({
+  collections,
+  highlights,
+  onRowClick,
+  onDelete,
+  selectedCollection,
+  setSelectedCollection,
+}: {
+  collections: Collection[];
+  highlights: Highlight[];
+  onRowClick: (h: Highlight) => void;
+  onDelete: (h: Highlight) => void;
+  selectedCollection: string | null;
+  setSelectedCollection: (c: string | null) => void;
+}) {
+  const filtered = selectedCollection
+    ? highlights.filter((h) => h.collectionId === selectedCollection)
+    : highlights;
+
+  const uncollected = highlights.filter((h) => !h.collectionId);
 
   return (
     <div>
-      {highlights.map((highlight, index) => (
-        <button
-          key={highlight._id}
-          onClick={() => onRowClick(highlight)}
-          className={`flex w-full gap-2.5 px-4 py-3 text-left hover:bg-paper-2 ${index < highlights.length - 1 ? "border-b border-rule" : ""}`}
-        >
-          <div
-            className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
+      {/* Collection filter */}
+      <div className="px-4 py-2.5 border-b border-rule">
+        <div className="flex items-center gap-2">
+          <Folder
+            size={12}
+            className="text-ink-4"
           />
-          <div className="min-w-0 flex-1">
-            <p
-              className={`font-display text-[13px] leading-6 text-ink ${highlight.note ? "mb-1" : "mb-0"}`}
+          <Select
+            value={selectedCollection ?? "__all__"}
+            onValueChange={(val) =>
+              setSelectedCollection(val === "__all__" ? null : val)
+            }
+          >
+            <SelectTrigger className="flex-1 h-8 bg-transparent text-xs text-ink outline-none font-mono cursor-pointer border-none shadow-none focus:ring-0 px-0">
+              <SelectValue placeholder="All highlights" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="__all__">
+                All highlights ({highlights.length})
+              </SelectItem>
+              <SelectItem value="__inbox__">
+                Inbox ({uncollected.length})
+              </SelectItem>
+              {collections.map((c) => {
+                const count = highlights.filter(
+                  (h) => h.collectionId === c._id,
+                ).length;
+                return (
+                  <SelectItem
+                    key={c._id}
+                    value={c._id}
+                  >
+                    {c.name} ({count})
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {(selectedCollection === "__inbox__" ? uncollected : filtered).length ===
+      0 ? (
+        <EmptyState
+          text="No highlights in this collection."
+          sub="Assign highlights to a collection from the edit panel."
+        />
+      ) : (
+        (selectedCollection === "__inbox__" ? uncollected : filtered).map(
+          (highlight) => (
+            <div
+              key={highlight._id}
+              className="flex w-full gap-2.5 px-4 py-2 group border-b border-rule"
             >
-              {highlight.text}
-            </p>
-            {highlight.note && (
-              <p className="text-[11px] italic leading-[1.4] text-ink-3">
-                "{highlight.note}"
-              </p>
-            )}
-            <div className="mt-1 font-mono text-[10px] text-ink-4">
-              {timeAgo(highlight.createdAt)}
+              <button
+                onClick={() => onRowClick(highlight)}
+                className="flex gap-2.5 flex-1 text-left hover:bg-paper-2 min-w-0"
+              >
+                <div
+                  className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="overflow-hidden font-display text-[12.5px] leading-[1.45] text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                    {highlight.text}
+                  </p>
+                  {highlight.note && (
+                    <p className="mt-[3px] text-[11px] italic text-ink-3">
+                      "{highlight.note}"
+                    </p>
+                  )}
+                </div>
+              </button>
+              <button
+                onClick={() => void onDelete(highlight)}
+                title="Delete highlight"
+                className="flex items-center justify-center rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity text-ink-4 hover:text-red-500"
+              >
+                <Trash2 size={13} />
+              </button>
             </div>
-          </div>
-        </button>
-      ))}
+          ),
+        )
+      )}
     </div>
   );
 }
 
-function NotesTab({ highlights, onRowClick }: RowProps) {
-  if (!highlights.length) {
-    return (
-      <EmptyState
-        text="No notes yet."
-        sub="Add a note to any highlight from the edit popover."
-      />
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-3 p-4">
-      {highlights.map((highlight) => (
-        <button
-          key={highlight._id}
-          onClick={() => onRowClick(highlight)}
-          className={`rounded border border-rule border-l-2 bg-paper-2 p-3 text-left hover:bg-paper-3 ${HL_BORDER_CLASS[highlight.color]}`}
-        >
-          <p className="mb-1.5 overflow-hidden font-display text-xs italic text-ink-3 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-            "{highlight.text}"
-          </p>
-          <Separator className="my-2" />
-          <p className="text-xs leading-6 text-ink-2">{highlight.note}</p>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function AllPagesTab({ highlights, onRowClick }: RowProps) {
+function AllPagesTab({ highlights, onRowClick, onDelete }: RowProps) {
   if (!highlights.length) {
     return (
       <EmptyState
@@ -420,25 +655,36 @@ function AllPagesTab({ highlights, onRowClick }: RowProps) {
             </div>
           </div>
           {group.items.map((highlight) => (
-            <button
+            <div
               key={highlight._id}
-              onClick={() => onRowClick(highlight)}
-              className="flex w-full gap-2.5 px-4 py-2 text-left hover:bg-paper-2"
+              className="flex w-full gap-2.5 px-4 py-2 group"
             >
-              <div
-                className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="overflow-hidden font-display text-[12.5px] leading-[1.45] text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-                  {highlight.text}
-                </p>
-                {highlight.note && (
-                  <p className="mt-[3px] text-[11px] italic text-ink-3">
-                    "{highlight.note}"
+              <button
+                onClick={() => onRowClick(highlight)}
+                className="flex gap-2.5 flex-1 text-left hover:bg-paper-2 min-w-0"
+              >
+                <div
+                  className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="overflow-hidden font-display text-[12.5px] leading-[1.45] text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                    {highlight.text}
                   </p>
-                )}
-              </div>
-            </button>
+                  {highlight.note && (
+                    <p className="mt-[3px] text-[11px] italic text-ink-3">
+                      "{highlight.note}"
+                    </p>
+                  )}
+                </div>
+              </button>
+              <button
+                onClick={() => void onDelete(highlight)}
+                title="Delete highlight"
+                className="flex items-center justify-center rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity text-ink-4 hover:text-red-500"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           ))}
         </div>
       ))}
@@ -448,16 +694,39 @@ function AllPagesTab({ highlights, onRowClick }: RowProps) {
 
 function StatsTab({
   highlights,
+  allHighlights,
   colorCounts,
+  domains,
+  statsDomain,
+  setStatsDomain,
+  setActiveTab,
+  setDomainFilter,
 }: {
   highlights: Highlight[];
+  allHighlights: Highlight[];
   colorCounts: { color: HighlightColor; count: number }[];
+  domains: { domain: string; count: number }[];
+  statsDomain: string | null;
+  setStatsDomain: (d: string | null) => void;
+  setActiveTab: (t: Tab) => void;
+  setDomainFilter: (f: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-4 p-4">
+      {/* Overall / domain-specific stats */}
       <div className={SECTION_CARD_CLASS}>
-        <div className="mb-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
-          This page
+        <div className="mb-2.5 flex items-center justify-between">
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
+            {statsDomain ? statsDomain : "Overall stats"}
+          </span>
+          {statsDomain && (
+            <button
+              onClick={() => setStatsDomain(null)}
+              className="text-[10px] font-mono text-accent"
+            >
+              Show all
+            </button>
+          )}
         </div>
         {[
           ["Highlights", highlights.length],
@@ -469,6 +738,9 @@ function StatsTab({
             "Unique colours",
             colorCounts.filter((entry) => entry.count > 0).length,
           ],
+          ...(statsDomain
+            ? []
+            : [["Domains", domains.length] as [string, number]]),
         ].map(([label, value]) => (
           <div
             key={label as string}
@@ -480,6 +752,7 @@ function StatsTab({
         ))}
       </div>
 
+      {/* Colours */}
       <div className={SECTION_CARD_CLASS}>
         <div className="mb-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
           Colours
@@ -510,6 +783,40 @@ function StatsTab({
             </span>
           </div>
         ))}
+      </div>
+
+      {/* Domains list */}
+      <div className={SECTION_CARD_CLASS}>
+        <div className="mb-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
+          Domains
+        </div>
+        {domains.length === 0 ? (
+          <p className="text-xs text-ink-4">No domains yet.</p>
+        ) : (
+          domains.map(({ domain, count }) => (
+            <button
+              key={domain}
+              onClick={() => {
+                setStatsDomain(domain);
+                setDomainFilter(domain);
+              }}
+              className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
+                statsDomain === domain
+                  ? "bg-paper text-ink"
+                  : "text-ink-3 hover:bg-paper hover:text-ink-2"
+              }`}
+            >
+              <span className="flex items-center gap-2 truncate">
+                <Globe
+                  size={11}
+                  className="text-ink-4 shrink-0"
+                />
+                {domain}
+              </span>
+              <span className="font-mono text-[10px] text-ink-4">{count}</span>
+            </button>
+          ))
+        )}
       </div>
     </div>
   );

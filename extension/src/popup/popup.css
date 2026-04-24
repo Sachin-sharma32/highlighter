@@ -43,5 +43,17 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .noscroll::-webkit-scrollbar { display: none; }
 .noscroll { scrollbar-width: none; }
 
+/* Elegant minimal scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: oklch(75% 0.01 60 / 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(60% 0.01 60 / 0.35);
+}
+* { scrollbar-width: thin; scrollbar-color: oklch(75% 0.01 60 / 0.25) transparent; }
+
 .serif { font-family: "Fraunces", Georgia, serif; letter-spacing: -0.02em; }
 .mono  { font-family: "JetBrains Mono", monospace; }

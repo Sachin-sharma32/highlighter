@@ -7,10 +7,12 @@ import {
   Link2,
   RefreshCw,
   LogOut,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
 
 const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
@@ -25,7 +27,7 @@ const HL_BG_CLASS: Record<HighlightColor, string> = {
 };
 
 const PANEL_ROOT_CLASS =
-  "flex h-[520px] w-[380px] flex-col overflow-hidden bg-paper font-ui";
+  "flex h-full w-full flex-col overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2";
 const BRAND_BADGE_CLASS =
   "flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-ink font-display text-[17px] font-medium text-paper ring-[1.5px] ring-accent";
 const HEADER_ICON_BUTTON_CLASS =
@@ -45,6 +47,12 @@ interface Highlight {
   url: string;
   title: string;
   createdAt: number;
+}
+
+interface UsageData {
+  plan: "free" | "premium";
+  count: number;
+  limit: number;
 }
 
 type Scope = "page" | "all";
@@ -78,7 +86,7 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
   return (
     <div
       data-testid="popup-pairing-screen"
-      className="flex h-[520px] w-[380px] flex-col items-center justify-center gap-6 bg-paper p-8 font-ui"
+      className="flex h-full w-full flex-col items-center justify-center gap-6 overflow-hidden rounded-[16px] border border-rule bg-paper p-8 font-ui shadow-paper-2"
     >
       <div className="flex items-center gap-2.5">
         <div className="flex size-[34px] items-center justify-center rounded-lg bg-ink font-display text-xl font-medium text-paper ring-2 ring-accent">
@@ -165,6 +173,8 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   const [footerError, setFooterError] = useState("");
   const [footerMessage, setFooterMessage] = useState("");
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [highlightingEnabled, setHighlightingEnabled] = useState(true);
+  const [usage, setUsage] = useState<UsageData | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -178,7 +188,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
     setTabId(tab?.id ?? null);
     setWindowId(tab?.windowId ?? null);
 
-    const [pageRes, allRes] = await Promise.all([
+    const [pageRes, allRes, settingsRes, usageRes] = await Promise.all([
       url
         ? chrome.runtime.sendMessage({
             type: "LIST_FOR_URL",
@@ -186,6 +196,8 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           })
         : Promise.resolve({ ok: true, data: [] }),
       chrome.runtime.sendMessage({ type: "LIST_ALL_HIGHLIGHTS" }),
+      chrome.runtime.sendMessage({ type: "GET_SETTINGS" }),
+      chrome.runtime.sendMessage({ type: "GET_USAGE" }),
     ]);
 
     if (pageRes?.ok && Array.isArray(pageRes.data)) {
@@ -193,6 +205,12 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
     }
     if (allRes?.ok && Array.isArray(allRes.data)) {
       setAllHighlights(allRes.data as Highlight[]);
+    }
+    if (settingsRes?.ok) {
+      setHighlightingEnabled(settingsRes.data.highlightingEnabled);
+    }
+    if (usageRes?.ok) {
+      setUsage(usageRes.data as UsageData);
     }
     setLoading(false);
   }, []);
@@ -203,6 +221,36 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
 
   function openDashboard() {
     chrome.tabs.create({ url: "http://localhost:5173" });
+  }
+
+  async function toggleHighlighting() {
+    const newState = !highlightingEnabled;
+    setHighlightingEnabled(newState);
+    await chrome.runtime.sendMessage({
+      type: "SET_HIGHLIGHTING_ENABLED",
+      payload: { enabled: newState },
+    });
+  }
+
+  async function deleteHighlight(h: Highlight) {
+    await chrome.runtime.sendMessage({
+      type: "DELETE_HIGHLIGHT",
+      payload: { id: h._id },
+    });
+    // Try to remove the mark from the current page
+    if (tabId != null && stripMarginaliaTarget(h.url) === tabUrl) {
+      try {
+        await chrome.tabs.sendMessage(tabId, {
+          type: "DELETE_HIGHLIGHT_MARK",
+          payload: { id: h._id },
+        });
+      } catch {
+        /* content script not loaded */
+      }
+    }
+    // Refresh lists
+    setPageHighlights((prev) => prev.filter((x) => x._id !== h._id));
+    setAllHighlights((prev) => prev.filter((x) => x._id !== h._id));
   }
 
   async function exportMarkdown() {
@@ -292,6 +340,16 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
             {hostname}
           </div>
         </div>
+        {/* Highlighting toggle */}
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[10px] text-ink-4">
+            {highlightingEnabled ? "On" : "Off"}
+          </span>
+          <Switch
+            checked={highlightingEnabled}
+            onCheckedChange={() => void toggleHighlighting()}
+          />
+        </div>
         <Button
           onClick={() => setConfirmDisconnect(true)}
           title="Disconnect"
@@ -302,6 +360,31 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           <LogOut size={14} />
         </Button>
       </div>
+
+      {/* Usage bar */}
+      {usage && usage.plan === "free" && (
+        <div className="px-4 py-2 border-b border-rule">
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-4">
+              {usage.count} / {usage.limit} highlights used
+            </span>
+            <span className="font-mono text-[10px] text-ink-4">
+              {Math.round((usage.count / usage.limit) * 100)}%
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden bg-rule">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${Math.min(100, (usage.count / usage.limit) * 100)}%`,
+                background: usage.count / usage.limit > 0.8
+                  ? "oklch(65% 0.2 25)"
+                  : "oklch(70% 0.14 145)",
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex border-b border-rule">
         {(
@@ -373,35 +456,47 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           </div>
         ) : (
           visible.map((highlight, index) => (
-            <button
+            <div
               key={highlight._id}
               data-testid="popup-highlight-row"
-              onClick={() => void focusHighlight(highlight)}
-              className={`flex w-full gap-2.5 py-2 text-left hover:bg-paper-2 ${index < visible.length - 1 ? "border-b border-rule" : ""}`}
+              className={`flex w-full gap-2.5 py-2 group ${index < visible.length - 1 ? "border-b border-rule" : ""}`}
             >
-              <div
-                className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
-              />
-              <div className="min-w-0 flex-1">
-                <p className={CLAMPED_HIGHLIGHT_TEXT_CLASS}>{highlight.text}</p>
-                {highlight.note && (
-                  <p className="mt-[3px] text-[11px] italic text-ink-3">
-                    "{highlight.note}"
-                  </p>
-                )}
-                {scope === "all" && (
-                  <div className="mt-1 flex items-baseline gap-1.5 truncate font-mono text-[10px] text-ink-4">
-                    <span className="truncate text-ink-3">
-                      {highlight.title || hostnameOf(highlight.url)}
-                    </span>
-                    <span className="shrink-0">·</span>
-                    <span className="shrink-0">
-                      {hostnameOf(highlight.url)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </button>
+              <button
+                onClick={() => void focusHighlight(highlight)}
+                className="flex gap-2.5 flex-1 text-left hover:bg-paper-2 min-w-0"
+              >
+                <div
+                  className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className={CLAMPED_HIGHLIGHT_TEXT_CLASS}>{highlight.text}</p>
+                  {highlight.note && (
+                    <p className="mt-[3px] text-[11px] italic text-ink-3">
+                      "{highlight.note}"
+                    </p>
+                  )}
+                  {scope === "all" && (
+                    <div className="mt-1 flex items-baseline gap-1.5 truncate font-mono text-[10px] text-ink-4">
+                      <span className="truncate text-ink-3">
+                        {highlight.title || hostnameOf(highlight.url)}
+                      </span>
+                      <span className="shrink-0">·</span>
+                      <span className="shrink-0">
+                        {hostnameOf(highlight.url)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </button>
+              {/* Quick delete button */}
+              <button
+                onClick={() => void deleteHighlight(highlight)}
+                title="Delete highlight"
+                className="flex items-center justify-center rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity text-ink-4 hover:text-red-500"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           ))
         )}
       </div>
@@ -500,7 +595,7 @@ export default function Popup() {
 
   if (paired === null) {
     return (
-      <div className="flex h-[520px] w-[380px] items-center justify-center bg-paper font-ui">
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2">
         <Loader2
           size={20}
           className="animate-spin text-ink-4"
