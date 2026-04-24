@@ -7,86 +7,170 @@
   :host * {
     box-sizing: border-box;
   }
+
+  /* Elegant minimal scrollbar for shadow DOM */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(75% 0.01 60 / 0.25);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(60% 0.01 60 / 0.35);
+  }
+  * { scrollbar-width: thin; scrollbar-color: oklch(75% 0.01 60 / 0.25) transparent; }
 }
 
 @layer components {
-  .marginalia-toolbar {
-    @apply fixed flex -translate-y-2 items-center gap-[3px] rounded bg-ink p-[5px] shadow-paper-2 select-none;
+  /* Unified card (used for both create toolbar and edit popup) */
+  .marginalia-card {
+    @apply fixed rounded-lg border border-rule bg-paper-2 shadow-paper-2 select-none;
     pointer-events: all;
+    box-shadow: 0 10px 30px rgba(18, 14, 10, 0.18);
   }
 
-  .marginalia-swatch {
-    @apply size-[22px] cursor-pointer rounded-[5px] border-2 border-transparent transition-transform duration-100;
+  .marginalia-toolbar-card {
+    width: 260px;
+    padding: 10px;
   }
 
-  .marginalia-swatch.active {
-    border-color: rgba(255, 255, 255, 0.7);
+  .marginalia-edit-card {
+    width: 280px;
+    padding: 10px;
+    max-height: 420px;
+    overflow-y: auto;
   }
 
-  .marginalia-swatch:hover {
-    transform: scale(1.15);
+  /* Swatch row (shared between create & edit) */
+  .marginalia-swatch-row {
+    @apply flex items-center gap-1.5 pb-2;
+    border-bottom: 1px solid theme("colors.rule.DEFAULT");
   }
 
-  .marginalia-popover {
-    @apply fixed min-w-[220px] rounded border border-rule bg-paper-2 p-3 shadow-paper-2;
-    pointer-events: all;
-    box-shadow: 0 8px 24px rgba(18, 14, 10, 0.18);
+  .marginalia-swatch-big {
+    @apply size-7 cursor-pointer rounded-full border border-rule transition-transform duration-100;
   }
 
-  .marginalia-pop-label {
-    @apply mb-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4;
+  .marginalia-swatch-big:hover {
+    transform: scale(1.1);
   }
 
-  .marginalia-pop-swatches {
-    @apply mb-2.5 flex gap-[5px];
+  .marginalia-swatch-big.active {
+    @apply ring-2 ring-ink ring-offset-1;
   }
 
-  .marginalia-pop-swatch {
-    @apply size-5 cursor-pointer rounded-sm border-2 border-transparent transition-transform duration-100;
+  .marginalia-swatch-big[data-color="amber"] { @apply bg-hl-amber; }
+  .marginalia-swatch-big[data-color="rose"] { @apply bg-hl-rose; }
+  .marginalia-swatch-big[data-color="sage"] { @apply bg-hl-sage; }
+  .marginalia-swatch-big[data-color="sky"] { @apply bg-hl-sky; }
+  .marginalia-swatch-big[data-color="violet"] { @apply bg-hl-violet; }
+
+  .marginalia-plus-btn {
+    @apply ml-auto flex size-7 cursor-pointer items-center justify-center rounded-full border border-rule bg-paper font-mono text-sm text-ink-2 transition-colors;
   }
 
-  .marginalia-pop-swatch.active {
-    @apply border-ink;
+  .marginalia-plus-btn:hover {
+    @apply bg-paper-3 text-ink;
   }
 
-  .marginalia-pop-swatch:hover {
-    transform: scale(1.15);
+  /* Action rows (create mode) */
+  .marginalia-action-row {
+    @apply flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-xs text-ink-2 transition-colors;
+    background: transparent;
+    border: none;
+    font-family: inherit;
   }
 
-  .marginalia-pop-note {
-    @apply mb-2 w-full rounded-sm border border-rule border-l-2 border-l-accent bg-paper-3 px-2.5 py-2 font-mono text-xs leading-6 text-ink-2 outline-none;
-    resize: none;
-    box-shadow: none;
+  .marginalia-action-row:hover {
+    @apply bg-paper-3 text-ink;
+  }
+
+  .marginalia-action-label {
+    @apply flex-1 text-xs;
+  }
+
+  .marginalia-kbd {
+    @apply rounded border border-rule bg-paper px-1.5 font-mono text-ink-4;
+    font-size: 10px;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  .marginalia-toolbar-footer {
+    @apply mt-1 pt-2 font-mono uppercase tracking-widest text-ink-4;
+    font-size: 10px;
+    border-top: 1px solid theme("colors.rule.DEFAULT");
+  }
+
+  /* Edit mode sections */
+  .marginalia-section {
+    @apply flex flex-col gap-1.5 pt-2;
+  }
+
+  .marginalia-section-label {
+    @apply font-mono uppercase tracking-widest text-ink-4;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .marginalia-edit-select {
+    @apply w-full rounded border border-rule bg-paper px-2 py-1.5 font-mono text-xs text-ink outline-none;
+  }
+
+  .marginalia-edit-note {
+    @apply w-full rounded border border-rule bg-paper-3 px-2.5 py-2 font-mono text-xs leading-6 text-ink-2 outline-none;
+    border-left: 2px solid theme("colors.accent.DEFAULT");
+    resize: vertical;
+    min-height: 60px;
   }
 
   .marginalia-tag-editor {
-    @apply mb-2 flex flex-wrap items-center gap-1.5;
+    @apply flex flex-wrap items-center gap-1.5;
   }
 
   .marginalia-tag-chip {
-    @apply inline-flex h-[22px] items-center gap-1 rounded-full border border-rule bg-paper px-2 font-mono text-[11px] text-ink-2;
+    @apply inline-flex h-5 items-center gap-1 rounded-full border border-rule bg-paper px-2 font-mono text-ink-2;
+    font-size: 10px;
   }
 
   .marginalia-tag-chip button {
-    @apply font-mono text-[10px] text-ink-4 hover:text-red-600;
+    @apply font-mono text-ink-4;
+    font-size: 10px;
+  }
+
+  .marginalia-tag-chip button:hover {
+    color: oklch(55% 0.2 25);
   }
 
   .marginalia-tag-input {
-    @apply h-[22px] w-[86px] rounded-full border border-accent bg-paper px-2 font-mono text-[11px] text-ink outline-none;
+    @apply h-5 w-20 rounded-full border border-accent bg-paper px-2 font-mono text-ink outline-none;
+    font-size: 10px;
   }
 
-  .marginalia-pop-row {
-    @apply flex justify-end gap-1.5;
+  .marginalia-edit-actions {
+    @apply flex items-center justify-between gap-2 pt-2;
+    border-top: 1px solid theme("colors.rule.DEFAULT");
   }
 
   .marginalia-pop-btn {
-    @apply h-[26px] rounded-[5px] border border-rule bg-transparent px-2.5 font-mono text-[11px] text-ink;
+    @apply h-6 rounded border border-rule bg-transparent px-2.5 font-mono text-ink;
+    font-size: 11px;
+  }
+
+  .marginalia-pop-btn:hover {
+    @apply bg-paper-3;
   }
 
   .marginalia-pop-btn-danger {
-    @apply border-red-200 text-red-600 hover:bg-red-50;
+    color: oklch(55% 0.2 25);
+    border-color: oklch(85% 0.06 25);
   }
 
+  .marginalia-pop-btn-danger:hover {
+    background: oklch(95% 0.03 25);
+  }
+
+  /* Mark styling */
   .marginalia-mark {
     @apply cursor-pointer rounded-[1px] bg-transparent;
     padding: 1px;

@@ -1,6 +1,57 @@
 import shadowCss from "./content.css?inline";
 import type { SaveHighlightPayload, TabMessage } from "../lib/messages";
 import { readMarginaliaTarget, stripMarginaliaTarget } from "../lib/urls";
+import { renderMultiSelect } from "./TooltipReact";
+
+// ── Settings cache (from chrome.storage.sync via background) ───────
+let highlightingEnabled = true;
+let customColors: { id: string; label: string; value: string; isDefault?: boolean }[] = [];
+
+void chrome.runtime
+  .sendMessage({ type: "GET_SETTINGS" })
+  .then((res) => {
+    if (res?.ok) highlightingEnabled = res.data.highlightingEnabled;
+  })
+  .catch(() => {});
+
+void chrome.runtime
+  .sendMessage({ type: "GET_COLORS" })
+  .then((res) => {
+    if (res?.ok && Array.isArray(res.data)) {
+      customColors = res.data;
+    }
+  })
+  .catch(() => {});
+
+interface Collection {
+  _id: string;
+  name: string;
+}
+let cachedCollections: Collection[] = [];
+let lastUsedCollectionId: string | null = null;
+
+async function refreshCollections() {
+  try {
+    const res = await chrome.runtime.sendMessage({ type: "LIST_COLLECTIONS" });
+    if (res?.ok && Array.isArray(res.data)) {
+      cachedCollections = res.data as Collection[];
+    }
+    const stored = await chrome.storage.sync.get("marginalia_last_collection_id");
+    const id = stored["marginalia_last_collection_id"];
+    lastUsedCollectionId = typeof id === "string" ? id : null;
+  } catch {
+    /* ignore */
+  }
+}
+
+async function persistLastCollection(id: string | null) {
+  lastUsedCollectionId = id;
+  if (id === null) {
+    await chrome.storage.sync.remove("marginalia_last_collection_id");
+  } else {
+    await chrome.storage.sync.set({ "marginalia_last_collection_id": id });
+  }
+}
 
 // ── Types ─────────────────────────────────────────────────────────
 interface SavedHighlight {
@@ -28,14 +79,16 @@ const HIGHLIGHT_FILLS: Record<HighlightColor, string> = {
   violet: "#ddd6fe",
 };
 
+function getAllColors() {
+  if (customColors.length > 0) return customColors.map(c => ({ id: c.id, color: c.value }));
+  return COLORS.map(c => ({ id: c, color: HIGHLIGHT_FILLS[c] }));
+}
+
 // ── Shadow DOM container ───────────────────────────────────────────
 let shadowHost: HTMLElement | null = null;
 let shadowRoot: ShadowRoot | null = null;
 let toolbarEl: HTMLElement | null = null;
-let popoverEl: HTMLElement | null = null;
 let positionStyleEl: HTMLStyleElement | null = null;
-let activePopoverMark: HTMLElement | null = null;
-let activePopoverFrame: number | null = null;
 let activeToolbarFrame: number | null = null;
 
 interface FloatingPosition {
@@ -44,9 +97,9 @@ interface FloatingPosition {
 }
 
 let toolbarPosition: FloatingPosition | null = null;
-let popoverPosition: FloatingPosition | null = null;
 let repaintPromise: Promise<void> | null = null;
 let toolbarRange: Range | null = null;
+let toolbarMark: HTMLElement | null = null;
 let savedHighlights: SavedHighlight[] = [];
 let repaintRetryTimer: number | null = null;
 
@@ -60,21 +113,6 @@ mark.marginalia-mark {
   background-color: transparent !important;
   background-repeat: repeat !important;
   color: #111827 !important;
-}
-mark.marginalia-mark[data-color="amber"] {
-  background-image: linear-gradient(180deg, transparent 0%, transparent 12%, #fde68a 12%, #fde68a 92%, transparent 92%) !important;
-}
-mark.marginalia-mark[data-color="rose"] {
-  background-image: linear-gradient(180deg, transparent 0%, transparent 12%, #fecdd3 12%, #fecdd3 92%, transparent 92%) !important;
-}
-mark.marginalia-mark[data-color="sage"] {
-  background-image: linear-gradient(180deg, transparent 0%, transparent 12%, #bbf7d0 12%, #bbf7d0 92%, transparent 92%) !important;
-}
-mark.marginalia-mark[data-color="sky"] {
-  background-image: linear-gradient(180deg, transparent 0%, transparent 12%, #bae6fd 12%, #bae6fd 92%, transparent 92%) !important;
-}
-mark.marginalia-mark[data-color="violet"] {
-  background-image: linear-gradient(180deg, transparent 0%, transparent 12%, #ddd6fe 12%, #ddd6fe 92%, transparent 92%) !important;
 }
 @keyframes marginalia-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
@@ -135,19 +173,12 @@ function getShadow(): ShadowRoot {
 
 function syncFloatingPositions() {
   if (!positionStyleEl) return;
-
   const rules: string[] = [];
   if (toolbarPosition) {
     rules.push(
       `#marginalia-toolbar{left:${toolbarPosition.left}px;top:${toolbarPosition.top}px;}`,
     );
   }
-  if (popoverPosition) {
-    rules.push(
-      `#marginalia-popover{left:${popoverPosition.left}px;top:${popoverPosition.top}px;}`,
-    );
-  }
-
   positionStyleEl.textContent = rules.join("\n");
 }
 
@@ -278,17 +309,14 @@ function findAnchoredRange(h: SavedHighlight) {
   return null;
 }
 
-function positionPopoverForMark() {
-  if (!activePopoverMark || !popoverEl) return;
-  const rect = activePopoverMark.getBoundingClientRect();
-  if (rect.bottom < 0 || rect.top > window.innerHeight) {
-    dismissPopover();
-    return;
-  }
-
-  popoverPosition = {
-    left: Math.max(8, Math.min(rect.left, window.innerWidth - 240)),
-    top: Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - 40)),
+function positionToolbarForRect(rect: DOMRect) {
+  const CARD_WIDTH = 260;
+  toolbarPosition = {
+    left: Math.max(8, Math.min(
+      rect.left + rect.width / 2 - CARD_WIDTH / 2,
+      window.innerWidth - CARD_WIDTH - 8,
+    )),
+    top: Math.min(rect.bottom + 8, window.innerHeight - 320),
   };
   syncFloatingPositions();
 }
@@ -300,26 +328,25 @@ function positionToolbarForRange() {
     dismissToolbar();
     return;
   }
-  toolbarPosition = {
-    left: Math.max(8, rect.left + rect.width / 2 - 78),
-    top: Math.max(8, rect.top - 46),
-  };
-  syncFloatingPositions();
+  positionToolbarForRect(rect);
 }
 
-function schedulePopoverPosition() {
-  if (!activePopoverMark || !popoverEl || activePopoverFrame != null) return;
-  activePopoverFrame = requestAnimationFrame(() => {
-    activePopoverFrame = null;
-    positionPopoverForMark();
-  });
+function positionToolbarForMark() {
+  if (!toolbarEl || !toolbarMark) return;
+  const rect = toolbarMark.getBoundingClientRect();
+  if (rect.bottom < 0 || rect.top > window.innerHeight) {
+    dismissToolbar();
+    return;
+  }
+  positionToolbarForRect(rect);
 }
 
 function scheduleToolbarPosition() {
-  if (!toolbarEl || !toolbarRange || activeToolbarFrame != null) return;
+  if (!toolbarEl || activeToolbarFrame != null) return;
   activeToolbarFrame = requestAnimationFrame(() => {
     activeToolbarFrame = null;
-    positionToolbarForRange();
+    if (toolbarRange) positionToolbarForRange();
+    else if (toolbarMark) positionToolbarForMark();
   });
 }
 
@@ -328,34 +355,98 @@ function showSelectionToolbar(rect: DOMRect, range: Range) {
   dismissToolbar();
   const sr = getShadow();
   toolbarRange = range;
+  toolbarMark = null;
+
+  const text = range.toString();
+  const charCount = text.length;
 
   toolbarEl = document.createElement("div");
   toolbarEl.id = "marginalia-toolbar";
-  toolbarEl.className = "marginalia-toolbar";
+  toolbarEl.className = "marginalia-card marginalia-toolbar-card";
 
-  toolbarPosition = {
-    left: Math.max(8, rect.left + rect.width / 2 - 78),
-    top: Math.max(8, rect.top - 46),
-  };
-  syncFloatingPositions();
+  positionToolbarForRect(rect);
 
-  for (const color of COLORS) {
+  // Row 1: colour swatches
+  const swatchRow = document.createElement("div");
+  swatchRow.className = "marginalia-swatch-row";
+  for (const c of getAllColors()) {
     const btn = document.createElement("button");
-    btn.className = "marginalia-swatch swatch";
-    btn.dataset.color = color;
-    btn.title = color;
+    btn.className = "marginalia-swatch-big";
+    btn.dataset.color = c.id;
+    btn.title = `Highlight ${c.id}`;
+    btn.style.background = c.color;
     btn.addEventListener("mousedown", (e) => {
       e.preventDefault();
-      void saveHighlight(range, color);
+      void saveHighlight(range, c.id);
       dismissToolbar();
     });
-    toolbarEl.appendChild(btn);
+    swatchRow.appendChild(btn);
   }
+  toolbarEl.appendChild(swatchRow);
+
+  // Action rows
+  toolbarEl.appendChild(
+    makeActionRow("Add note", "N", () => {
+      dismissToolbar();
+      void saveHighlightAndShowEdit(range, resolveDefaultColor(), { focus: "note" });
+    }),
+  );
+  toolbarEl.appendChild(
+    makeActionRow("Tag…", "T", () => {
+      dismissToolbar();
+      void saveHighlightAndShowEdit(range, resolveDefaultColor(), { focus: "tag" });
+    }),
+  );
+  toolbarEl.appendChild(
+    makeActionRow("Copy with source", "C", () => {
+      // Dismiss FIRST to prevent flickering, then copy
+      const md = `> ${text}\n\n— ${document.title} (${location.href})`;
+      dismissToolbar();
+      void navigator.clipboard.writeText(md).catch(() => {});
+    }),
+  );
+
+  // Footer: char count
+  const footer = document.createElement("div");
+  footer.className = "marginalia-toolbar-footer";
+  footer.textContent = `${charCount} char${charCount === 1 ? "" : "s"} selected`;
+  toolbarEl.appendChild(footer);
 
   sr.appendChild(toolbarEl);
 }
 
+function makeActionRow(
+  label: string,
+  kbd: string,
+  onClick: () => void,
+): HTMLElement {
+  const row = document.createElement("button");
+  row.className = "marginalia-action-row";
+  row.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    onClick();
+  });
+  const labelEl = document.createElement("span");
+  labelEl.className = "marginalia-action-label";
+  labelEl.textContent = label;
+  row.appendChild(labelEl);
+  const kbdEl = document.createElement("span");
+  kbdEl.className = "marginalia-kbd";
+  kbdEl.textContent = kbd;
+  row.appendChild(kbdEl);
+  return row;
+}
+
+function resolveDefaultColor(): string {
+  const all = getAllColors();
+  return all[0]?.id || "amber";
+}
+
+let onDismissToolbar: (() => void) | null = null;
+
 function dismissToolbar() {
+  onDismissToolbar?.();
+  onDismissToolbar = null;
   toolbarEl?.remove();
   toolbarEl = null;
   toolbarRange = null;
@@ -367,26 +458,23 @@ function dismissToolbar() {
   syncFloatingPositions();
 }
 
-function dismissPopover() {
-  popoverEl?.remove();
-  popoverEl = null;
-  activePopoverMark = null;
-  popoverPosition = null;
-  if (activePopoverFrame != null) {
-    cancelAnimationFrame(activePopoverFrame);
-    activePopoverFrame = null;
-  }
-  syncFloatingPositions();
+// ── Save highlight ─────────────────────────────────────────────────
+interface SaveOptions {
+  note?: string;
+  collectionId?: string | null;
+  tags?: string[];
 }
 
-// ── Save highlight ─────────────────────────────────────────────────
-async function saveHighlight(range: Range, color: HighlightColor) {
+async function saveHighlight(
+  range: Range,
+  color: string,
+  options: SaveOptions = {},
+): Promise<string | null> {
   const text = range.toString().trim();
-  if (!text) return;
+  if (!text) return null;
 
   const offsets = rangeOffsets(range);
 
-  // Collect surrounding context (~100 chars before + after)
   const container = range.commonAncestorContainer;
   const parent =
     container.nodeType === Node.TEXT_NODE
@@ -394,8 +482,7 @@ async function saveHighlight(range: Range, color: HighlightColor) {
       : (container as Element);
   const textContext = parent?.textContent?.slice(0, 200) ?? undefined;
 
-  // Wrap the range in a mark
-  wrapRange(range, color, "pending");
+  wrapRange(range, color, "pending", options.note, options.tags ?? []);
 
   const payload: SaveHighlightPayload = {
     url: stripMarginaliaTarget(location.href),
@@ -407,6 +494,12 @@ async function saveHighlight(range: Range, color: HighlightColor) {
     anchorStart: offsets?.start,
     anchorEnd: offsets?.end,
     color,
+    note: options.note,
+    collectionIds:
+      options.collectionId === null
+        ? undefined
+        : options.collectionId ? [options.collectionId] : lastUsedCollectionId ? [lastUsedCollectionId] : undefined,
+    tags: options.tags,
   };
 
   const response = await chrome.runtime.sendMessage({
@@ -414,14 +507,31 @@ async function saveHighlight(range: Range, color: HighlightColor) {
     payload,
   });
   if (response?.ok && response.data?.id) {
-    // Update the mark's data-id
+    const newId = response.data.id as string;
     const marks = document.querySelectorAll<HTMLElement>(
       `mark.marg-h[data-id="pending"]`,
     );
     marks.forEach((m) => {
-      m.dataset.id = response.data.id;
+      m.dataset.id = newId;
     });
+    return newId;
   }
+  return null;
+}
+
+async function saveHighlightAndShowEdit(
+  range: Range,
+  color: string,
+  opts: { focus?: "note" | "tag" } = {},
+) {
+  await refreshCollections();
+  const id = await saveHighlight(range, color);
+  if (!id) return;
+  const mark = document.querySelector<HTMLElement>(
+    `mark.marg-h[data-id="${CSS.escape(id)}"]`,
+  );
+  if (!mark) return;
+  showEditCard(mark, id, color, "", [], lastUsedCollectionId ? [lastUsedCollectionId] : [], opts.focus ?? "note");
 }
 
 // ── Wrap range in a <mark> ─────────────────────────────────────────
@@ -429,11 +539,14 @@ function attachMarkClick(mark: HTMLElement) {
   mark.addEventListener("click", (e) => {
     e.stopPropagation();
     const currentId = mark.dataset.id ?? "";
-    const currentColor = (mark.dataset.color ?? "amber") as HighlightColor;
+    const currentColor = mark.dataset.color ?? "amber";
     const currentNote = mark.dataset.note ?? "";
     const currentTags = readTags(mark.dataset.tags);
+    const currentCollectionIds = readTags(mark.dataset.collectionIds);
     if (!currentId || currentId === "pending") return;
-    showEditPopover(mark, currentId, currentColor, currentNote, currentTags);
+    void refreshCollections().then(() =>
+      showEditCard(mark, currentId, currentColor, currentNote, currentTags, currentCollectionIds, "note"),
+    );
   });
 }
 
@@ -451,8 +564,9 @@ function writeTags(mark: HTMLElement, tags: string[]) {
   mark.dataset.tags = JSON.stringify(tags);
 }
 
-function applyMarkColor(mark: HTMLElement, color: HighlightColor) {
-  const fill = HIGHLIGHT_FILLS[color] ?? HIGHLIGHT_FILLS.amber;
+function applyMarkColor(mark: HTMLElement, color: string) {
+  const custom = customColors.find(c => c.id === color);
+  const fill = custom ? custom.value : (HIGHLIGHT_FILLS[color as HighlightColor] ?? HIGHLIGHT_FILLS.amber);
   mark.dataset.color = color;
   mark.style.setProperty("background-color", "transparent", "important");
   mark.style.setProperty("color", "#111827", "important");
@@ -464,25 +578,27 @@ function applyMarkColor(mark: HTMLElement, color: HighlightColor) {
   mark.style.setProperty("background-repeat", "repeat", "important");
 }
 
-function wrapRange(range: Range, color: HighlightColor, id: string, note?: string, tags: string[] = []) {
+function wrapRange(range: Range, color: string, id: string, note?: string, tags: string[] = [], collectionIds: string[] = []) {
   try {
     const mark = document.createElement("mark");
-    mark.className = `marg-h marginalia-mark marg-${color}`;
+    mark.className = `marg-h marginalia-mark`;
     mark.dataset.id = id;
     applyMarkColor(mark, color);
     if (note) mark.dataset.note = note;
     writeTags(mark, tags);
+    if (collectionIds.length) mark.dataset.collectionIds = JSON.stringify(collectionIds);
     range.surroundContents(mark);
     attachMarkClick(mark);
   } catch {
     try {
       const fragment = range.extractContents();
       const mark = document.createElement("mark");
-      mark.className = `marg-h marginalia-mark marg-${color}`;
+      mark.className = `marg-h marginalia-mark`;
       mark.dataset.id = id;
       applyMarkColor(mark, color);
       if (note) mark.dataset.note = note;
       writeTags(mark, tags);
+      if (collectionIds.length) mark.dataset.collectionIds = JSON.stringify(collectionIds);
       mark.appendChild(fragment);
       range.insertNode(mark);
       attachMarkClick(mark);
@@ -492,156 +608,228 @@ function wrapRange(range: Range, color: HighlightColor, id: string, note?: strin
   }
 }
 
-// ── Edit / delete popover ──────────────────────────────────────────
-function showEditPopover(
+// ── Unified edit card (same visual as create toolbar, below the mark) ──
+function showEditCard(
   mark: HTMLElement,
   id: string,
-  currentColor: HighlightColor,
-  currentNote: string = "",
-  currentTags: string[] = [],
+  color: string,
+  note: string,
+  tags: string[],
+  collectionIds: string[],
+  focus: "note" | "tag" = "note",
 ) {
   dismissToolbar();
-  dismissPopover();
-
   const sr = getShadow();
-  activePopoverMark = mark;
+  toolbarMark = mark;
+  toolbarRange = null;
 
-  popoverEl = document.createElement("div");
-  popoverEl.id = "marginalia-popover";
-  popoverEl.className = "marginalia-popover";
-  positionPopoverForMark();
+  toolbarEl = document.createElement("div");
+  toolbarEl.id = "marginalia-toolbar";
+  toolbarEl.className = "marginalia-card marginalia-edit-card";
 
-  // Color row
-  const colorLabel = document.createElement("div");
-  colorLabel.className = "marginalia-pop-label";
-  colorLabel.textContent = "Colour";
-  popoverEl.appendChild(colorLabel);
+  const rect = mark.getBoundingClientRect();
+  positionToolbarForRect(rect);
 
+  let currentColor = color;
+  let currentNote = note;
+  let currentTags = [...tags];
+  let currentCollectionIds = [...collectionIds];
+
+  // ── Swatch row with active indicator ──
   const swatchRow = document.createElement("div");
-  swatchRow.className = "marginalia-pop-swatches";
-  for (const color of COLORS) {
-    const btn = document.createElement("button");
-    btn.className = `marginalia-pop-swatch${color === currentColor ? " active" : ""}`;
-    btn.dataset.color = color;
-    btn.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
-        type: "UPDATE_HIGHLIGHT",
-        payload: { id, color },
+  swatchRow.className = "marginalia-swatch-row";
+
+  function renderSwatches() {
+    swatchRow.innerHTML = "";
+    for (const c of getAllColors()) {
+      const btn = document.createElement("button");
+      btn.className = `marginalia-swatch-big${c.id === currentColor ? " active" : ""}`;
+      btn.dataset.color = c.id;
+      btn.title = c.id;
+      btn.style.background = c.color;
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        currentColor = c.id;
+        applyMarkColor(mark, c.id);
+        void chrome.runtime.sendMessage({
+          type: "UPDATE_HIGHLIGHT",
+          payload: { id, color: c.id },
+        });
+        renderSwatches();
       });
-      applyMarkColor(mark, color);
-      for (const previousColor of COLORS) {
-        mark.classList.remove(`marg-${previousColor}`);
-      }
-      mark.classList.add(`marg-${color}`);
-      swatchRow
-        .querySelectorAll(".marginalia-pop-swatch")
-        .forEach((swatch) => swatch.classList.remove("active"));
-      btn.classList.add("active");
-    });
-    swatchRow.appendChild(btn);
+      swatchRow.appendChild(btn);
+    }
   }
-  popoverEl.appendChild(swatchRow);
+  renderSwatches();
+  toolbarEl.appendChild(swatchRow);
 
-  // Note textarea
-  const noteLabel = document.createElement("div");
-  noteLabel.className = "marginalia-pop-label";
-  noteLabel.textContent = "Note";
-  popoverEl.appendChild(noteLabel);
+  // ── Collection section ──
+  const colSection = document.createElement("div");
+  colSection.className = "marginalia-section";
+  const colLabel = document.createElement("div");
+  colLabel.className = "marginalia-section-label";
+  colLabel.textContent = "Collections";
+  colSection.appendChild(colLabel);
 
-  const textarea = document.createElement("textarea");
-  textarea.className = "marginalia-pop-note";
-  textarea.rows = 3;
-  textarea.placeholder = "Add a note…";
-  textarea.value = currentNote;
-  popoverEl.appendChild(textarea);
+  const colMount = document.createElement("div");
+  colSection.appendChild(colMount);
+  toolbarEl.appendChild(colSection);
 
+  // We mount the react component, passing it sr as container for Portal
+  const reactRoot = renderMultiSelect(
+    colMount,
+    cachedCollections,
+    currentCollectionIds,
+    (ids) => {
+      currentCollectionIds = ids;
+      if (ids.length) {
+        mark.dataset.collectionIds = JSON.stringify(ids);
+        void persistLastCollection(ids[ids.length - 1]);
+      } else {
+        delete mark.dataset.collectionIds;
+      }
+      void chrome.runtime.sendMessage({
+        type: "UPDATE_HIGHLIGHT",
+        payload: { id, collectionIds: currentCollectionIds },
+      });
+    },
+    sr as unknown as HTMLElement
+  );
+
+  // Need to unmount React when toolbar closes
+  onDismissToolbar = () => {
+    reactRoot.unmount();
+  };
+
+  // ── Tags section ──
+  const tagSection = document.createElement("div");
+  tagSection.className = "marginalia-section";
   const tagLabel = document.createElement("div");
-  tagLabel.className = "marginalia-pop-label";
+  tagLabel.className = "marginalia-section-label";
   tagLabel.textContent = "Tags";
-  popoverEl.appendChild(tagLabel);
+  tagSection.appendChild(tagLabel);
 
-  let tags = [...currentTags];
-  const tagWrap = document.createElement("div");
-  tagWrap.className = "marginalia-tag-editor";
-  const renderTags = () => {
-    tagWrap.textContent = "";
-    for (const tag of tags) {
+  const tagEditor = document.createElement("div");
+  tagEditor.className = "marginalia-tag-editor";
+  let tagInput: HTMLInputElement | null = null;
+
+  function renderTags() {
+    tagEditor.innerHTML = "";
+    for (const t of currentTags) {
       const chip = document.createElement("span");
       chip.className = "marginalia-tag-chip";
-      chip.textContent = `#${tag}`;
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.textContent = "x";
-      remove.addEventListener("click", async () => {
-        tags = tags.filter((item) => item !== tag);
-        await chrome.runtime.sendMessage({
+      chip.textContent = `#${t} `;
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "×";
+      removeBtn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        currentTags = currentTags.filter((x) => x !== t);
+        writeTags(mark, currentTags);
+        void chrome.runtime.sendMessage({
           type: "UPDATE_HIGHLIGHT",
-          payload: { id, tags },
+          payload: { id, tags: currentTags },
         });
-        writeTags(mark, tags);
         renderTags();
       });
-      chip.appendChild(remove);
-      tagWrap.appendChild(chip);
+      chip.appendChild(removeBtn);
+      tagEditor.appendChild(chip);
     }
-    const input = document.createElement("input");
-    input.className = "marginalia-tag-input";
-    input.placeholder = "tag name";
-    input.addEventListener("keydown", async (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      const tag = input.value.trim().replace(/^#/, "").replace(/\s+/g, "-");
-      if (!tag || tags.includes(tag)) return;
-      tags = [...tags, tag];
-      await chrome.runtime.sendMessage({
-        type: "UPDATE_HIGHLIGHT",
-        payload: { id, tags },
-      });
-      writeTags(mark, tags);
-      renderTags();
+    tagInput = document.createElement("input");
+    tagInput.className = "marginalia-tag-input";
+    tagInput.placeholder = "+tag";
+    tagInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && tagInput?.value.trim()) {
+        e.preventDefault();
+        const newTag = tagInput.value.trim().replace(/^#/, "");
+        if (newTag && !currentTags.includes(newTag)) {
+          currentTags.push(newTag);
+          writeTags(mark, currentTags);
+          void chrome.runtime.sendMessage({
+            type: "UPDATE_HIGHLIGHT",
+            payload: { id, tags: currentTags },
+          });
+        }
+        renderTags();
+      }
     });
-    tagWrap.appendChild(input);
-  };
+    tagEditor.appendChild(tagInput);
+  }
   renderTags();
-  popoverEl.appendChild(tagWrap);
+  tagSection.appendChild(tagEditor);
+  toolbarEl.appendChild(tagSection);
 
-  // Buttons row
-  const btnRow = document.createElement("div");
-  btnRow.className = "marginalia-pop-row";
+  // ── Note section ──
+  const noteSection = document.createElement("div");
+  noteSection.className = "marginalia-section";
+  const noteLabel = document.createElement("div");
+  noteLabel.className = "marginalia-section-label";
+  noteLabel.textContent = "Note";
+  noteSection.appendChild(noteLabel);
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "marginalia-edit-note";
+  textarea.placeholder = "Add a note…";
+  textarea.rows = 3;
+  textarea.value = currentNote;
+  textarea.addEventListener("blur", () => {
+    currentNote = textarea.value;
+    mark.dataset.note = currentNote;
+    void chrome.runtime.sendMessage({
+      type: "UPDATE_HIGHLIGHT",
+      payload: { id, note: currentNote },
+    });
+  });
+  noteSection.appendChild(textarea);
+  toolbarEl.appendChild(noteSection);
+
+  // ── Action row: Delete + Done ──
+  const actions = document.createElement("div");
+  actions.className = "marginalia-edit-actions";
 
   const deleteBtn = document.createElement("button");
   deleteBtn.className = "marginalia-pop-btn marginalia-pop-btn-danger";
   deleteBtn.textContent = "Delete";
-  deleteBtn.addEventListener("click", async () => {
-    await chrome.runtime.sendMessage({
+  deleteBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    void chrome.runtime.sendMessage({
       type: "DELETE_HIGHLIGHT",
       payload: { id },
     });
-    mark.replaceWith(...Array.from(mark.childNodes));
-    dismissPopover();
+    const marks = document.querySelectorAll<HTMLElement>(
+      `mark.marg-h[data-id="${CSS.escape(id)}"]`,
+    );
+    marks.forEach((m) => m.replaceWith(...Array.from(m.childNodes)));
+    dismissToolbar();
   });
+  actions.appendChild(deleteBtn);
 
-  const saveBtn = document.createElement("button");
-  saveBtn.className = "marginalia-pop-btn";
-  saveBtn.textContent = "Save note";
-  saveBtn.addEventListener("click", async () => {
-    const res = await chrome.runtime.sendMessage({
-      type: "UPDATE_HIGHLIGHT",
-      payload: { id, note: textarea.value },
-    });
-    if (res?.ok) {
+  const doneBtn = document.createElement("button");
+  doneBtn.className = "marginalia-pop-btn";
+  doneBtn.textContent = "Done";
+  doneBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    // Save note on close
+    if (textarea.value !== currentNote) {
       mark.dataset.note = textarea.value;
+      void chrome.runtime.sendMessage({
+        type: "UPDATE_HIGHLIGHT",
+        payload: { id, note: textarea.value },
+      });
     }
-    dismissPopover();
+    dismissToolbar();
   });
+  actions.appendChild(doneBtn);
+  toolbarEl.appendChild(actions);
 
-  btnRow.appendChild(deleteBtn);
-  btnRow.appendChild(saveBtn);
-  popoverEl.appendChild(btnRow);
+  sr.appendChild(toolbarEl);
 
-  sr.appendChild(popoverEl);
-  positionPopoverForMark();
+  // Focus the right field
+  requestAnimationFrame(() => {
+    if (focus === "tag" && tagInput) tagInput.focus();
+    else textarea.focus();
+  });
 }
+
 
 // ── Re-paint saved highlights on load ─────────────────────────────
 async function repaintHighlights() {
@@ -721,6 +909,9 @@ document.addEventListener("mouseup", (e) => {
     return;
   }
 
+  // Don't show toolbar when highlighting is disabled
+  if (!highlightingEnabled) return;
+
   const range = sel.getRangeAt(0);
   const rect = range.getBoundingClientRect();
   showSelectionToolbar(rect, range.cloneRange());
@@ -729,7 +920,7 @@ document.addEventListener("mouseup", (e) => {
 document.addEventListener("mousedown", (e) => {
   const target = e.target as Element;
   if (!target.closest?.("#marginalia-host")) {
-    dismissPopover();
+    dismissToolbar();
   }
 });
 
@@ -743,9 +934,7 @@ document.addEventListener("keydown", (e) => {
   dismissToolbar();
 });
 
-window.addEventListener("scroll", schedulePopoverPosition, true);
 window.addEventListener("scroll", scheduleToolbarPosition, true);
-window.addEventListener("resize", schedulePopoverPosition);
 window.addEventListener("resize", scheduleToolbarPosition);
 
 const observer = new MutationObserver((mutations) => {
@@ -762,6 +951,20 @@ chrome.runtime.onMessage.addListener((msg: TabMessage, _sender, sendResponse) =>
     void focusHighlight(msg.payload.id).then((focused) =>
       sendResponse({ ok: focused }),
     );
+    return true;
+  }
+  if (msg?.type === "DELETE_HIGHLIGHT_MARK" && msg.payload?.id) {
+    const marks = document.querySelectorAll<HTMLElement>(
+      `mark.marg-h[data-id="${CSS.escape(msg.payload.id)}"]`,
+    );
+    marks.forEach((m) => m.replaceWith(...Array.from(m.childNodes)));
+    sendResponse({ ok: true });
+    return true;
+  }
+  if (msg?.type === "HIGHLIGHTING_TOGGLED") {
+    highlightingEnabled = msg.payload.enabled;
+    if (!highlightingEnabled) dismissToolbar();
+    sendResponse({ ok: true });
     return true;
   }
 });
