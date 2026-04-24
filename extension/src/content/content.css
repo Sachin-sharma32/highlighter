@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :host,
+  :host * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  .marginalia-toolbar {
+    @apply fixed flex -translate-y-2 items-center gap-[3px] rounded bg-ink p-[5px] shadow-paper-3 select-none;
+    pointer-events: all;
+  }
+
+  .marginalia-swatch {
+    @apply size-[22px] cursor-pointer rounded-[5px] border-2 border-transparent transition-transform duration-100;
+  }
+
+  .marginalia-swatch.active {
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+
+  .marginalia-swatch:hover {
+    transform: scale(1.15);
+  }
+
+  .marginalia-popover {
+    @apply fixed min-w-[220px] rounded border border-rule bg-paper p-3 shadow-paper-3;
+    pointer-events: all;
+  }
+
+  .marginalia-pop-label {
+    @apply mb-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4;
+  }
+
+  .marginalia-pop-swatches {
+    @apply mb-2.5 flex gap-[5px];
+  }
+
+  .marginalia-pop-swatch {
+    @apply size-5 cursor-pointer rounded-sm border-2 border-transparent transition-transform duration-100;
+  }
+
+  .marginalia-pop-swatch.active {
+    @apply border-ink;
+  }
+
+  .marginalia-pop-swatch:hover {
+    transform: scale(1.15);
+  }
+
+  .marginalia-pop-note {
+    @apply mb-2 w-full rounded-sm border border-rule border-l-2 border-l-accent bg-paper-2 px-2.5 py-2 text-xs italic leading-6 text-ink-2 outline-none;
+    resize: none;
+  }
+
+  .marginalia-pop-row {
+    @apply flex justify-end gap-1.5;
+  }
+
+  .marginalia-pop-btn {
+    @apply h-[26px] rounded-[5px] border border-rule bg-transparent px-2.5 text-[11px] text-ink;
+  }
+
+  .marginalia-pop-btn-danger {
+    @apply border-red-200 text-red-600 hover:bg-red-50;
+  }
+
+  .marginalia-mark {
+    @apply cursor-pointer rounded-[1px] bg-transparent;
+    padding: 1px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .marginalia-swatch[data-color="amber"],
+  .marginalia-pop-swatch[data-color="amber"] {
+    @apply bg-hl-amber;
+  }
+
+  .marginalia-swatch[data-color="rose"],
+  .marginalia-pop-swatch[data-color="rose"] {
+    @apply bg-hl-rose;
+  }
+
+  .marginalia-swatch[data-color="sage"],
+  .marginalia-pop-swatch[data-color="sage"] {
+    @apply bg-hl-sage;
+  }
+
+  .marginalia-swatch[data-color="sky"],
+  .marginalia-pop-swatch[data-color="sky"] {
+    @apply bg-hl-sky;
+  }
+
+  .marginalia-swatch[data-color="violet"],
+  .marginalia-pop-swatch[data-color="violet"] {
+    @apply bg-hl-violet;
+  }
+
+  .marginalia-mark[data-color="amber"] {
+    background-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 12%,
+      theme("colors.hl.amber") 12%,
+      theme("colors.hl.amber") 92%,
+      transparent 92%
+    );
+  }
+
+  .marginalia-mark[data-color="rose"] {
+    background-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 12%,
+      theme("colors.hl.rose") 12%,
+      theme("colors.hl.rose") 92%,
+      transparent 92%
+    );
+  }
+
+  .marginalia-mark[data-color="sage"] {
+    background-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 12%,
+      theme("colors.hl.sage") 12%,
+      theme("colors.hl.sage") 92%,
+      transparent 92%
+    );
+  }
+
+  .marginalia-mark[data-color="sky"] {
+    background-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 12%,
+      theme("colors.hl.sky") 12%,
+      theme("colors.hl.sky") 92%,
+      transparent 92%
+    );
+  }
+
+  .marginalia-mark[data-color="violet"] {
+    background-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 12%,
+      theme("colors.hl.violet") 12%,
+      theme("colors.hl.violet") 92%,
+      transparent 92%
+    );
+  }
+}

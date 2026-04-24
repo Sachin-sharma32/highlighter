@@ -1,3 +1,4 @@
+import shadowCss from "./content.css?inline";
 import type { SaveHighlightPayload } from "../lib/messages";
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -13,91 +14,71 @@ interface SavedHighlight {
 const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
 type HighlightColor = typeof COLORS[number];
 
-const HL_BG: Record<HighlightColor, string> = {
-  amber: "oklch(90% 0.10 85)",
-  rose: "oklch(88% 0.08 20)",
-  sage: "oklch(90% 0.07 145)",
-  sky: "oklch(90% 0.06 230)",
-  violet: "oklch(88% 0.07 305)",
-};
-
 // ── Shadow DOM container ───────────────────────────────────────────
 let shadowHost: HTMLElement | null = null;
 let shadowRoot: ShadowRoot | null = null;
 let toolbarEl: HTMLElement | null = null;
 let popoverEl: HTMLElement | null = null;
+let positionStyleEl: HTMLStyleElement | null = null;
+
+interface FloatingPosition {
+  left: number;
+  top: number;
+}
+
+let toolbarPosition: FloatingPosition | null = null;
+let popoverPosition: FloatingPosition | null = null;
+
+function ensureHostStyles() {
+  if (document.getElementById("marginalia-host-style")) return;
+
+  const hostStyle = document.createElement("style");
+  hostStyle.id = "marginalia-host-style";
+  hostStyle.textContent = `
+    .marginalia-host {
+      all: initial;
+      position: fixed;
+      z-index: 2147483647;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+  `;
+  document.head.appendChild(hostStyle);
+}
 
 function getShadow(): ShadowRoot {
   if (shadowRoot) return shadowRoot;
+  ensureHostStyles();
   shadowHost = document.createElement("div");
   shadowHost.id = "marginalia-host";
-  shadowHost.style.cssText = "all: initial; position: fixed; z-index: 2147483647; top: 0; left: 0; pointer-events: none;";
+  shadowHost.className = "marginalia-host";
   document.documentElement.appendChild(shadowHost);
   shadowRoot = shadowHost.attachShadow({ mode: "open" });
 
-  // Inline the base styles so they work inside Shadow DOM
   const style = document.createElement("style");
-  style.textContent = `
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .toolbar {
-      position: fixed;
-      background: oklch(18% 0.01 60);
-      border-radius: 10px;
-      padding: 5px;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      box-shadow: 0 12px 32px rgba(20,12,4,0.28), 0 2px 6px rgba(20,12,4,0.2);
-      pointer-events: all;
-      transform: translateY(-8px);
-      user-select: none;
-    }
-    .swatch {
-      width: 22px;
-      height: 22px;
-      border-radius: 5px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      transition: transform 0.1s, border-color 0.1s;
-    }
-    .swatch:hover { transform: scale(1.15); }
-    .swatch.active { border-color: rgba(255,255,255,0.7); }
-    .divider { width: 1px; height: 16px; background: rgba(255,255,255,0.15); margin: 0 2px; }
-    .icon-btn {
-      width: 28px; height: 28px;
-      border-radius: 6px;
-      border: none; background: transparent;
-      color: rgba(255,255,255,0.7);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px;
-      transition: background 0.1s;
-      pointer-events: all;
-    }
-    .icon-btn:hover { background: rgba(255,255,255,0.12); }
-    .popover {
-      position: fixed;
-      background: oklch(98.5% 0.006 85);
-      border: 1px solid oklch(88% 0.012 85);
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(50,30,10,0.08), 0 24px 60px rgba(50,30,10,0.12);
-      padding: 12px;
-      min-width: 220px;
-      pointer-events: all;
-    }
-    .pop-label { font-size: 10px; color: oklch(62% 0.014 60); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-family: monospace; }
-    .pop-swatches { display: flex; gap: 5px; margin-bottom: 10px; }
-    .pop-swatch { width: 20px; height: 20px; border-radius: 4px; border: 2px solid transparent; cursor: pointer; transition: transform 0.1s; }
-    .pop-swatch:hover { transform: scale(1.15); }
-    .pop-swatch.active { border-color: oklch(18% 0.01 60); }
-    .pop-note { width: 100%; resize: none; border: 1px solid oklch(88% 0.012 85); border-left: 2px solid oklch(62% 0.16 40); border-radius: 6px; padding: 8px 10px; font-size: 12px; line-height: 1.5; color: oklch(32% 0.012 60); font-style: italic; background: oklch(96.5% 0.008 85); outline: none; margin-bottom: 8px; }
-    .pop-btn { height: 26px; padding: 0 10px; border-radius: 5px; font-size: 11px; cursor: pointer; border: 1px solid oklch(88% 0.012 85); background: transparent; color: oklch(18% 0.01 60); }
-    .pop-btn.danger { color: #dc2626; border-color: #fecaca; }
-    .pop-btn.danger:hover { background: #fef2f2; }
-    .pop-row { display: flex; gap: 6px; justify-content: flex-end; }
-  `;
+  style.textContent = shadowCss;
   shadowRoot.appendChild(style);
+
+  positionStyleEl = document.createElement("style");
+  positionStyleEl.id = "marginalia-position-style";
+  shadowRoot.appendChild(positionStyleEl);
+
   return shadowRoot;
+}
+
+function syncFloatingPositions() {
+  if (!positionStyleEl) return;
+
+  const rules: string[] = [];
+  if (toolbarPosition) {
+    rules.push(`#marginalia-toolbar{left:${toolbarPosition.left}px;top:${toolbarPosition.top}px;}`);
+  }
+  if (popoverPosition) {
+    rules.push(`#marginalia-popover{left:${popoverPosition.left}px;top:${popoverPosition.top}px;}`);
+  }
+
+  positionStyleEl.textContent = rules.join("\n");
 }
 
 // ── Toolbar ────────────────────────────────────────────────────────
@@ -106,18 +87,22 @@ function showSelectionToolbar(rect: DOMRect, range: Range) {
   const sr = getShadow();
 
   toolbarEl = document.createElement("div");
-  toolbarEl.className = "toolbar";
+  toolbarEl.id = "marginalia-toolbar";
+  toolbarEl.className = "marginalia-toolbar";
 
   const x = rect.left + rect.width / 2 - 78; // approx center
   const y = rect.top - 46;
 
-  toolbarEl.style.left = `${Math.max(8, x)}px`;
-  toolbarEl.style.top = `${Math.max(8, y)}px`;
+  toolbarPosition = {
+    left: Math.max(8, x),
+    top: Math.max(8, y),
+  };
+  syncFloatingPositions();
 
   for (const color of COLORS) {
     const btn = document.createElement("button");
-    btn.className = "swatch";
-    btn.style.background = HL_BG[color];
+    btn.className = "marginalia-swatch";
+    btn.dataset.color = color;
     btn.title = color;
     btn.addEventListener("mousedown", (e) => {
       e.preventDefault();
@@ -133,11 +118,15 @@ function showSelectionToolbar(rect: DOMRect, range: Range) {
 function dismissToolbar() {
   toolbarEl?.remove();
   toolbarEl = null;
+  toolbarPosition = null;
+  syncFloatingPositions();
 }
 
 function dismissPopover() {
   popoverEl?.remove();
   popoverEl = null;
+  popoverPosition = null;
+  syncFloatingPositions();
 }
 
 // ── Save highlight ─────────────────────────────────────────────────
@@ -173,10 +162,9 @@ async function saveHighlight(range: Range, color: HighlightColor) {
 function wrapRange(range: Range, color: HighlightColor, id: string) {
   try {
     const mark = document.createElement("mark");
-    mark.className = `marg-h marg-${color}`;
+    mark.className = "marg-h marginalia-mark";
     mark.dataset.id = id;
     mark.dataset.color = color;
-    applyMarkStyle(mark, color);
     range.surroundContents(mark);
     mark.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -187,10 +175,9 @@ function wrapRange(range: Range, color: HighlightColor, id: string) {
     try {
       const fragment = range.extractContents();
       const mark = document.createElement("mark");
-      mark.className = `marg-h marg-${color}`;
+      mark.className = "marg-h marginalia-mark";
       mark.dataset.id = id;
       mark.dataset.color = color;
-      applyMarkStyle(mark, color);
       mark.appendChild(fragment);
       range.insertNode(mark);
       mark.addEventListener("click", (e) => {
@@ -203,18 +190,6 @@ function wrapRange(range: Range, color: HighlightColor, id: string) {
   }
 }
 
-function applyMarkStyle(mark: HTMLElement, color: HighlightColor) {
-  mark.style.cssText = `
-    background-image: linear-gradient(180deg, transparent 0%, transparent 12%, ${HL_BG[color]} 12%, ${HL_BG[color]} 92%, transparent 92%);
-    padding: 1px 1px;
-    border-radius: 1px;
-    cursor: pointer;
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
-    background-color: transparent;
-  `;
-}
-
 // ── Edit / delete popover ──────────────────────────────────────────
 function showEditPopover(mark: HTMLElement, id: string, currentColor: HighlightColor) {
   dismissToolbar();
@@ -224,29 +199,30 @@ function showEditPopover(mark: HTMLElement, id: string, currentColor: HighlightC
   const rect = mark.getBoundingClientRect();
 
   popoverEl = document.createElement("div");
-  popoverEl.className = "popover";
-  popoverEl.style.left = `${Math.max(8, rect.left)}px`;
-  popoverEl.style.top = `${rect.bottom + 8}px`;
+  popoverEl.id = "marginalia-popover";
+  popoverEl.className = "marginalia-popover";
+  popoverPosition = {
+    left: Math.max(8, rect.left),
+    top: rect.bottom + 8,
+  };
+  syncFloatingPositions();
 
   // Color row
   const colorLabel = document.createElement("div");
-  colorLabel.className = "pop-label";
+  colorLabel.className = "marginalia-pop-label";
   colorLabel.textContent = "Colour";
   popoverEl.appendChild(colorLabel);
 
   const swatchRow = document.createElement("div");
-  swatchRow.className = "pop-swatches";
+  swatchRow.className = "marginalia-pop-swatches";
   for (const color of COLORS) {
     const btn = document.createElement("button");
-    btn.className = `pop-swatch${color === currentColor ? " active" : ""}`;
-    btn.style.background = HL_BG[color];
+    btn.className = `marginalia-pop-swatch${color === currentColor ? " active" : ""}`;
+    btn.dataset.color = color;
     btn.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({ type: "UPDATE_HIGHLIGHT", payload: { id, color } });
-      // Update mark
-      mark.className = `marg-h marg-${color}`;
       mark.dataset.color = color;
-      applyMarkStyle(mark, color);
-      swatchRow.querySelectorAll(".pop-swatch").forEach((s) => s.classList.remove("active"));
+      swatchRow.querySelectorAll(".marginalia-pop-swatch").forEach((swatch) => swatch.classList.remove("active"));
       btn.classList.add("active");
     });
     swatchRow.appendChild(btn);
@@ -255,22 +231,22 @@ function showEditPopover(mark: HTMLElement, id: string, currentColor: HighlightC
 
   // Note textarea
   const noteLabel = document.createElement("div");
-  noteLabel.className = "pop-label";
+  noteLabel.className = "marginalia-pop-label";
   noteLabel.textContent = "Note";
   popoverEl.appendChild(noteLabel);
 
   const textarea = document.createElement("textarea");
-  textarea.className = "pop-note";
+  textarea.className = "marginalia-pop-note";
   textarea.rows = 3;
   textarea.placeholder = "Add a note…";
   popoverEl.appendChild(textarea);
 
   // Buttons row
   const btnRow = document.createElement("div");
-  btnRow.className = "pop-row";
+  btnRow.className = "marginalia-pop-row";
 
   const deleteBtn = document.createElement("button");
-  deleteBtn.className = "pop-btn danger";
+  deleteBtn.className = "marginalia-pop-btn marginalia-pop-btn-danger";
   deleteBtn.textContent = "Delete";
   deleteBtn.addEventListener("click", async () => {
     await chrome.runtime.sendMessage({ type: "DELETE_HIGHLIGHT", payload: { id } });
@@ -279,7 +255,7 @@ function showEditPopover(mark: HTMLElement, id: string, currentColor: HighlightC
   });
 
   const saveBtn = document.createElement("button");
-  saveBtn.className = "pop-btn";
+  saveBtn.className = "marginalia-pop-btn";
   saveBtn.textContent = "Save note";
   saveBtn.addEventListener("click", async () => {
     await chrome.runtime.sendMessage({ type: "UPDATE_HIGHLIGHT", payload: { id, note: textarea.value } });
