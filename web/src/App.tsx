@@ -3,6 +3,7 @@ import { useConvexAuth } from "convex/react";
 import Dashboard from "./routes/Dashboard";
 import ConnectExtension from "./routes/ConnectExtension";
 import Reader from "./routes/Reader";
+import Settings from "./routes/Settings";
 import SignIn from "./routes/SignIn";
 import TestSignIn from "./routes/TestSignIn";
 
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/connect-extension" element={<RequireAuth><ConnectExtension /></RequireAuth>} />
       <Route path="/reader" element={<RequireAuth><Reader /></RequireAuth>} />
+      <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
