@@ -11,6 +11,7 @@ type ListHighlight = {
   text: string;
   color: string;
   note?: string;
+  tags: string[];
   createdAt: number;
 };
 
@@ -43,7 +44,7 @@ function collectionLabel(id: Id<"collections"> | "inbox" | "all" | "notes" | "re
 }
 
 export function HighlightList() {
-  const { activeCollectionId, selectedHighlightId, setSelectedHighlight, searchQuery } = useAppStore();
+  const { activeCollectionId, activeTag, selectedHighlightId, setSelectedHighlight, searchQuery } = useAppStore();
 
   const isSpecial = ["inbox", "all", "notes", "review"].includes(activeCollectionId as string);
 
@@ -53,11 +54,13 @@ export function HighlightList() {
     search: searchQuery || undefined,
   }) ?? []) as ListHighlight[];
 
-  const filtered = activeCollectionId === "inbox"
-    ? highlights.filter((h: ListHighlight) => !h.collectionId)
-    : highlights;
+  const filtered = (activeTag
+    ? highlights.filter((h: ListHighlight) => h.tags.includes(activeTag))
+    : activeCollectionId === "inbox"
+      ? highlights.filter((h: ListHighlight) => !h.collectionId)
+      : highlights);
 
-  const title = collectionLabel(activeCollectionId) ?? "Collection";
+  const title = activeTag ? `#${activeTag}` : collectionLabel(activeCollectionId) ?? "Collection";
 
   return (
     <div

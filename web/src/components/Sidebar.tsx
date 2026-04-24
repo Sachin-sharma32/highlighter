@@ -78,7 +78,7 @@ function NavItem({
 }
 
 export function Sidebar() {
-  const { activeCollectionId, setActiveCollection } = useAppStore();
+  const { activeCollectionId, activeTag, setActiveCollection, setActiveTag } = useAppStore();
   const collections = (useQuery(api.collections.list) ?? []) as SidebarCollection[];
   const allTags = (useQuery(api.highlights.allTags) ?? []) as SidebarTag[];
   const allHighlights = (useQuery(api.highlights.list, {}) ?? []) as SidebarHighlight[];
@@ -149,12 +149,23 @@ export function Sidebar() {
             <SectionLabel label="Tags" />
             <div className="px-3.5 pb-3 flex flex-wrap gap-1">
               {allTags.slice(0, 12).map(({ tag, count }: SidebarTag) => (
-                <span
+                <button
                   key={tag}
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)", padding: "2px 6px", borderRadius: 3, background: "var(--paper)", border: "1px solid var(--rule)" }}
+                  type="button"
+                  onClick={() => setActiveTag(tag)}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: activeTag === tag ? "var(--ink)" : "var(--ink-3)",
+                    padding: "2px 6px",
+                    borderRadius: 3,
+                    background: activeTag === tag ? "var(--accent-tint)" : "var(--paper)",
+                    border: `1px solid ${activeTag === tag ? "var(--accent-color)" : "var(--rule)"}`,
+                    cursor: "pointer",
+                  }}
                 >
                   #{tag} <span style={{ color: "var(--ink-4)" }}>{count}</span>
-                </span>
+                </button>
               ))}
             </div>
           </>

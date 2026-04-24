@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { ChevronLeft, ChevronRight, Copy, Share2, Link, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Share2, Link, MoreHorizontal, Trash2, Folder } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
+import { TagEditor } from "@/components/TagEditor";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +27,7 @@ type HighlightColor = typeof COLORS[number];
 
 type DetailHighlight = {
   _id: Id<"highlights">;
+  collectionId?: Id<"collections">;
   title: string;
   author?: string;
   url: string;
@@ -25,6 +35,17 @@ type DetailHighlight = {
   color: HighlightColor;
   note?: string;
   tags: string[];
+};
+
+type ListHighlight = {
+  _id: Id<"highlights">;
+  collectionId?: Id<"collections">;
+  tags: string[];
+};
+
+type Collection = {
+  _id: Id<"collections">;
+  name: string;
 };
 
 const HL_COLORS: Record<HighlightColor, string> = {
@@ -35,12 +56,27 @@ const HL_COLORS: Record<HighlightColor, string> = {
   violet: "var(--hl-violet)",
 };
 
-function IconBtn({ onClick, children }: { onClick?: () => void; children: React.ReactNode }) {
+function IconBtn({
+  onClick,
+  disabled,
+  children,
+}: {
+  onClick?: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className="flex items-center justify-center rounded-md transition-colors"
-      style={{ width: 28, height: 28, color: "var(--ink-3)" }}
+      style={{
+        width: 28,
+        height: 28,
+        color: disabled ? "var(--ink-4)" : "var(--ink-3)",
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? "default" : "pointer",
+      }}
     >
       {children}
     </button>
@@ -80,7 +116,7 @@ function NoteEditor({
         fontSize: 14,
         lineHeight: 1.55,
         color: "var(--ink-2)",
-        fontStyle: "italic",
+        fontFamily: "var(--font-mono)",
         resize: "vertical",
       }}
     />
@@ -88,7 +124,14 @@ function NoteEditor({
 }
 
 export function HighlightDetail() {
-  const { selectedHighlightId, setSelectedHighlight } = useAppStore();
+  const { activeCollectionId, activeTag, selectedHighlightId, setActiveTag, setSelectedHighlight, searchQuery, setCommandPaletteOpen } = useAppStore();
+  const isSpecial = ["inbox", "all", "notes", "review"].includes(activeCollectionId as string);
+  const navigationHighlights = (useQuery(api.highlights.list, {
+    collectionId: isSpecial ? undefined : (activeCollectionId as Id<"collections">),
+    filter: activeCollectionId === "notes" ? "notes" : undefined,
+    search: searchQuery || undefined,
+  }) ?? []) as ListHighlight[];
+  const collections = (useQuery(api.collections.list) ?? []) as Collection[];
   const highlight = useQuery(
     api.highlights.byId,
     selectedHighlightId ? { id: selectedHighlightId } : "skip"
@@ -98,8 +141,57 @@ export function HighlightDetail() {
   const update = useMutation(api.highlights.update);
   const remove = useMutation(api.highlights.remove);
 
-  const [newTag, setNewTag] = useState("");
-  const [addingTag, setAddingTag] = useState(false);
+  const visibleHighlightIds = useMemo(() => {
+    const visible = activeTag
+      ? navigationHighlights.filter((h) => h.tags.includes(activeTag))
+      : activeCollectionId === "inbox"
+        ? navigationHighlights.filter((h) => !h.collectionId)
+        : navigationHighlights;
+    return visible.map((h) => h._id);
+  }, [activeCollectionId, activeTag, navigationHighlights]);
+
+  const currentIndex = selectedHighlightId
+    ? visibleHighlightIds.findIndex((id) => id === selectedHighlightId)
+    : -1;
+  const previousHighlightId = currentIndex > 0 ? visibleHighlightIds[currentIndex - 1] : null;
+  const nextHighlightId = currentIndex >= 0 && currentIndex < visibleHighlightIds.length - 1
+    ? visibleHighlightIds[currentIndex + 1]
+    : null;
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, [contenteditable='true']")) return;
+      if (!highlight) return;
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandPaletteOpen(true);
+        return;
+      }
+
+      const colorIndex = Number(event.key) - 1;
+      if (colorIndex >= 0 && colorIndex < COLORS.length) {
+        event.preventDefault();
+        void setColor({ id: highlight._id, color: COLORS[colorIndex] });
+      }
+      if (event.key.toLowerCase() === "j" && nextHighlightId) {
+        event.preventDefault();
+        setSelectedHighlight(nextHighlightId);
+      }
+      if (event.key.toLowerCase() === "k" && previousHighlightId) {
+        event.preventDefault();
+        setSelectedHighlight(previousHighlightId);
+      }
+      if (event.key.toLowerCase() === "c") {
+        event.preventDefault();
+        void navigator.clipboard.writeText(highlight.text);
+        toast.success("Copied to clipboard");
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [highlight, nextHighlightId, previousHighlightId, setColor, setCommandPaletteOpen, setSelectedHighlight]);
 
   if (!selectedHighlightId) {
     return (
@@ -122,18 +214,23 @@ export function HighlightDetail() {
     await setColor({ id: highlight._id, color });
   }
 
-  async function handleAddTag() {
-    if (!highlight || !newTag.trim()) return;
-    const tag = newTag.trim().replace(/^#/, "");
-    if (highlight.tags.includes(tag)) { setNewTag(""); setAddingTag(false); return; }
+  async function handleAddTag(tag: string) {
+    if (!highlight || highlight.tags.includes(tag)) return;
     await update({ id: highlight._id, tags: [...highlight.tags, tag] });
-    setNewTag("");
-    setAddingTag(false);
   }
 
   async function handleRemoveTag(tag: string) {
     if (!highlight) return;
     await update({ id: highlight._id, tags: highlight.tags.filter((t: string) => t !== tag) });
+  }
+
+  async function handleCollectionChange(value: string) {
+    if (!highlight) return;
+    await update({
+      id: highlight._id,
+      collectionId: value === "inbox" ? undefined : (value as Id<"collections">),
+    });
+    toast.success(value === "inbox" ? "Moved to inbox" : "Added to collection");
   }
 
   async function handleDelete() {
@@ -148,18 +245,53 @@ export function HighlightDetail() {
     toast.success("Copied to clipboard");
   }
 
+  async function handleShare() {
+    if (!highlight) return;
+    const shareText = `"${highlight.text}"\n\n${highlight.url}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: highlight.title || "Marginalia highlight",
+          text: shareText,
+          url: highlight.url,
+        });
+        return;
+      } catch (error) {
+        if ((error as Error).name === "AbortError") return;
+      }
+    }
+    await navigator.clipboard.writeText(shareText);
+    toast.success("Share text copied");
+  }
+
+  async function handleCopyLink() {
+    if (!highlight) return;
+    await navigator.clipboard.writeText(highlight.url);
+    toast.success("Source link copied");
+  }
+
   const hlClass = `h ${highlight.color !== "amber" ? highlight.color : ""}`.trim();
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" data-testid="highlight-detail" style={{ background: "var(--paper)" }}>
       {/* Toolbar */}
       <div className="flex items-center gap-1.5 px-5 shrink-0" style={{ height: 44, borderBottom: "1px solid var(--rule)" }}>
-        <IconBtn onClick={() => setSelectedHighlight(null)}><ChevronLeft size={13} /></IconBtn>
-        <IconBtn><ChevronRight size={13} /></IconBtn>
+        <IconBtn
+          onClick={() => previousHighlightId && setSelectedHighlight(previousHighlightId)}
+          disabled={!previousHighlightId}
+        >
+          <ChevronLeft size={13} />
+        </IconBtn>
+        <IconBtn
+          onClick={() => nextHighlightId && setSelectedHighlight(nextHighlightId)}
+          disabled={!nextHighlightId}
+        >
+          <ChevronRight size={13} />
+        </IconBtn>
         <div className="flex-1" />
         <IconBtn onClick={handleCopy}><Copy size={13} /></IconBtn>
-        <IconBtn><Share2 size={13} /></IconBtn>
-        <IconBtn><Link size={13} /></IconBtn>
+        <IconBtn onClick={() => void handleShare()}><Share2 size={13} /></IconBtn>
+        <IconBtn onClick={() => void handleCopyLink()}><Link size={13} /></IconBtn>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center justify-center rounded-md" style={{ width: 28, height: 28, color: "var(--ink-3)" }}>
@@ -200,7 +332,7 @@ export function HighlightDetail() {
             style={{
               margin: 0,
               padding: "28px 0",
-              fontFamily: "var(--font-display)",
+              fontFamily: "var(--font-quote)",
               fontSize: 24,
               lineHeight: 1.38,
               letterSpacing: "-0.015em",
@@ -233,39 +365,38 @@ export function HighlightDetail() {
           </div>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-1.5 mt-5">
-            {highlight.tags.map((tag: string) => (
-              <span
-                key={tag}
-                className="flex items-center gap-1"
-                style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 22, padding: "0 8px", borderRadius: 999, fontSize: 11, background: "var(--paper-2)", border: "1px solid var(--rule)", color: "var(--ink-2)" }}
-              >
-                #{tag}
-                <button onClick={() => void handleRemoveTag(tag)} className="hover:text-red-500 ml-0.5" style={{ color: "var(--ink-4)", lineHeight: 1 }}>×</button>
-              </span>
-            ))}
-            {addingTag ? (
-              <input
-                autoFocus
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleAddTag();
-                  if (e.key === "Escape") { setAddingTag(false); setNewTag(""); }
-                }}
-                onBlur={() => { if (newTag) void handleAddTag(); else setAddingTag(false); }}
-                placeholder="tag name"
-                style={{ height: 22, padding: "0 8px", borderRadius: 999, fontSize: 11, border: "1px solid var(--accent-color)", outline: "none", background: "var(--accent-tint)", width: 90 }}
-              />
-            ) : (
-              <button
-                onClick={() => setAddingTag(true)}
-                className="flex items-center gap-1"
-                style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 22, padding: "0 8px", borderRadius: 999, fontSize: 11, border: "1px dashed var(--rule-2)", color: "var(--ink-4)" }}
-              >
-                <Plus size={10} /> tag
-              </button>
-            )}
+          <div className="mt-5">
+            <TagEditor
+              tags={highlight.tags}
+              activeTag={activeTag}
+              onSelectTag={setActiveTag}
+              onAddTag={(tag) => void handleAddTag(tag)}
+              onRemoveTag={(tag) => void handleRemoveTag(tag)}
+            />
+          </div>
+
+          <div className="mt-5 rounded-lg border p-3" style={{ borderColor: "var(--rule)", background: "var(--paper-2)" }}>
+            <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em]" style={{ color: "var(--ink-4)" }}>
+              <Folder size={12} /> Collection
+            </div>
+            <Select
+              value={highlight.collectionId ?? "inbox"}
+              onValueChange={(value) => void handleCollectionChange(value)}
+            >
+              <SelectTrigger className="h-8 bg-paper text-xs">
+                <SelectValue placeholder="Choose collection" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="inbox">Inbox</SelectItem>
+                  {collections.map((collection) => (
+                    <SelectItem key={collection._id} value={collection._id}>
+                      {collection.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Note */}
