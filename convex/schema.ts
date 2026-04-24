@@ -11,6 +11,11 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_user", ["userId"]),
 
+  settings: defineTable({
+    userId: v.id("users"),
+    highlightColors: v.any(),
+  }).index("by_user", ["userId"]),
+
   highlights: defineTable({
     userId: v.id("users"),
     url: v.string(),
@@ -22,15 +27,10 @@ export default defineSchema({
     anchorSuffix: v.optional(v.string()),
     anchorStart: v.optional(v.number()),
     anchorEnd: v.optional(v.number()),
-    color: v.union(
-      v.literal("amber"),
-      v.literal("rose"),
-      v.literal("sage"),
-      v.literal("sky"),
-      v.literal("violet")
-    ),
+    color: v.string(),
     note: v.optional(v.string()),
     collectionId: v.optional(v.id("collections")),
+    collectionIds: v.optional(v.array(v.id("collections"))),
     tags: v.array(v.string()),
     createdAt: v.number(),
   })
@@ -55,4 +55,21 @@ export default defineSchema({
   })
     .index("by_token", ["token"])
     .index("by_user", ["userId"]),
+
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    plan: v.union(v.literal("free"), v.literal("premium")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("pending"),
+      v.literal("cancelled"),
+      v.literal("expired")
+    ),
+    razorpayOrderId: v.optional(v.string()),
+    razorpayPaymentId: v.optional(v.string()),
+    razorpaySignature: v.optional(v.string()),
+    activatedAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    amountInPaise: v.optional(v.number()),
+  }).index("by_user", ["userId"]),
 });

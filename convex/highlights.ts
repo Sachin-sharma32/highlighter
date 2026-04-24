@@ -1,14 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { assertCanCreateHighlight } from "./plan";
 
-const colorValidator = v.union(
-  v.literal("amber"),
-  v.literal("rose"),
-  v.literal("sage"),
-  v.literal("sky"),
-  v.literal("violet")
-);
+const colorValidator = v.string();
 
 export const list = query({
   args: {
@@ -115,11 +110,13 @@ export const create = mutation({
     color: colorValidator,
     note: v.optional(v.string()),
     collectionId: v.optional(v.id("collections")),
+    collectionIds: v.optional(v.array(v.id("collections"))),
     tags: v.array(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
+    await assertCanCreateHighlight(ctx, userId);
     return await ctx.db.insert("highlights", {
       ...args,
       userId,
@@ -134,6 +131,7 @@ export const update = mutation({
     color: v.optional(colorValidator),
     note: v.optional(v.string()),
     collectionId: v.optional(v.id("collections")),
+    collectionIds: v.optional(v.array(v.id("collections"))),
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, { id, ...patch }) => {
