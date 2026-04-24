@@ -3,6 +3,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { HighlightList } from "@/components/HighlightList";
 import { HighlightDetail } from "@/components/HighlightDetail";
 import { CommandPalette } from "@/components/CommandPalette";
+import { PricingModal } from "@/components/PricingModal";
+import { UsageBanner } from "@/components/UsageBanner";
 
 export default function Dashboard() {
   return (
@@ -11,12 +13,14 @@ export default function Dashboard() {
       style={{ background: "var(--paper)" }}
     >
       <TopNav />
+      <UsageBanner />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <HighlightList />
         <HighlightDetail />
       </div>
       <CommandPalette />
+      <PricingModal />
     </div>
   );
 }

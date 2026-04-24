@@ -69,63 +69,59 @@ export function CommandPalette() {
     <Dialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
       <DialogContent
         data-testid="command-palette"
-        className="p-0 gap-0 overflow-hidden"
-        style={{ maxWidth: 620, borderRadius: 14, border: "1px solid var(--rule)", boxShadow: "var(--shadow-3)" }}
+        className="p-0 gap-0 overflow-hidden max-w-[620px] rounded-[14px] border border-rule shadow-[var(--shadow-3)]"
       >
         <Command shouldFilter={false}>
-          <div className="flex items-center gap-2.5 px-4 border-b" style={{ borderColor: "var(--rule)", height: 50 }}>
-            <Sparkles size={14} style={{ color: "var(--accent-2)", flexShrink: 0 }} />
+          <div className="flex items-center gap-2.5 px-4 border-b border-rule h-[50px]">
+            <Sparkles size={14} className="text-accent-2 shrink-0" />
             <CommandInput
               data-testid="command-palette-input"
               placeholder="Search highlights, notes, sources…"
               value={query}
               onValueChange={setQuery}
-              className="flex-1 border-0 outline-none bg-transparent text-sm"
-              style={{ fontFamily: "var(--font-display)", color: "var(--ink)", height: "100%", padding: 0 }}
+              className="flex-1 border-0 outline-none bg-transparent text-sm font-display text-ink h-full p-0"
             />
-            <kbd style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "1px 5px", borderRadius: 4, border: "1px solid var(--rule-2)", background: "var(--paper-2)", color: "var(--ink-3)", flexShrink: 0 }}>esc</kbd>
+            <kbd className="font-mono text-[10px] px-1.5 py-[1px] rounded bg-paper-2 border border-rule-2 text-ink-3 shrink-0">esc</kbd>
           </div>
-          <CommandList className="max-h-96 noscroll" style={{ background: "var(--paper)" }}>
+          <CommandList className="max-h-96 noscroll bg-paper">
             <CommandEmpty>
-              <div className="py-8 text-center text-sm" style={{ color: "var(--ink-4)" }}>No results found</div>
+              <div className="py-8 text-center text-sm text-ink-4">No results found</div>
             </CommandEmpty>
 
             {highlights.length > 0 && (
-              <CommandGroup heading="Highlights" style={{ padding: 6 }}>
+              <CommandGroup heading="Highlights" className="p-1.5">
                 {highlights.slice(0, 6).map((h: CommandHighlight) => (
                   <CommandItem
                     key={h._id}
                     value={h._id}
                     onSelect={() => handleSelectHighlight(h._id)}
                     data-testid="command-highlight-result"
-                    className="flex gap-2.5 rounded-lg cursor-pointer"
-                    style={{ padding: "10px 12px" }}
+                    className="flex gap-2.5 rounded-lg cursor-pointer px-3 py-2.5"
                   >
-                    <div style={{ width: 3, borderRadius: 2, background: COLOR_DOT[h.color] ?? COLOR_DOT.amber, flexShrink: 0, alignSelf: "stretch" }} />
+                    <div className="w-[3px] rounded-sm shrink-0 self-stretch" style={{ background: COLOR_DOT[h.color] ?? COLOR_DOT.amber }} />
                     <div className="flex-1 min-w-0">
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-4)", marginBottom: 2 }}>{h.title}</div>
-                      <div style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--ink-2)", lineHeight: 1.4 }} className="truncate">
+                      <div className="font-mono text-[10px] text-ink-4 mb-0.5">{h.title}</div>
+                      <div className="font-display text-[13px] text-ink-2 leading-tight truncate">
                         {h.text}
                       </div>
                     </div>
-                    <FileText size={12} style={{ color: "var(--ink-4)", flexShrink: 0, marginTop: 2 }} />
+                    <FileText size={12} className="text-ink-4 shrink-0 mt-0.5" />
                   </CommandItem>
                 ))}
               </CommandGroup>
             )}
 
             {collections.length > 0 && query.length === 0 && (
-              <CommandGroup heading="Collections" style={{ padding: 6 }}>
+              <CommandGroup heading="Collections" className="p-1.5">
                 {collections.map((c: CommandCollection) => (
                   <CommandItem
                     key={c._id}
                     value={`col-${c._id}`}
                     onSelect={() => handleSelectCollection(c._id)}
-                    className="flex gap-2.5 rounded-lg cursor-pointer"
-                    style={{ padding: "8px 12px" }}
+                    className="flex gap-2.5 rounded-lg cursor-pointer px-3 py-2"
                   >
-                    <Folder size={13} style={{ color: "var(--ink-4)" }} />
-                    <span style={{ fontSize: 13, color: "var(--ink-2)" }}>{c.name}</span>
+                    <Folder size={13} className="text-ink-4" />
+                    <span className="text-[13px] text-ink-2">{c.name}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -134,12 +130,11 @@ export function CommandPalette() {
 
           {/* Footer */}
           <div
-            className="flex gap-4 px-3.5 py-2"
-            style={{ borderTop: "1px solid var(--rule)", background: "var(--paper-2)" }}
+            className="flex gap-4 px-3.5 py-2 border-t border-rule bg-paper-2"
           >
             {[["↑↓", "navigate"], ["↵", "open"], ["esc", "close"]].map(([key, label]) => (
-              <span key={label} className="flex items-center gap-1.5" style={{ fontSize: 10, color: "var(--ink-4)" }}>
-                <kbd style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "1px 4px", borderRadius: 3, border: "1px solid var(--rule-2)", background: "var(--paper)", color: "var(--ink-3)" }}>{key}</kbd>
+              <span key={label} className="flex items-center gap-1.5 text-[10px] text-ink-4">
+                <kbd className="font-mono text-[10px] px-1 py-[1px] rounded bg-paper border border-rule-2 text-ink-3">{key}</kbd>
                 {label}
               </span>
             ))}

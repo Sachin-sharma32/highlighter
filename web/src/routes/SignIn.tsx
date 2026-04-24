@@ -37,36 +37,33 @@ export default function SignIn() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--paper-2)" }}>
+    <div className="flex items-center justify-center min-h-screen bg-paper-2">
       <div
-        className="flex flex-col items-center gap-8 p-12 rounded-xl"
-        style={{ background: "var(--paper)", border: "1px solid var(--rule)", boxShadow: "var(--shadow-2)", width: 400 }}
+        className="flex flex-col items-center gap-8 p-12 rounded-xl bg-paper border border-rule shadow-[var(--shadow-2)] w-[400px]"
       >
         {/* Logo */}
         <div className="flex items-center gap-3">
           <div
-            className="flex items-center justify-center rounded-lg text-white text-xl font-medium"
-            style={{ width: 36, height: 36, background: "var(--ink)", fontFamily: "var(--font-display)", boxShadow: "0 0 0 2px var(--accent-color)" }}
+            className="flex items-center justify-center rounded-lg text-white text-xl font-medium w-9 h-9 bg-ink font-display shadow-[0_0_0_2px_var(--accent-color)]"
           >
             M
           </div>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink)" }}>
+          <span className="font-display text-[20px] font-medium tracking-tight text-ink">
             Marginalia
           </span>
         </div>
 
         <div className="text-center">
-          <p style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 8 }}>
+          <p className="font-display text-[26px] font-medium tracking-tight text-ink mb-2">
             Welcome back
           </p>
-          <p style={{ fontSize: 14, color: "var(--ink-3)" }}>
+          <p className="text-sm text-ink-3">
             Sign in to access your highlights
           </p>
         </div>
 
         <Button
-          className="w-full gap-2"
-          style={{ height: 40, background: "var(--ink)", color: "var(--paper)", borderRadius: 8 }}
+          className="w-full gap-2 h-10 bg-ink text-paper rounded-lg"
           disabled={isSigningIn || isSigningInLocal}
           onClick={() => void handleGoogleSignIn()}
         >
@@ -91,12 +88,12 @@ export default function SignIn() {
         )}
 
         {error && (
-          <p style={{ fontSize: 12, color: "#dc2626", textAlign: "center", margin: 0 }}>
+          <p className="text-xs text-red-600 text-center m-0">
             {error}
           </p>
         )}
 
-        <p style={{ fontSize: 12, color: "var(--ink-4)", textAlign: "center" }}>
+        <p className="text-xs text-ink-4 text-center">
           Your highlights stay private and sync across all your devices.
         </p>
       </div>

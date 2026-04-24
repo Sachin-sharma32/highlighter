@@ -23,24 +23,23 @@ export default function ConnectExtension() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen" data-testid="connect-extension-page" style={{ background: "var(--paper-2)" }}>
+    <div className="flex items-center justify-center min-h-screen bg-paper-2" data-testid="connect-extension-page">
       <div
-        className="flex flex-col gap-8 p-12 rounded-xl"
-        style={{ background: "var(--paper)", border: "1px solid var(--rule)", boxShadow: "var(--shadow-2)", width: 480 }}
+        className="flex flex-col gap-8 p-12 rounded-xl bg-paper border border-rule shadow-[var(--shadow-2)] w-[480px]"
       >
         <div className="flex items-center gap-3">
-          <div className="rounded-lg flex items-center justify-center" style={{ width: 36, height: 36, background: "var(--paper-2)", border: "1px solid var(--rule)" }}>
-            <Link2 size={16} style={{ color: "var(--ink-2)" }} />
+          <div className="rounded-lg flex items-center justify-center w-9 h-9 bg-paper-2 border border-rule">
+            <Link2 size={16} className="text-ink-2" />
           </div>
           <div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink)", margin: 0 }}>
+            <h1 className="font-display text-[20px] font-medium tracking-tight text-ink m-0">
               Connect the extension
             </h1>
-            <p style={{ fontSize: 12, color: "var(--ink-4)", margin: 0 }}>Pair Marginalia with your Chrome extension</p>
+            <p className="text-xs text-ink-4 m-0">Pair Marginalia with your Chrome extension</p>
           </div>
         </div>
 
-        <ol className="flex flex-col gap-4" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        <ol className="flex flex-col gap-4 list-none p-0 m-0">
           {[
             "Install the Marginalia extension from Chrome Web Store (or load unpacked from extension/dist)",
             "Click the Marginalia icon in your Chrome toolbar",
@@ -48,12 +47,11 @@ export default function ConnectExtension() {
           ].map((step, i) => (
             <li key={i} className="flex gap-3">
               <span
-                className="shrink-0 flex items-center justify-center rounded-full text-xs font-medium"
-                style={{ width: 20, height: 20, background: "var(--paper-2)", border: "1px solid var(--rule)", color: "var(--ink-3)", fontFamily: "var(--font-mono)", marginTop: 2 }}
+                className="shrink-0 flex items-center justify-center rounded-full text-[10px] font-medium w-5 h-5 bg-paper-2 border border-rule text-ink-3 font-mono mt-0.5"
               >
                 {i + 1}
               </span>
-              <p style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5, margin: 0 }}>{step}</p>
+              <p className="text-[13px] text-ink-2 leading-relaxed m-0">{step}</p>
             </li>
           ))}
         </ol>
@@ -63,8 +61,7 @@ export default function ConnectExtension() {
             onClick={() => void generate()}
             disabled={loading}
             data-testid="generate-pairing-code-button"
-            className="gap-2 self-start"
-            style={{ height: 38, background: "var(--ink)", color: "var(--paper)", borderRadius: 8, fontSize: 13 }}
+            className="gap-2 self-start h-[38px] bg-ink text-paper rounded-lg text-[13px]"
           >
             {loading ? <RefreshCw size={13} className="animate-spin" /> : <Link2 size={13} />}
             Generate pairing code
@@ -72,19 +69,18 @@ export default function ConnectExtension() {
         ) : (
           <div className="flex flex-col gap-4">
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-                Your pairing code <span style={{ color: "var(--hl-sage-ink)" }}>(valid 10 min)</span>
+              <div className="font-mono text-[10px] text-ink-4 uppercase tracking-[0.08em] mb-2">
+                Your pairing code <span className="text-hl-sage-ink">(valid 10 min)</span>
               </div>
               <div
-                className="flex items-center justify-between rounded-lg px-4 py-3"
-                style={{ background: "var(--paper-2)", border: "1px solid var(--rule)" }}
+                className="flex items-center justify-between rounded-lg px-4 py-3 bg-paper-2 border border-rule"
               >
-                <span data-testid="pairing-code-value" style={{ fontFamily: "var(--font-mono)", fontSize: 22, letterSpacing: "0.08em", color: "var(--ink)", fontWeight: 500 }}>
+                <span data-testid="pairing-code-value" className="font-mono text-[22px] tracking-[0.08em] text-ink font-medium">
                   {code}
                 </span>
                 <button
                   onClick={() => { void navigator.clipboard.writeText(code); toast.success("Copied!"); }}
-                  style={{ fontSize: 11, color: "var(--accent-color)", fontFamily: "var(--font-mono)" }}
+                  className="text-[11px] text-accent font-mono"
                 >
                   copy
                 </button>
@@ -92,8 +88,8 @@ export default function ConnectExtension() {
             </div>
 
             <div className="flex items-center gap-2">
-              <CheckCircle size={13} style={{ color: "oklch(70% 0.14 145)" }} />
-              <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Paste this code in the extension popup and click Connect</span>
+              <CheckCircle size={13} className="text-[oklch(70%_0.14_145)]" />
+              <span className="text-xs text-ink-3">Paste this code in the extension popup and click Connect</span>
             </div>
 
             <Button

@@ -17,7 +17,7 @@ import {
   Type,
   User,
 } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import {
   applyAppearanceSettings,
@@ -147,7 +147,27 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<TabId>("colors");
   const [theme, setTheme] = useState<AppTheme>(() => (localStorage.getItem("marginalia.theme") as AppTheme | null) ?? "light");
   const [typography, setTypography] = useState<TypographyChoice>(() => (localStorage.getItem("marginalia.typography") as TypographyChoice | null) ?? "editorial");
-  const [colors, setColors] = useState<ColorSetting[]>(() => readStoredJson("marginalia.highlightColors", DEFAULT_COLORS));
+  
+  const fetchedColors = useQuery(api.settings.getColors);
+  const saveColorsToConvex = useMutation(api.settings.saveColors);
+
+  const [localColors, setLocalColors] = useState<ColorSetting[] | null>(null);
+
+  // Derive final colors
+  const baseColors = fetchedColors ? (fetchedColors as ColorSetting[]) : DEFAULT_COLORS;
+  const colors = localColors ?? baseColors;
+
+  // Migrate from local storage once if needed
+  useEffect(() => {
+    if (fetchedColors === null && !localStorage.getItem("marginalia.migratedColors")) {
+      const local = readStoredJson("marginalia.highlightColors", DEFAULT_COLORS);
+      // eslint-disable-next-line react-compiler/react-compiler
+      setLocalColors(local);
+      void saveColorsToConvex({ colors: local });
+      localStorage.setItem("marginalia.migratedColors", "true");
+    }
+  }, [fetchedColors, saveColorsToConvex]);
+
   const [addingColor, setAddingColor] = useState(false);
   const [hue, setHue] = useState(45);
   const [saturation, setSaturation] = useState(92);
@@ -162,22 +182,24 @@ export default function Settings() {
     applyAppearanceSettings(theme, typography);
   }, [theme, typography]);
 
-  useEffect(() => {
-    localStorage.setItem("marginalia.highlightColors", JSON.stringify(colors));
-  }, [colors]);
+  function updateColors(newColors: ColorSetting[]) {
+    setLocalColors(newColors);
+    void saveColorsToConvex({ colors: newColors });
+  }
 
   function addColor() {
     const label = newColorName.trim() || "New color";
-    setColors((items) => [
-      ...items,
+    const nextColors = [
+      ...colors,
       {
         id: `custom-${Date.now()}`,
         label,
         value: newColor,
-        shortcut: items.length < 9 ? items.length + 1 : undefined,
+        shortcut: colors.length < 9 ? colors.length + 1 : undefined,
         isDefault: false,
       },
-    ]);
+    ];
+    updateColors(nextColors);
     setNewColorName("New color");
     setAddingColor(false);
   }
@@ -227,7 +249,7 @@ export default function Settings() {
                     <input
                       value={color.label}
                       onChange={(event) =>
-                        setColors((items) => items.map((item) => item.id === color.id ? { ...item, label: event.target.value } : item))
+                        updateColors(colors.map((item) => item.id === color.id ? { ...item, label: event.target.value } : item))
                       }
                       className="bg-transparent text-sm font-medium outline-none"
                       style={{ color: "var(--ink)" }}
@@ -244,7 +266,7 @@ export default function Settings() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           disabled={color.isDefault}
-                          onClick={() => setColors((items) => items.filter((item) => item.id !== color.id))}
+                          onClick={() => updateColors(colors.filter((item) => item.id !== color.id))}
                           className="gap-2 text-xs"
                         >
                           <Trash2 size={12} /> Remove color
