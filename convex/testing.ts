@@ -14,10 +14,18 @@ function assertTestMode() {
 
 async function getOrCreatePlaywrightUser(ctx: any, email: string) {
   const normalizedEmail = email.trim().toLowerCase();
-  const existing = await retrieveAccount(ctx, {
-    provider: "playwright",
-    account: { id: normalizedEmail },
-  });
+  let existing: Awaited<ReturnType<typeof retrieveAccount>> | null = null;
+  try {
+    existing = await retrieveAccount(ctx, {
+      provider: "playwright",
+      account: { id: normalizedEmail },
+    });
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== "InvalidAccountId") {
+      throw error;
+    }
+  }
+
   if (existing) {
     return existing.user;
   }
@@ -38,10 +46,18 @@ export const resetUserData = mutation({
   handler: async (ctx: any, { email }: { email: string }) => {
     assertTestMode();
 
-    const existing = await retrieveAccount(ctx, {
-      provider: "playwright",
-      account: { id: email.trim().toLowerCase() },
-    });
+    let existing: Awaited<ReturnType<typeof retrieveAccount>> | null = null;
+    try {
+      existing = await retrieveAccount(ctx, {
+        provider: "playwright",
+        account: { id: email.trim().toLowerCase() },
+      });
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "InvalidAccountId") {
+        throw error;
+      }
+    }
+
     if (!existing) {
       return { ok: true };
     }

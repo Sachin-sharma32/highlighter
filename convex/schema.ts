@@ -18,6 +18,10 @@ export default defineSchema({
     author: v.optional(v.string()),
     text: v.string(),
     textContext: v.optional(v.string()),
+    anchorPrefix: v.optional(v.string()),
+    anchorSuffix: v.optional(v.string()),
+    anchorStart: v.optional(v.number()),
+    anchorEnd: v.optional(v.number()),
     color: v.union(
       v.literal("amber"),
       v.literal("rose"),
@@ -38,9 +42,17 @@ export default defineSchema({
   pairingCodes: defineTable({
     userId: v.id("users"),
     code: v.string(),
-    token: v.string(),
+    token: v.optional(v.string()),
     expiresAt: v.number(),
   })
     .index("by_code", ["code"])
+    .index("by_user", ["userId"]),
+
+  extensionSessions: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_token", ["token"])
     .index("by_user", ["userId"]),
 });
