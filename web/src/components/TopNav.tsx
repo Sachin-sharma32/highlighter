@@ -1,7 +1,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sparkles, LogOut, Link2 } from "lucide-react";
+import { Search, Sparkles, LogOut, Link2, Settings } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -96,6 +96,9 @@ export function TopNav() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate("/connect-extension")} className="gap-2 text-xs cursor-pointer">
               <Link2 size={12} /> Connect extension
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/settings")} className="gap-2 text-xs cursor-pointer">
+              <Settings size={12} /> Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => void signOut()} className="gap-2 text-xs cursor-pointer text-red-600">
