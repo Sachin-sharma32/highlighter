@@ -50,7 +50,7 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
   }
 
   return (
-    <div style={{ width: 380, height: 520, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, gap: 24, background: "var(--paper)" }}>
+    <div data-testid="popup-pairing-screen" style={{ width: 380, height: 520, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, gap: 24, background: "var(--paper)" }}>
       {/* Logo */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 34, height: 34, borderRadius: 8, background: "var(--ink)", color: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, boxShadow: "0 0 0 2px var(--accent)" }}>
@@ -69,6 +69,7 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
 
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
         <input
+          data-testid="popup-pairing-input"
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           onKeyDown={(e) => e.key === "Enter" && void handleConnect()}
@@ -85,6 +86,7 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
         {error && <p style={{ fontSize: 11, color: "#dc2626" }}>{error}</p>}
         <button
           onClick={() => void handleConnect()}
+          data-testid="popup-connect-button"
           disabled={loading || !code.trim()}
           style={{
             height: 40, borderRadius: 8, background: code.trim() ? "var(--ink)" : "var(--paper-3)",
@@ -160,7 +162,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   const hostname = (() => { try { return new URL(tabUrl).hostname; } catch { return tabUrl; } })();
 
   return (
-    <div style={{ width: 380, height: 520, display: "flex", flexDirection: "column", background: "var(--paper)", overflow: "hidden" }}>
+    <div data-testid="popup-main" style={{ width: 380, height: 520, display: "flex", flexDirection: "column", background: "var(--paper)", overflow: "hidden" }}>
       {/* Header */}
       <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--rule)", display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--ink)", color: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 500, flexShrink: 0, boxShadow: "0 0 0 1.5px var(--accent)" }}>M</div>
@@ -176,12 +178,12 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
       {/* On this page */}
       <div style={{ padding: "14px 16px 10px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-          <span className="mono" style={{ fontSize: 11, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em" }}>On this page</span>
+          <span className="mono" data-testid="popup-on-page-label" style={{ fontSize: 11, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em" }}>On this page</span>
           <span style={{ fontSize: 11, color: "var(--ink-3)" }}>{highlights.length} highlight{highlights.length !== 1 ? "s" : ""}</span>
         </div>
         {highlights.length > 0 && (
           <>
-            <div className="serif" style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tabTitle}</div>
+            <div className="serif" data-testid="popup-tab-title" style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tabTitle}</div>
             <div style={{ display: "flex", gap: 3, height: 6, borderRadius: 3, overflow: "hidden" }}>
               {COLORS.filter((c) => colorCounts[c] > 0).map((c) => (
                 <div key={c} style={{ flex: colorCounts[c] / totalWidth, background: HL_BG[c], borderRadius: 3 }} />
@@ -206,7 +208,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           </div>
         ) : (
           highlights.map((h, i) => (
-            <div key={h._id} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < highlights.length - 1 ? "1px solid var(--rule)" : "none" }}>
+            <div key={h._id} data-testid="popup-highlight-row" style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < highlights.length - 1 ? "1px solid var(--rule)" : "none" }}>
               <div style={{ width: 3, borderRadius: 2, background: HL_BG[h.color], flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p className="serif" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>

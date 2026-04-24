@@ -58,7 +58,7 @@ export function HighlightDetail() {
   if (!selectedHighlightId) {
     return (
       <div className="flex-1 flex items-center justify-center" style={{ background: "var(--paper)" }}>
-        <p style={{ fontSize: 13, color: "var(--ink-4)" }}>Select a highlight to read it here</p>
+        <p data-testid="highlight-detail-empty" style={{ fontSize: 13, color: "var(--ink-4)" }}>Select a highlight to read it here</p>
       </div>
     );
   }
@@ -66,7 +66,7 @@ export function HighlightDetail() {
   if (!highlight) {
     return (
       <div className="flex-1 flex items-center justify-center" style={{ background: "var(--paper)" }}>
-        <p style={{ fontSize: 13, color: "var(--ink-4)" }}>Loading…</p>
+        <p data-testid="highlight-detail-loading" style={{ fontSize: 13, color: "var(--ink-4)" }}>Loading…</p>
       </div>
     );
   }
@@ -112,7 +112,7 @@ export function HighlightDetail() {
   const hlClass = `h ${highlight.color !== "amber" ? highlight.color : ""}`.trim();
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: "var(--paper)" }}>
+    <div className="flex-1 flex flex-col overflow-hidden" data-testid="highlight-detail" style={{ background: "var(--paper)" }}>
       {/* Toolbar */}
       <div className="flex items-center gap-1.5 px-5 shrink-0" style={{ height: 44, borderBottom: "1px solid var(--rule)" }}>
         <IconBtn onClick={() => setSelectedHighlight(null)}><ChevronLeft size={13} /></IconBtn>
@@ -157,6 +157,7 @@ export function HighlightDetail() {
 
           {/* Highlight text as blockquote */}
           <blockquote
+            data-testid="highlight-detail-quote"
             style={{
               margin: 0,
               padding: "28px 0",
@@ -178,6 +179,7 @@ export function HighlightDetail() {
               <button
                 key={c}
                 onClick={() => void handleColorChange(c)}
+                data-testid={`highlight-color-${c}`}
                 className="rounded transition-transform hover:scale-110"
                 title={c}
                 style={{
@@ -233,6 +235,7 @@ export function HighlightDetail() {
               Your note
             </div>
             <Textarea
+              data-testid="highlight-note-input"
               value={note}
               onChange={(e) => setNote_(e.target.value)}
               onBlur={() => void handleNoteBlur()}

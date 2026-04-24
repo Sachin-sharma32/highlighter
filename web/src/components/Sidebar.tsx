@@ -26,23 +26,24 @@ function SectionLabel({ label }: { label: string }) {
 }
 
 function NavItem({
-  id,
   icon,
   label,
   count,
   active,
   onClick,
+  testId,
 }: {
-  id: ActiveCollection;
   icon: React.ReactNode;
   label: string;
   count?: string | number;
   active: boolean;
   onClick: () => void;
+  testId: string;
 }) {
   return (
     <button
       onClick={onClick}
+      data-testid={testId}
       className="flex items-center gap-2.5 w-full text-left transition-colors"
       style={{
         padding: "6px 14px",
@@ -91,12 +92,14 @@ export function Sidebar() {
     <>
       <div
         className="flex flex-col overflow-hidden"
+        data-testid="sidebar"
         style={{ width: 240, background: "var(--paper-2)", borderRight: "1px solid var(--rule)" }}
       >
         {/* New collection button */}
         <div className="p-2.5">
           <Button
             onClick={() => setDialogOpen(true)}
+            data-testid="new-collection-button"
             className="w-full gap-1.5 text-xs font-medium"
             style={{ height: 32, background: "var(--ink)", color: "var(--paper)", borderRadius: 8 }}
           >
@@ -105,10 +108,10 @@ export function Sidebar() {
         </div>
 
         <SectionLabel label="Library" />
-        <NavItem id="inbox" icon={<Highlighter size={13} />} label="Inbox" count={inboxCount || undefined} active={activeCollectionId === "inbox"} onClick={() => setActiveCollection("inbox")} />
-        <NavItem id="all" icon={<BookOpen size={13} />} label="All highlights" count={allHighlights.length || undefined} active={activeCollectionId === "all"} onClick={() => setActiveCollection("all")} />
-        <NavItem id="notes" icon={<StickyNote size={13} />} label="With notes" count={notesCount || undefined} active={activeCollectionId === "notes"} onClick={() => setActiveCollection("notes")} />
-        <NavItem id="review" icon={<RefreshCw size={13} />} label="Review" active={activeCollectionId === "review"} onClick={() => setActiveCollection("review")} />
+        <NavItem icon={<Highlighter size={13} />} label="Inbox" count={inboxCount || undefined} active={activeCollectionId === "inbox"} onClick={() => setActiveCollection("inbox")} testId="library-inbox" />
+        <NavItem icon={<BookOpen size={13} />} label="All highlights" count={allHighlights.length || undefined} active={activeCollectionId === "all"} onClick={() => setActiveCollection("all")} testId="library-all-highlights" />
+        <NavItem icon={<StickyNote size={13} />} label="With notes" count={notesCount || undefined} active={activeCollectionId === "notes"} onClick={() => setActiveCollection("notes")} testId="library-notes" />
+        <NavItem icon={<RefreshCw size={13} />} label="Review" active={activeCollectionId === "review"} onClick={() => setActiveCollection("review")} testId="library-review" />
 
         {collections.length > 0 && (
           <>
@@ -116,12 +119,12 @@ export function Sidebar() {
             {collections.map((col) => (
               <NavItem
                 key={col._id}
-                id={col._id}
                 icon={<Folder size={13} />}
                 label={col.name}
                 count={allHighlights.filter((h) => h.collectionId === col._id).length || undefined}
                 active={activeCollectionId === col._id}
                 onClick={() => setActiveCollection(col._id)}
+                testId={`collection-item-${col._id}`}
               />
             ))}
           </>
@@ -157,11 +160,12 @@ export function Sidebar() {
 
       {/* New collection dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent style={{ maxWidth: 400 }}>
+        <DialogContent data-testid="new-collection-dialog" style={{ maxWidth: 400 }}>
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "var(--font-display)", fontSize: 18 }}>New collection</DialogTitle>
           </DialogHeader>
           <Input
+            data-testid="new-collection-input"
             placeholder="e.g. Attention economy"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -171,7 +175,7 @@ export function Sidebar() {
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="text-xs">Cancel</Button>
-            <Button onClick={() => void handleCreateCollection()} className="text-xs" style={{ background: "var(--ink)", color: "var(--paper)" }}>
+            <Button data-testid="create-collection-submit" onClick={() => void handleCreateCollection()} className="text-xs" style={{ background: "var(--ink)", color: "var(--paper)" }}>
               Create
             </Button>
           </DialogFooter>

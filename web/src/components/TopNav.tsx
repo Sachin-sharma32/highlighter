@@ -35,12 +35,14 @@ export function TopNav() {
     <>
       <div
         className="flex items-center gap-3 shrink-0 px-6"
+        data-testid="topnav"
         style={{ height: 52, borderBottom: "1px solid var(--rule)", background: "var(--paper)" }}
       >
         {/* Logo */}
         <div className="flex items-center gap-2.5 mr-2">
           <div
             className="flex items-center justify-center rounded-lg text-white text-base font-medium shrink-0"
+            data-testid="topnav-logo"
             style={{ width: 28, height: 28, background: "var(--ink)", fontFamily: "var(--font-display)", boxShadow: "0 0 0 1.5px var(--accent-color)" }}
           >
             M
@@ -54,6 +56,7 @@ export function TopNav() {
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => setCommandPaletteOpen(true)}
+            data-testid="topnav-search-button"
             className="flex items-center gap-2 px-3 rounded-full text-sm transition-colors"
             style={{ width: 420, maxWidth: "100%", height: 32, border: "1px solid var(--rule)", background: "var(--paper-2)", color: "var(--ink-4)" }}
           >

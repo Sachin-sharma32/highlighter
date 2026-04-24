@@ -1,7 +1,7 @@
 import { Page } from "@playwright/test";
+import path from "node:path";
 
-const env = globalThis as { process?: { env?: Record<string, string | undefined> } };
-const CONVEX_URL = env.process?.env?.VITE_CONVEX_URL ?? "http://localhost:3210";
+const CONVEX_URL = process.env.VITE_CONVEX_URL ?? "http://localhost:3210";
 
 /**
  * Signs in as a test user by hitting the dev-only /test-signin route.
@@ -61,5 +61,5 @@ export async function resetDb(email = "test@marginalia.dev") {
 }
 
 export function getExtensionDistPath(): string {
-  return new URL("../extension/dist", import.meta.url).pathname;
+  return path.resolve(__dirname, "../extension/dist");
 }

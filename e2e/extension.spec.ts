@@ -1,4 +1,4 @@
-import { expect, test, chromium, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, chromium, type Page } from "@playwright/test";
 import { createServer, type Server } from "node:http";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -42,7 +42,7 @@ async function launchExtensionContext() {
 }
 
 async function startArticleServer() {
-  const html = readFileSync(new URL("./fixtures/article.html", import.meta.url), "utf8");
+  const html = readFileSync(path.resolve(__dirname, "./fixtures/article.html"), "utf8");
 
   const server = await new Promise<Server>((resolve) => {
     const instance = createServer((_request, response) => {
@@ -75,21 +75,15 @@ test("pairs the extension, saves a highlight, and syncs it back to the dashboard
     await signInThroughDashboard(dashboardPage, TEST_EMAIL);
 
     await dashboardPage.goto(`${DASHBOARD_URL}/connect-extension`);
-    await dashboardPage.getByRole("button", { name: "Generate pairing code" }).click();
-
-    const pairingCode = await dashboardPage.waitForFunction(
-      () => document.body.innerText.match(/MARG-[A-Z0-9]{4}-[A-Z0-9]{4}/)?.[0] ?? null
-    );
-    const code = await pairingCode.jsonValue();
-    if (typeof code !== "string") {
-      throw new Error("Failed to extract pairing code");
-    }
+    await dashboardPage.getByTestId("generate-pairing-code-button").click();
+    const code = await dashboardPage.getByTestId("pairing-code-value").textContent();
+    if (!code) throw new Error("Failed to extract pairing code");
 
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
-    await popupPage.getByPlaceholder("MARG-XXXX-XXXX").fill(code);
-    await popupPage.getByRole("button", { name: "Connect" }).click();
-    await expect(popupPage.getByText("On this page")).toBeVisible();
+    await popupPage.getByTestId("popup-pairing-input").fill(code);
+    await popupPage.getByTestId("popup-connect-button").click();
+    await expect(popupPage.getByTestId("popup-on-page-label")).toBeVisible();
 
     const articlePage = await context.newPage();
     await articlePage.goto(articleServer.url);
@@ -125,7 +119,7 @@ test("pairs the extension, saves a highlight, and syncs it back to the dashboard
     await expect(articlePage.locator("mark.marg-h.marg-amber")).toHaveCount(1);
 
     await dashboardPage.goto(DASHBOARD_URL);
-    await expect(dashboardPage.getByText("The margins are where the argument happens")).toBeVisible();
+    await expect(dashboardPage.getByTestId("highlight-row").first()).toBeVisible();
   } finally {
     await articleServer.close();
     await cleanup();

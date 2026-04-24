@@ -56,6 +56,7 @@ export function CommandPalette() {
   return (
     <Dialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
       <DialogContent
+        data-testid="command-palette"
         className="p-0 gap-0 overflow-hidden"
         style={{ maxWidth: 620, borderRadius: 14, border: "1px solid var(--rule)", boxShadow: "var(--shadow-3)" }}
       >
@@ -63,6 +64,7 @@ export function CommandPalette() {
           <div className="flex items-center gap-2.5 px-4 border-b" style={{ borderColor: "var(--rule)", height: 50 }}>
             <Sparkles size={14} style={{ color: "var(--accent-2)", flexShrink: 0 }} />
             <CommandInput
+              data-testid="command-palette-input"
               placeholder="Search highlights, notes, sources…"
               value={query}
               onValueChange={setQuery}
@@ -83,6 +85,7 @@ export function CommandPalette() {
                     key={h._id}
                     value={h._id}
                     onSelect={() => handleSelectHighlight(h._id)}
+                    data-testid="command-highlight-result"
                     className="flex gap-2.5 rounded-lg cursor-pointer"
                     style={{ padding: "10px 12px" }}
                   >

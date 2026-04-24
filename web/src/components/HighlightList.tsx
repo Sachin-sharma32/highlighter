@@ -52,6 +52,7 @@ export function HighlightList() {
   return (
     <div
       className="flex flex-col overflow-hidden"
+      data-testid="highlight-list"
       style={{ width: 360, borderRight: "1px solid var(--rule)", background: "var(--paper)" }}
     >
       {/* Header */}
@@ -80,6 +81,8 @@ export function HighlightList() {
             <button
               key={h._id}
               onClick={() => setSelectedHighlight(h._id)}
+              data-testid="highlight-row"
+              data-highlight-id={h._id}
               className="flex gap-2.5 w-full text-left transition-colors"
               style={{
                 padding: "12px 16px",
@@ -95,6 +98,7 @@ export function HighlightList() {
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-4)", flexShrink: 0 }}>{timeAgo(h.createdAt)}</div>
                 </div>
                 <p
+                  data-testid="highlight-row-text"
                   className="text-sm leading-snug"
                   style={{
                     fontFamily: "var(--font-display)",

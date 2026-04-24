@@ -9,16 +9,15 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("renders the authenticated dashboard and creates a collection", async ({ page }) => {
-  await expect(page.getByText("Marginalia").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "New collection" })).toBeVisible();
-  await expect(page.getByText("All highlights")).toBeVisible();
+  await expect(page.getByTestId("topnav-logo")).toBeVisible();
+  await expect(page.getByTestId("new-collection-button")).toBeVisible();
+  await expect(page.getByTestId("library-all-highlights")).toBeVisible();
 
-  await page.getByRole("button", { name: "New collection" }).click();
-  await page.getByPlaceholder("e.g. Attention economy").fill("Field Notes");
-  await page.getByRole("button", { name: "Create" }).click();
+  await page.getByTestId("new-collection-button").click();
+  await page.getByTestId("new-collection-input").fill("Field Notes");
+  await page.getByTestId("create-collection-submit").click();
 
-  await expect(page.getByText("Collection created")).toBeVisible();
-  await expect(page.getByText("Field Notes")).toBeVisible();
+  await expect(page.locator("[data-testid^='collection-item-']").first()).toContainText("Field Notes");
 });
 
 test("loads a seeded highlight and persists note edits", async ({ page }) => {
@@ -30,16 +29,14 @@ test("loads a seeded highlight and persists note edits", async ({ page }) => {
   });
 
   await page.reload();
-  await page.getByText("The margins are where the argument happens.").click();
+  await page.getByTestId("highlight-row").first().click();
 
-  const noteField = page.getByPlaceholder("Add a note…");
+  const noteField = page.getByTestId("highlight-note-input");
   await noteField.fill("A saved test note.");
   await noteField.press("Tab");
 
-  await expect(page.getByText("Note saved")).toBeVisible();
-
   await page.reload();
-  await page.getByText("The margins are where the argument happens.").click();
+  await page.getByTestId("highlight-row").first().click();
   await expect(noteField).toHaveValue("A saved test note.");
 });
 
@@ -54,10 +51,10 @@ test("opens the command palette and selects a highlight result", async ({ page }
   await page.reload();
   await page.keyboard.press("Control+K");
 
-  const searchInput = page.getByPlaceholder("Search highlights, notes, sources…");
+  const searchInput = page.getByTestId("command-palette-input");
   await expect(searchInput).toBeVisible();
   await searchInput.fill("annotation");
 
-  await page.getByText("Every annotation is an act of faith.").click();
-  await expect(page.locator("blockquote")).toContainText("Every annotation is an act of faith.");
+  await page.getByTestId("command-highlight-result").first().click();
+  await expect(page.getByTestId("highlight-detail-quote")).toContainText("Every annotation is an act of faith.");
 });

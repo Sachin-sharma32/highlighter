@@ -23,7 +23,7 @@ export default function ConnectExtension() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--paper-2)" }}>
+    <div className="flex items-center justify-center min-h-screen" data-testid="connect-extension-page" style={{ background: "var(--paper-2)" }}>
       <div
         className="flex flex-col gap-8 p-12 rounded-xl"
         style={{ background: "var(--paper)", border: "1px solid var(--rule)", boxShadow: "var(--shadow-2)", width: 480 }}
@@ -62,6 +62,7 @@ export default function ConnectExtension() {
           <Button
             onClick={() => void generate()}
             disabled={loading}
+            data-testid="generate-pairing-code-button"
             className="gap-2 self-start"
             style={{ height: 38, background: "var(--ink)", color: "var(--paper)", borderRadius: 8, fontSize: 13 }}
           >
@@ -78,7 +79,7 @@ export default function ConnectExtension() {
                 className="flex items-center justify-between rounded-lg px-4 py-3"
                 style={{ background: "var(--paper-2)", border: "1px solid var(--rule)" }}
               >
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 22, letterSpacing: "0.08em", color: "var(--ink)", fontWeight: 500 }}>
+                <span data-testid="pairing-code-value" style={{ fontFamily: "var(--font-mono)", fontSize: 22, letterSpacing: "0.08em", color: "var(--ink)", fontWeight: 500 }}>
                   {code}
                 </span>
                 <button
