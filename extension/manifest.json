@@ -31,9 +31,26 @@
     "activeTab",
     "scripting",
     "sidePanel",
-    "tabs"
+    "tabs",
+    "contextMenus"
   ],
   "host_permissions": ["<all_urls>"],
+  "commands": {
+    "open-side-panel": {
+      "suggested_key": {
+        "default": "Alt+M",
+        "mac": "Alt+M"
+      },
+      "description": "Open the Marginalia side panel"
+    },
+    "toggle-highlighting": {
+      "suggested_key": {
+        "default": "Alt+Shift+M",
+        "mac": "Alt+Shift+M"
+      },
+      "description": "Toggle Marginalia highlighting on/off"
+    }
+  },
   "externally_connectable": {
     "matches": [
       "http://localhost:*/*",
