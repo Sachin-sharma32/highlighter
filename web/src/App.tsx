@@ -4,6 +4,7 @@ import Dashboard from "./routes/Dashboard";
 import ConnectExtension from "./routes/ConnectExtension";
 import Reader from "./routes/Reader";
 import SignIn from "./routes/SignIn";
+import TestSignIn from "./routes/TestSignIn";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -16,6 +17,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/signin" element={<SignIn />} />
+      {import.meta.env.DEV && <Route path="/test-signin" element={<TestSignIn />} />}
       <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/connect-extension" element={<RequireAuth><ConnectExtension /></RequireAuth>} />
       <Route path="/reader" element={<RequireAuth><Reader /></RequireAuth>} />
