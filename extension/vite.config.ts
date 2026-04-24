@@ -5,6 +5,7 @@ import path from "path";
 import manifest from "./manifest.json";
 
 export default defineConfig({
+  envDir: "..",
   plugins: [
     react(),
     crx({ manifest }),
@@ -16,6 +17,6 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: false,
   },
 });
