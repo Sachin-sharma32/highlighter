@@ -292,6 +292,16 @@ export function HighlightDetail() {
         <IconBtn onClick={handleCopy}><Copy size={13} /></IconBtn>
         <IconBtn onClick={() => void handleShare()}><Share2 size={13} /></IconBtn>
         <IconBtn onClick={() => void handleCopyLink()}><Link size={13} /></IconBtn>
+        <button
+          onClick={() => void handleDelete()}
+          title="Delete highlight"
+          className="flex items-center justify-center rounded-md transition-colors"
+          style={{ width: 28, height: 28, color: "var(--ink-4)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "oklch(60% 0.2 25)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--ink-4)"; }}
+        >
+          <Trash2 size={13} />
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center justify-center rounded-md" style={{ width: 28, height: 28, color: "var(--ink-3)" }}>
