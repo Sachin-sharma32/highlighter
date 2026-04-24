@@ -1,5 +1,6 @@
 import { ConvexClient } from "convex/browser";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import type { ExtMessage, ExtResponse } from "../lib/messages";
 import { getToken, setToken, setUserId, clearToken, isPaired } from "../lib/storage";
 
@@ -7,14 +8,8 @@ const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
 
 let client: ConvexClient | null = null;
 
-async function getClient(): Promise<ConvexClient> {
-  if (!client) {
-    client = new ConvexClient(CONVEX_URL);
-    const token = await getToken();
-    if (token) {
-      client.setAuth(async () => token);
-    }
-  }
+function getClient(): ConvexClient {
+  if (!client) client = new ConvexClient(CONVEX_URL);
   return client;
 }
 
@@ -22,21 +17,56 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
 });
 
-// Message handler from content script / popup / side panel
 chrome.runtime.onMessage.addListener(
-  (message: ExtMessage, _sender, sendResponse: (r: ExtResponse) => void) => {
-    handleMessage(message)
+  (message: ExtMessage, sender, sendResponse: (r: ExtResponse) => void) => {
+    handleMessage(message, sender)
       .then(sendResponse)
       .catch((err: unknown) =>
         sendResponse({ ok: false, error: (err as Error).message ?? "Unknown error" })
       );
-    return true; // keep channel open for async
+    return true;
   }
 );
 
-async function handleMessage(msg: ExtMessage): Promise<ExtResponse> {
-  const c = await getClient();
+async function requireToken(): Promise<string> {
+  const token = await getToken();
+  if (!token) throw new Error("Not paired. Open the extension popup to connect.");
+  return token;
+}
 
+async function openSidePanel(payload: { tabId?: number; windowId?: number } = {}) {
+  if (!chrome.sidePanel?.open) {
+    throw new Error("Side panel is not available in this browser.");
+  }
+
+  if (payload.tabId != null) {
+    await chrome.sidePanel.open({ tabId: payload.tabId });
+    return;
+  }
+
+  if (payload.windowId != null) {
+    await chrome.sidePanel.open({ windowId: payload.windowId });
+    return;
+  }
+
+  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (tab?.id != null) {
+    await chrome.sidePanel.open({ tabId: tab.id });
+    return;
+  }
+
+  if (tab?.windowId != null) {
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+    return;
+  }
+
+  throw new Error("No active browser tab was found for the side panel.");
+}
+
+async function handleMessage(
+  msg: ExtMessage,
+  sender: chrome.runtime.MessageSender
+): Promise<ExtResponse> {
   switch (msg.type) {
     case "GET_AUTH_STATUS": {
       const paired = await isPaired();
@@ -44,57 +74,80 @@ async function handleMessage(msg: ExtMessage): Promise<ExtResponse> {
     }
 
     case "EXCHANGE_PAIRING_CODE": {
+      const c = getClient();
       const result = await c.mutation(api.extensionAuth.exchangePairingCode, {
         code: msg.payload.code,
       });
       await setToken(result.token);
       await setUserId(result.userId);
-      // Re-init client with the new token
-      client = null;
-      await getClient();
       return { ok: true, data: result };
     }
 
     case "SIGN_OUT": {
+      const token = await getToken();
+      if (token) {
+        try {
+          const c = getClient();
+          await c.mutation(api.ext.signOut, { token });
+        } catch {
+          /* ignore — token may already be invalid */
+        }
+      }
       await clearToken();
-      client = null;
       return { ok: true, data: null };
     }
 
     case "SAVE_HIGHLIGHT": {
-      const id = await c.mutation(api.highlights.create, {
-        ...msg.payload,
-        tags: [],
-      });
+      const token = await requireToken();
+      const c = getClient();
+      const id = await c.mutation(api.ext.create, { token, ...msg.payload });
       return { ok: true, data: { id } };
     }
 
     case "UPDATE_HIGHLIGHT": {
-      await c.mutation(api.highlights.update, {
-        id: msg.payload.id as Parameters<typeof api.highlights.update>[1]["id"],
+      const token = await requireToken();
+      const c = getClient();
+      await c.mutation(api.ext.update, {
+        token,
+        id: msg.payload.id as Id<"highlights">,
         color: msg.payload.color,
         note: msg.payload.note,
+        tags: msg.payload.tags,
       });
       return { ok: true, data: null };
     }
 
     case "DELETE_HIGHLIGHT": {
-      await c.mutation(api.highlights.remove, {
-        id: msg.payload.id as Parameters<typeof api.highlights.remove>[1]["id"],
+      const token = await requireToken();
+      const c = getClient();
+      await c.mutation(api.ext.remove, {
+        token,
+        id: msg.payload.id as Id<"highlights">,
       });
       return { ok: true, data: null };
     }
 
     case "LIST_FOR_URL": {
-      const highlights = await c.query(api.highlights.byUrl, { url: msg.payload.url });
+      const token = await getToken();
+      if (!token) return { ok: true, data: [] };
+      const c = getClient();
+      const highlights = await c.query(api.ext.listByUrl, { token, url: msg.payload.url });
+      return { ok: true, data: highlights };
+    }
+
+    case "LIST_ALL_HIGHLIGHTS": {
+      const token = await getToken();
+      if (!token) return { ok: true, data: [] };
+      const c = getClient();
+      const highlights = await c.query(api.ext.listAll, { token });
       return { ok: true, data: highlights };
     }
 
     case "OPEN_SIDE_PANEL": {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab?.id) {
-        await chrome.sidePanel.open({ tabId: tab.id });
-      }
+      await openSidePanel({
+        tabId: msg.payload?.tabId ?? sender.tab?.id,
+        windowId: msg.payload?.windowId ?? sender.tab?.windowId,
+      });
       return { ok: true, data: null };
     }
 

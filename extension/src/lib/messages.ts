@@ -5,10 +5,14 @@ export type ExtMessage =
   | { type: "UPDATE_HIGHLIGHT"; payload: UpdateHighlightPayload }
   | { type: "DELETE_HIGHLIGHT"; payload: { id: string } }
   | { type: "LIST_FOR_URL"; payload: { url: string } }
+  | { type: "LIST_ALL_HIGHLIGHTS" }
+  | { type: "OPEN_SIDE_PANEL"; payload?: { tabId?: number; windowId?: number } }
   | { type: "EXCHANGE_PAIRING_CODE"; payload: { code: string } }
   | { type: "GET_AUTH_STATUS" }
-  | { type: "SIGN_OUT" }
-  | { type: "OPEN_SIDE_PANEL" };
+  | { type: "SIGN_OUT" };
+
+// Sent from popup/sidepanel to content script via chrome.tabs.sendMessage
+export type TabMessage = { type: "SCROLL_TO_HIGHLIGHT"; payload: { id: string } };
 
 export interface SaveHighlightPayload {
   url: string;
@@ -16,6 +20,10 @@ export interface SaveHighlightPayload {
   author?: string;
   text: string;
   textContext?: string;
+  anchorPrefix?: string;
+  anchorSuffix?: string;
+  anchorStart?: number;
+  anchorEnd?: number;
   color: "amber" | "rose" | "sage" | "sky" | "violet";
 }
 
@@ -23,6 +31,7 @@ export interface UpdateHighlightPayload {
   id: string;
   color?: "amber" | "rose" | "sage" | "sky" | "violet";
   note?: string;
+  tags?: string[];
 }
 
 export type ExtResponse<T = unknown> =

@@ -16,6 +16,6 @@ export async function setConvexToken(token: string | null) {
   if (token) {
     client.setAuth(async () => token);
   } else {
-    client.clearAuth();
+    client.setAuth(async () => null);
   }
 }
