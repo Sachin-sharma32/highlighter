@@ -22,7 +22,8 @@ export type TabMessage =
   | { type: "SCROLL_TO_HIGHLIGHT"; payload: { id: string } }
   | { type: "DELETE_HIGHLIGHT_MARK"; payload: { id: string } }
   | { type: "HIGHLIGHTING_TOGGLED"; payload: { enabled: boolean } }
-  | { type: "GET_YOUTUBE_CLIP_CONTEXT" };
+  | { type: "GET_YOUTUBE_CLIP_CONTEXT" }
+  | { type: "SHOW_YOUTUBE_CLIP_TRIMMER" };
 
 export interface SaveHighlightPayload {
   url: string;

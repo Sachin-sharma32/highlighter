@@ -12,8 +12,6 @@ import {
   Folder,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -24,11 +22,8 @@ import {
 import { DASHBOARD_URL } from "@/lib/dashboard";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
 import {
-  buildDefaultClipRange,
   formatClipTime,
   getYouTubeVideoId,
-  isYouTubeWatchUrl,
-  type YouTubeClipContext,
   youtubeWatchUrl,
 } from "@/lib/youtube";
 
@@ -84,12 +79,6 @@ interface Collection {
 
 type Tab = "highlights" | "collections" | "all" | "stats";
 
-type ClipDraft = YouTubeClipContext & {
-  start: number;
-  end: number;
-  note: string;
-};
-
 function hostnameOf(url: string): string {
   try {
     return new URL(url).hostname;
@@ -123,116 +112,6 @@ function highlightDisplayText(highlight: Highlight) {
     return clipLabel(highlight.clipStart, highlight.clipEnd);
   }
   return highlight.text;
-}
-
-function ClipCaptureCard({
-  draft,
-  loading,
-  error,
-  saving,
-  onDraftChange,
-  onRefresh,
-  onSave,
-}: {
-  draft: ClipDraft | null;
-  loading: boolean;
-  error: string;
-  saving: boolean;
-  onDraftChange: (draft: ClipDraft) => void;
-  onRefresh: () => void;
-  onSave: () => void;
-}) {
-  if (loading) {
-    return (
-      <div className="border-b border-rule bg-paper-2 px-4 py-3">
-        <div className="flex items-center gap-2 text-xs text-ink-3">
-          <Loader2 size={13} className="animate-spin" />
-          Reading current YouTube timestamp…
-        </div>
-      </div>
-    );
-  }
-
-  if (!draft) {
-    return error ? (
-      <div className="border-b border-rule bg-paper-2 px-4 py-2 text-[11px] text-red-600">
-        {error}
-      </div>
-    ) : null;
-  }
-
-  const invalid = draft.end <= draft.start;
-
-  return (
-    <div className="border-b border-rule bg-paper-2 px-4 py-3">
-      <div className="mb-2 flex items-center gap-2">
-        <Scissors size={13} className="text-accent" />
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-[13px] font-medium text-ink">
-            Save YouTube clip
-          </div>
-          <div className="truncate font-mono text-[10px] text-ink-4">
-            {formatClipTime(draft.start)}-{formatClipTime(draft.end)}
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7"
-          onClick={onRefresh}
-          title="Refresh timestamp"
-        >
-          <RefreshCw size={12} />
-        </Button>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="text-[10px] uppercase tracking-[0.06em] text-ink-4">
-          Start seconds
-          <Input
-            type="number"
-            min={0}
-            value={draft.start}
-            onChange={(e) => onDraftChange({ ...draft, start: Number(e.target.value) })}
-            className="mt-1 h-8 bg-paper text-xs"
-          />
-        </label>
-        <label className="text-[10px] uppercase tracking-[0.06em] text-ink-4">
-          End seconds
-          <Input
-            type="number"
-            min={draft.start + 1}
-            value={draft.end}
-            onChange={(e) => onDraftChange({ ...draft, end: Number(e.target.value) })}
-            className="mt-1 h-8 bg-paper text-xs"
-          />
-        </label>
-      </div>
-      <textarea
-        value={draft.note}
-        onChange={(e) => onDraftChange({ ...draft, note: e.target.value })}
-        placeholder="Optional note for this moment…"
-        className="mt-2 h-16 w-full resize-none rounded-md border border-rule bg-paper px-2.5 py-2 text-xs text-ink outline-none placeholder:text-ink-4"
-      />
-      {invalid && (
-        <div className="mt-1 text-[11px] text-red-600">
-          End must be after start.
-        </div>
-      )}
-      {error && <div className="mt-1 text-[11px] text-red-600">{error}</div>}
-      <Button
-        onClick={onSave}
-        disabled={saving || invalid}
-        className="mt-2 h-8 w-full text-xs"
-      >
-        {saving ? (
-          <Loader2 size={12} data-icon="inline-start" className="animate-spin" />
-        ) : (
-          <Scissors size={12} data-icon="inline-start" />
-        )}
-        Save clip
-      </Button>
-    </div>
-  );
 }
 
 async function navigateToHighlight(
@@ -281,37 +160,7 @@ export default function SidePanel() {
     null,
   );
   const [statsDomain, setStatsDomain] = useState<string | null>(null);
-  const [clipDraft, setClipDraft] = useState<ClipDraft | null>(null);
-  const [clipLoading, setClipLoading] = useState(false);
-  const [clipSaving, setClipSaving] = useState(false);
   const [clipError, setClipError] = useState("");
-
-  const refreshClipDraft = useCallback(async (activeTabId: number | null, activeUrl: string) => {
-    setClipError("");
-    if (!activeTabId || !isYouTubeWatchUrl(activeUrl)) {
-      setClipDraft(null);
-      setClipLoading(false);
-      return;
-    }
-
-    setClipLoading(true);
-    try {
-      const res = await chrome.tabs.sendMessage(activeTabId, {
-        type: "GET_YOUTUBE_CLIP_CONTEXT",
-      });
-      if (!res?.ok || !res.data) {
-        throw new Error(res?.error ?? "Could not read YouTube player.");
-      }
-      const context = res.data as YouTubeClipContext;
-      const range = buildDefaultClipRange(context.currentTime, context.duration);
-      setClipDraft({ ...context, ...range, note: "" });
-    } catch (error) {
-      setClipDraft(null);
-      setClipError(error instanceof Error ? error.message : "Could not read YouTube player.");
-    } finally {
-      setClipLoading(false);
-    }
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -335,7 +184,6 @@ export default function SidePanel() {
     setTabUrl(url);
     setTabTitle(tab?.title ?? "");
     setTabId(tab?.id ?? null);
-    void refreshClipDraft(tab?.id ?? null, url);
 
     const [pageRes, allRes, collectionsRes] = await Promise.all([
       url
@@ -358,10 +206,20 @@ export default function SidePanel() {
       setCollections(collectionsRes.data as Collection[]);
     }
     setLoading(false);
-  }, [refreshClipDraft]);
+  }, []);
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const handleSaved = (message: { type?: string }) => {
+      if (message?.type === "YOUTUBE_CLIP_SAVED") {
+        void load();
+      }
+    };
+    chrome.runtime.onMessage.addListener(handleSaved);
+    return () => chrome.runtime.onMessage.removeListener(handleSaved);
   }, [load]);
 
   useEffect(() => {
@@ -440,37 +298,22 @@ export default function SidePanel() {
     setAllHighlights((prev) => prev.filter((x) => x._id !== h._id));
   }
 
-  async function saveClip() {
-    if (!clipDraft || clipDraft.end <= clipDraft.start) return;
-    setClipSaving(true);
+  async function openClipTrimmer() {
+    if (!tabId) return;
     setClipError("");
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: "SAVE_HIGHLIGHT",
-        payload: {
-          url: youtubeWatchUrl(clipDraft.videoId),
-          title: clipDraft.title,
-          text: clipLabel(clipDraft.start, clipDraft.end),
-          color: "sky",
-          note: clipDraft.note.trim() || undefined,
-          sourceType: "youtube",
-          youtubeVideoId: clipDraft.videoId,
-          clipStart: Math.floor(clipDraft.start),
-          clipEnd: Math.floor(clipDraft.end),
-          youtubeChannelTitle: clipDraft.channelTitle,
-        },
+      const response = await chrome.tabs.sendMessage(tabId, {
+        type: "SHOW_YOUTUBE_CLIP_TRIMMER",
       });
-      if (!response?.ok) throw new Error(response?.error ?? "Could not save clip.");
-      await load();
+      if (!response?.ok) throw new Error(response?.error ?? "Could not open clip trimmer.");
     } catch (error) {
-      setClipError(error instanceof Error ? error.message : "Could not save clip.");
-    } finally {
-      setClipSaving(false);
+      setClipError(error instanceof Error ? error.message : "Could not open clip trimmer.");
     }
   }
 
   const onRowClick = (h: Highlight) =>
     void navigateToHighlight(h, tabUrl, tabId);
+  const isYouTubeVideo = Boolean(getYouTubeVideoId(tabUrl));
 
   if (!paired) {
     return (
@@ -546,15 +389,18 @@ export default function SidePanel() {
         </div>
       </div>
 
-      <ClipCaptureCard
-        draft={clipDraft}
-        loading={clipLoading}
-        error={clipError}
-        saving={clipSaving}
-        onDraftChange={setClipDraft}
-        onRefresh={() => void refreshClipDraft(tabId, tabUrl)}
-        onSave={() => void saveClip()}
-      />
+      {isYouTubeVideo && (
+        <div className="border-b border-rule bg-paper-2 px-4 py-2">
+          <Button
+            onClick={() => void openClipTrimmer()}
+            className="h-8 w-full text-xs"
+          >
+            <Scissors size={12} data-icon="inline-start" />
+            Clip current moment
+          </Button>
+          {clipError && <div className="mt-1 text-[11px] text-red-600">{clipError}</div>}
+        </div>
+      )}
 
       <div className="flex shrink-0 border-b border-rule">
         {(["highlights", "collections", "all", "stats"] as Tab[]).map((tab) => (

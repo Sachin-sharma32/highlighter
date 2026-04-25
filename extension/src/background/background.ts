@@ -25,7 +25,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel
     .setPanelBehavior({ openPanelOnActionClick: false })
     .catch(() => {});
-  try {
+  chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: "marginalia-open-side-panel",
       title: "Open Marginalia side panel",
@@ -36,9 +36,13 @@ chrome.runtime.onInstalled.addListener(() => {
       title: "Toggle highlighting on/off",
       contexts: ["action"],
     });
-  } catch {
-    /* menus already exist */
-  }
+    chrome.contextMenus.create({
+      id: "marginalia-save-youtube-clip",
+      title: "Save Marginalia clip",
+      contexts: ["page", "video"],
+      documentUrlPatterns: ["*://*.youtube.com/*", "*://youtu.be/*"],
+    });
+  });
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
@@ -61,6 +65,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const current = await isHighlightingEnabled();
     await setHighlightingEnabled(!current);
     await broadcastHighlightingToggle(!current);
+  } else if (info.menuItemId === "marginalia-save-youtube-clip" && tab?.id != null) {
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: "SHOW_YOUTUBE_CLIP_TRIMMER" });
+    } catch {
+      /* content script not ready on this page */
+    }
   }
 });
 

@@ -1,7 +1,7 @@
 import shadowCss from "./content.css?inline";
 import type { SaveHighlightPayload, TabMessage } from "../lib/messages";
 import { readMarginaliaTarget, stripMarginaliaTarget } from "../lib/urls";
-import { getYouTubeVideoId, youtubeWatchUrl } from "../lib/youtube";
+import { buildDefaultClipRange, formatClipTime, getYouTubeVideoId, youtubeWatchUrl } from "../lib/youtube";
 import { renderMultiSelect } from "./TooltipReact";
 
 // ── Settings cache (from chrome.storage.sync via background) ───────
@@ -111,6 +111,7 @@ let toolbarPosition: FloatingPosition | null = null;
 let repaintPromise: Promise<void> | null = null;
 let toolbarRange: Range | null = null;
 let toolbarMark: HTMLElement | null = null;
+let youtubeClipEl: HTMLElement | null = null;
 let savedHighlights: SavedHighlight[] = [];
 let repaintRetryTimer: number | null = null;
 
@@ -986,6 +987,188 @@ function getYouTubeClipContext() {
   };
 }
 
+function clipLabel(start?: number, end?: number) {
+  if (start === undefined || end === undefined) return "YouTube clip";
+  return `YouTube clip ${formatClipTime(start)}-${formatClipTime(end)}`;
+}
+
+function dismissYouTubeClipTrimmer() {
+  youtubeClipEl?.remove();
+  youtubeClipEl = null;
+}
+
+function showYouTubeClipTrimmer() {
+  const context = getYouTubeClipContext();
+  if (!context) {
+    throw new Error("No playable YouTube video found.");
+  }
+
+  dismissYouTubeClipTrimmer();
+  dismissToolbar();
+
+  const sr = getShadow();
+  const range = buildDefaultClipRange(context.currentTime, context.duration);
+  let start = range.start;
+  let end = range.end;
+  let note = "";
+  let saving = false;
+
+  const card = document.createElement("div");
+  card.id = "marginalia-youtube-clipper";
+  card.className = "marginalia-card marginalia-youtube-clipper";
+  youtubeClipEl = card;
+
+  const header = document.createElement("div");
+  header.className = "marginalia-youtube-clipper-header";
+
+  const titleWrap = document.createElement("div");
+  titleWrap.className = "marginalia-youtube-clipper-title-wrap";
+
+  const eyebrow = document.createElement("div");
+  eyebrow.className = "marginalia-youtube-clipper-eyebrow";
+  eyebrow.textContent = "YouTube clip";
+
+  const title = document.createElement("div");
+  title.className = "marginalia-youtube-clipper-title";
+  title.textContent = context.title;
+
+  titleWrap.append(eyebrow, title);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "marginalia-youtube-clipper-icon";
+  closeBtn.type = "button";
+  closeBtn.title = "Close";
+  closeBtn.textContent = "×";
+  closeBtn.addEventListener("click", dismissYouTubeClipTrimmer);
+
+  header.append(titleWrap, closeBtn);
+
+  const rangeLabel = document.createElement("div");
+  rangeLabel.className = "marginalia-youtube-clipper-range";
+
+  const fields = document.createElement("div");
+  fields.className = "marginalia-youtube-clipper-fields";
+
+  const startInput = document.createElement("input");
+  startInput.type = "number";
+  startInput.min = "0";
+  startInput.value = String(start);
+  startInput.className = "marginalia-youtube-clipper-input";
+
+  const endInput = document.createElement("input");
+  endInput.type = "number";
+  endInput.min = String(start + 1);
+  endInput.value = String(end);
+  endInput.className = "marginalia-youtube-clipper-input";
+
+  const startLabel = document.createElement("label");
+  startLabel.className = "marginalia-youtube-clipper-label";
+  startLabel.textContent = "Start seconds";
+  startLabel.appendChild(startInput);
+
+  const endLabel = document.createElement("label");
+  endLabel.className = "marginalia-youtube-clipper-label";
+  endLabel.textContent = "End seconds";
+  endLabel.appendChild(endInput);
+
+  fields.append(startLabel, endLabel);
+
+  const noteInput = document.createElement("textarea");
+  noteInput.className = "marginalia-youtube-clipper-note";
+  noteInput.placeholder = "Optional note for this moment…";
+
+  const status = document.createElement("div");
+  status.className = "marginalia-youtube-clipper-status";
+
+  const actions = document.createElement("div");
+  actions.className = "marginalia-youtube-clipper-actions";
+
+  const refreshBtn = document.createElement("button");
+  refreshBtn.type = "button";
+  refreshBtn.className = "marginalia-pop-btn";
+  refreshBtn.textContent = "Refresh time";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.className = "marginalia-pop-btn marginalia-youtube-clipper-save";
+  saveBtn.textContent = "Save clip";
+
+  actions.append(refreshBtn, saveBtn);
+  card.append(header, rangeLabel, fields, noteInput, status, actions);
+
+  function syncState() {
+    start = Math.max(0, Math.floor(Number(startInput.value) || 0));
+    end = Math.max(0, Math.floor(Number(endInput.value) || 0));
+    note = noteInput.value;
+    endInput.min = String(start + 1);
+
+    const invalid = end <= start;
+    rangeLabel.textContent = `${formatClipTime(start)}-${formatClipTime(end)}`;
+    saveBtn.toggleAttribute("disabled", invalid || saving);
+    if (invalid) {
+      status.textContent = "End must be after start.";
+      status.dataset.tone = "error";
+    } else if (!saving && status.dataset.tone !== "success") {
+      status.textContent = "";
+      delete status.dataset.tone;
+    }
+  }
+
+  startInput.addEventListener("input", syncState);
+  endInput.addEventListener("input", syncState);
+  noteInput.addEventListener("input", syncState);
+
+  refreshBtn.addEventListener("click", () => {
+    const nextContext = getYouTubeClipContext();
+    if (!nextContext) return;
+    const nextRange = buildDefaultClipRange(nextContext.currentTime, nextContext.duration);
+    startInput.value = String(nextRange.start);
+    endInput.value = String(nextRange.end);
+    syncState();
+  });
+
+  saveBtn.addEventListener("click", () => {
+    if (saving || end <= start) return;
+    saving = true;
+    status.textContent = "Saving clip…";
+    status.dataset.tone = "muted";
+    syncState();
+
+    const payload: SaveHighlightPayload = {
+      url: youtubeWatchUrl(context.videoId),
+      title: context.title,
+      text: clipLabel(start, end),
+      color: "sky",
+      note: note.trim() || undefined,
+      sourceType: "youtube",
+      youtubeVideoId: context.videoId,
+      clipStart: start,
+      clipEnd: end,
+      youtubeChannelTitle: context.channelTitle,
+    };
+
+    void chrome.runtime.sendMessage({ type: "SAVE_HIGHLIGHT", payload })
+      .then((response) => {
+        if (!response?.ok) throw new Error(response?.error ?? "Could not save clip.");
+        status.textContent = "Saved to dashboard.";
+        status.dataset.tone = "success";
+        void chrome.runtime.sendMessage({ type: "YOUTUBE_CLIP_SAVED" }).catch(() => {});
+        window.setTimeout(dismissYouTubeClipTrimmer, 900);
+      })
+      .catch((error) => {
+        saving = false;
+        status.textContent = error instanceof Error ? error.message : "Could not save clip.";
+        status.dataset.tone = "error";
+        syncState();
+      });
+  });
+
+  syncState();
+  sr.appendChild(card);
+  startInput.focus();
+  startInput.select();
+}
+
 // ── Message listener (from popup/sidepanel) ────────────────────────
 chrome.runtime.onMessage.addListener((msg: TabMessage, _sender, sendResponse) => {
   if (msg?.type === "SCROLL_TO_HIGHLIGHT" && msg.payload?.id) {
@@ -1011,6 +1194,15 @@ chrome.runtime.onMessage.addListener((msg: TabMessage, _sender, sendResponse) =>
   if (msg?.type === "GET_YOUTUBE_CLIP_CONTEXT") {
     const context = getYouTubeClipContext();
     sendResponse(context ? { ok: true, data: context } : { ok: false, error: "No playable YouTube video found." });
+    return true;
+  }
+  if (msg?.type === "SHOW_YOUTUBE_CLIP_TRIMMER") {
+    try {
+      showYouTubeClipTrimmer();
+      sendResponse({ ok: true });
+    } catch (error) {
+      sendResponse({ ok: false, error: error instanceof Error ? error.message : "Could not open clip trimmer." });
+    }
     return true;
   }
 });
