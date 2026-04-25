@@ -1,7 +1,7 @@
 import shadowCss from "./content.css?inline";
 import type { SaveHighlightPayload, TabMessage } from "../lib/messages";
 import { readMarginaliaTarget, stripMarginaliaTarget } from "../lib/urls";
-import { buildDefaultClipRange, formatClipTime, getYouTubeVideoId, youtubeWatchUrl } from "../lib/youtube";
+import { formatClipTime, getYouTubeVideoId, youtubeWatchUrl } from "../lib/youtube";
 import { renderMultiSelect } from "./TooltipReact";
 
 // ── Settings cache (from chrome.storage.sync via background) ───────
@@ -112,6 +112,8 @@ let repaintPromise: Promise<void> | null = null;
 let toolbarRange: Range | null = null;
 let toolbarMark: HTMLElement | null = null;
 let youtubeClipEl: HTMLElement | null = null;
+let youtubePlayerButton: HTMLButtonElement | null = null;
+let youtubePlayerButtonMountTimer: number | null = null;
 let savedHighlights: SavedHighlight[] = [];
 let repaintRetryTimer: number | null = null;
 
@@ -151,6 +153,20 @@ function ensureHostStyles() {
         top: 0;
         left: 0;
         pointer-events: none;
+      }
+      .marginalia-ytp-clip-button {
+        width: auto !important;
+        min-width: 54px !important;
+        padding: 0 10px !important;
+        font-family: "YouTube Noto", Roboto, Arial, sans-serif !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.02em !important;
+        color: #fff !important;
+        opacity: 0.9;
+      }
+      .marginalia-ytp-clip-button:hover {
+        opacity: 1;
       }
     `;
     document.head.appendChild(hostStyle);
@@ -950,13 +966,21 @@ document.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("scroll", scheduleToolbarPosition, true);
-window.addEventListener("resize", scheduleToolbarPosition);
+window.addEventListener("resize", () => {
+  scheduleToolbarPosition();
+  positionYouTubeClipper();
+  scheduleYouTubePlayerButtonMount();
+});
+window.addEventListener("yt-navigate-finish", scheduleYouTubePlayerButtonMount);
+window.addEventListener("yt-page-data-updated", scheduleYouTubePlayerButtonMount);
 
 const observer = new MutationObserver((mutations) => {
   if (mutations.some((mutation) => mutation.target instanceof Element && mutation.target.closest("#marginalia-host"))) {
     return;
   }
   scheduleRepaintRetry();
+  positionYouTubeClipper();
+  scheduleYouTubePlayerButtonMount();
 });
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
@@ -997,6 +1021,22 @@ function dismissYouTubeClipTrimmer() {
   youtubeClipEl = null;
 }
 
+function positionYouTubeClipper() {
+  if (!youtubeClipEl) return;
+  const player = document.querySelector<HTMLElement>(".html5-video-player");
+  const rect = player?.getBoundingClientRect();
+  if (!rect || rect.width <= 0 || rect.height <= 0) {
+    youtubeClipEl.style.top = "86px";
+    youtubeClipEl.style.right = "24px";
+    return;
+  }
+
+  const right = Math.max(16, window.innerWidth - rect.right + 24);
+  const top = Math.max(16, rect.top + 24);
+  youtubeClipEl.style.right = `${right}px`;
+  youtubeClipEl.style.top = `${top}px`;
+}
+
 function showYouTubeClipTrimmer() {
   const context = getYouTubeClipContext();
   if (!context) {
@@ -1007,9 +1047,9 @@ function showYouTubeClipTrimmer() {
   dismissToolbar();
 
   const sr = getShadow();
-  const range = buildDefaultClipRange(context.currentTime, context.duration);
-  let start = range.start;
-  let end = range.end;
+  const video = document.querySelector<HTMLVideoElement>("video");
+  let start: number | null = null;
+  let end: number | null = null;
   let note = "";
   let saving = false;
 
@@ -1026,7 +1066,7 @@ function showYouTubeClipTrimmer() {
 
   const eyebrow = document.createElement("div");
   eyebrow.className = "marginalia-youtube-clipper-eyebrow";
-  eyebrow.textContent = "YouTube clip";
+  eyebrow.textContent = "Marginalia clip";
 
   const title = document.createElement("div");
   title.className = "marginalia-youtube-clipper-title";
@@ -1043,39 +1083,29 @@ function showYouTubeClipTrimmer() {
 
   header.append(titleWrap, closeBtn);
 
+  const helper = document.createElement("div");
+  helper.className = "marginalia-youtube-clipper-helper";
+  helper.textContent = "Play the video, then mark the beginning and end of the moment you want to save.";
+
   const rangeLabel = document.createElement("div");
   rangeLabel.className = "marginalia-youtube-clipper-range";
 
-  const fields = document.createElement("div");
-  fields.className = "marginalia-youtube-clipper-fields";
+  const marks = document.createElement("div");
+  marks.className = "marginalia-youtube-clipper-marks";
 
-  const startInput = document.createElement("input");
-  startInput.type = "number";
-  startInput.min = "0";
-  startInput.value = String(start);
-  startInput.className = "marginalia-youtube-clipper-input";
+  const startBtn = document.createElement("button");
+  startBtn.type = "button";
+  startBtn.className = "marginalia-youtube-clipper-mark-btn";
 
-  const endInput = document.createElement("input");
-  endInput.type = "number";
-  endInput.min = String(start + 1);
-  endInput.value = String(end);
-  endInput.className = "marginalia-youtube-clipper-input";
+  const endBtn = document.createElement("button");
+  endBtn.type = "button";
+  endBtn.className = "marginalia-youtube-clipper-mark-btn";
 
-  const startLabel = document.createElement("label");
-  startLabel.className = "marginalia-youtube-clipper-label";
-  startLabel.textContent = "Start seconds";
-  startLabel.appendChild(startInput);
-
-  const endLabel = document.createElement("label");
-  endLabel.className = "marginalia-youtube-clipper-label";
-  endLabel.textContent = "End seconds";
-  endLabel.appendChild(endInput);
-
-  fields.append(startLabel, endLabel);
+  marks.append(startBtn, endBtn);
 
   const noteInput = document.createElement("textarea");
   noteInput.className = "marginalia-youtube-clipper-note";
-  noteInput.placeholder = "Optional note for this moment…";
+  noteInput.placeholder = "Add a note if this idea needs context…";
 
   const status = document.createElement("div");
   status.className = "marginalia-youtube-clipper-status";
@@ -1083,52 +1113,62 @@ function showYouTubeClipTrimmer() {
   const actions = document.createElement("div");
   actions.className = "marginalia-youtube-clipper-actions";
 
-  const refreshBtn = document.createElement("button");
-  refreshBtn.type = "button";
-  refreshBtn.className = "marginalia-pop-btn";
-  refreshBtn.textContent = "Refresh time";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "marginalia-pop-btn";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.addEventListener("click", dismissYouTubeClipTrimmer);
 
   const saveBtn = document.createElement("button");
   saveBtn.type = "button";
   saveBtn.className = "marginalia-pop-btn marginalia-youtube-clipper-save";
   saveBtn.textContent = "Save clip";
 
-  actions.append(refreshBtn, saveBtn);
-  card.append(header, rangeLabel, fields, noteInput, status, actions);
+  actions.append(cancelBtn, saveBtn);
+  card.append(header, helper, rangeLabel, marks, noteInput, status, actions);
+
+  function readCurrentTime() {
+    const currentVideo = document.querySelector<HTMLVideoElement>("video") ?? video;
+    if (!currentVideo || !Number.isFinite(currentVideo.currentTime)) return 0;
+    return Math.max(0, Math.floor(currentVideo.currentTime));
+  }
 
   function syncState() {
-    start = Math.max(0, Math.floor(Number(startInput.value) || 0));
-    end = Math.max(0, Math.floor(Number(endInput.value) || 0));
     note = noteInput.value;
-    endInput.min = String(start + 1);
 
-    const invalid = end <= start;
-    rangeLabel.textContent = `${formatClipTime(start)}-${formatClipTime(end)}`;
-    saveBtn.toggleAttribute("disabled", invalid || saving);
-    if (invalid) {
+    startBtn.innerHTML = `<span>Set start</span><strong>${start === null ? "Not set" : formatClipTime(start)}</strong>`;
+    endBtn.innerHTML = `<span>Set end</span><strong>${end === null ? "Not set" : formatClipTime(end)}</strong>`;
+    rangeLabel.textContent = start !== null && end !== null
+      ? `${formatClipTime(start)}-${formatClipTime(end)}`
+      : "Mark start and end while the video plays";
+
+    const missing = start === null || end === null;
+    const invalid = !missing && end <= start;
+    saveBtn.toggleAttribute("disabled", missing || invalid || saving);
+    if (missing) {
+      status.textContent = "Save unlocks once both start and end are marked.";
+      status.dataset.tone = "muted";
+    } else if (invalid) {
       status.textContent = "End must be after start.";
       status.dataset.tone = "error";
     } else if (!saving && status.dataset.tone !== "success") {
-      status.textContent = "";
-      delete status.dataset.tone;
+      status.textContent = "Ready to save.";
+      status.dataset.tone = "success";
     }
   }
 
-  startInput.addEventListener("input", syncState);
-  endInput.addEventListener("input", syncState);
-  noteInput.addEventListener("input", syncState);
-
-  refreshBtn.addEventListener("click", () => {
-    const nextContext = getYouTubeClipContext();
-    if (!nextContext) return;
-    const nextRange = buildDefaultClipRange(nextContext.currentTime, nextContext.duration);
-    startInput.value = String(nextRange.start);
-    endInput.value = String(nextRange.end);
+  startBtn.addEventListener("click", () => {
+    start = readCurrentTime();
     syncState();
   });
+  endBtn.addEventListener("click", () => {
+    end = readCurrentTime();
+    syncState();
+  });
+  noteInput.addEventListener("input", syncState);
 
   saveBtn.addEventListener("click", () => {
-    if (saving || end <= start) return;
+    if (saving || start === null || end === null || end <= start) return;
     saving = true;
     status.textContent = "Saving clip…";
     status.dataset.tone = "muted";
@@ -1165,8 +1205,52 @@ function showYouTubeClipTrimmer() {
 
   syncState();
   sr.appendChild(card);
-  startInput.focus();
-  startInput.select();
+  positionYouTubeClipper();
+  startBtn.focus();
+}
+
+function isYouTubeVideoPage() {
+  return Boolean(getYouTubeVideoId(location.href) && document.querySelector<HTMLVideoElement>("video"));
+}
+
+function mountYouTubePlayerButton() {
+  if (!isYouTubeVideoPage()) {
+    youtubePlayerButton?.remove();
+    youtubePlayerButton = null;
+    dismissYouTubeClipTrimmer();
+    return;
+  }
+
+  const controls =
+    document.querySelector<HTMLElement>(".ytp-right-controls") ||
+    document.querySelector<HTMLElement>(".ytp-left-controls");
+  if (!controls) return;
+
+  if (youtubePlayerButton && controls.contains(youtubePlayerButton)) return;
+
+  youtubePlayerButton?.remove();
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "ytp-button marginalia-ytp-clip-button";
+  button.title = "Clip current moment with Marginalia";
+  button.setAttribute("aria-label", "Clip current moment with Marginalia");
+  button.textContent = "Clip";
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    showYouTubeClipTrimmer();
+  });
+
+  controls.prepend(button);
+  youtubePlayerButton = button;
+}
+
+function scheduleYouTubePlayerButtonMount() {
+  if (youtubePlayerButtonMountTimer != null) return;
+  youtubePlayerButtonMountTimer = window.setTimeout(() => {
+    youtubePlayerButtonMountTimer = null;
+    mountYouTubePlayerButton();
+  }, 250);
 }
 
 // ── Message listener (from popup/sidepanel) ────────────────────────
@@ -1210,6 +1294,7 @@ chrome.runtime.onMessage.addListener((msg: TabMessage, _sender, sendResponse) =>
 // ── Init ───────────────────────────────────────────────────────────
 repaintHighlights()
   .then(() => {
+    mountYouTubePlayerButton();
     const hashId = readMarginaliaTarget(location.href);
     if (hashId) {
       requestAnimationFrame(() => {

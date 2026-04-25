@@ -51,10 +51,11 @@
 
   .marginalia-youtube-clipper {
     @apply font-ui;
-    width: min(360px, calc(100vw - 32px));
-    right: 18px;
-    top: 84px;
-    padding: 14px;
+    width: min(460px, calc(100vw - 32px));
+    right: 24px;
+    top: 86px;
+    padding: 18px;
+    border-radius: 16px;
   }
 
   .marginalia-youtube-clipper-header {
@@ -67,16 +68,17 @@
 
   .marginalia-youtube-clipper-eyebrow {
     @apply font-mono uppercase tracking-widest text-accent;
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .marginalia-youtube-clipper-title {
-    @apply mt-1 truncate font-display text-sm font-medium text-ink;
+    @apply mt-1 line-clamp-2 font-display text-lg font-medium text-ink;
+    line-height: 1.2;
   }
 
   .marginalia-youtube-clipper-icon {
-    @apply flex size-7 cursor-pointer items-center justify-center rounded border border-rule bg-paper text-ink-4 transition-colors;
-    font-size: 18px;
+    @apply flex size-8 cursor-pointer items-center justify-center rounded-full border border-rule bg-paper text-ink-4 transition-colors;
+    font-size: 20px;
     line-height: 1;
   }
 
@@ -84,35 +86,43 @@
     @apply bg-paper-3 text-ink;
   }
 
+  .marginalia-youtube-clipper-helper {
+    @apply mt-3 text-sm leading-6 text-ink-3;
+  }
+
   .marginalia-youtube-clipper-range {
-    @apply mt-3 rounded-md border border-rule bg-paper px-3 py-2 font-mono text-xs text-ink-2;
+    @apply mt-4 rounded-lg border border-rule bg-paper px-4 py-3 font-mono text-sm text-ink-2;
   }
 
-  .marginalia-youtube-clipper-fields {
-    @apply mt-3 grid grid-cols-2 gap-2;
+  .marginalia-youtube-clipper-marks {
+    @apply mt-4 grid grid-cols-2 gap-3;
   }
 
-  .marginalia-youtube-clipper-label {
-    @apply flex flex-col gap-1 font-mono uppercase tracking-widest text-ink-4;
-    font-size: 10px;
+  .marginalia-youtube-clipper-mark-btn {
+    @apply flex min-h-20 cursor-pointer flex-col items-start justify-between rounded-xl border border-rule bg-paper px-4 py-3 text-left transition-colors;
   }
 
-  .marginalia-youtube-clipper-input {
-    @apply h-8 rounded border border-rule bg-paper px-2 font-mono text-xs text-ink outline-none;
-  }
-
-  .marginalia-youtube-clipper-input:focus,
+  .marginalia-youtube-clipper-mark-btn:hover,
+  .marginalia-youtube-clipper-mark-btn:focus,
   .marginalia-youtube-clipper-note:focus {
     border-color: theme("colors.accent.DEFAULT");
   }
 
+  .marginalia-youtube-clipper-mark-btn span {
+    @apply font-mono uppercase tracking-widest text-ink-4;
+    font-size: 11px;
+  }
+
+  .marginalia-youtube-clipper-mark-btn strong {
+    @apply font-display text-2xl font-medium text-ink;
+  }
+
   .marginalia-youtube-clipper-note {
-    @apply mt-3 h-20 w-full resize-none rounded border border-rule bg-paper px-3 py-2 font-mono text-xs leading-5 text-ink-2 outline-none;
+    @apply mt-4 h-24 w-full resize-none rounded-xl border border-rule bg-paper px-4 py-3 text-sm leading-6 text-ink-2 outline-none;
   }
 
   .marginalia-youtube-clipper-status {
-    @apply min-h-4 pt-1 font-mono text-ink-4;
-    font-size: 11px;
+    @apply min-h-6 pt-2 text-sm text-ink-4;
   }
 
   .marginalia-youtube-clipper-status[data-tone="error"] {
@@ -124,7 +134,11 @@
   }
 
   .marginalia-youtube-clipper-actions {
-    @apply mt-2 flex items-center justify-between gap-2;
+    @apply mt-3 flex items-center justify-between gap-3;
+  }
+
+  .marginalia-youtube-clipper-actions .marginalia-pop-btn {
+    @apply h-9 rounded-lg px-4 text-sm;
   }
 
   .marginalia-youtube-clipper-save {
