@@ -68,17 +68,22 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
     setLoading(true);
     setError("");
     try {
-      const res = await chrome.runtime.sendMessage({
-        type: "EXCHANGE_PAIRING_CODE",
-        payload: { code: code.trim() },
-      });
+      const res = await Promise.race([
+        chrome.runtime.sendMessage({
+          type: "EXCHANGE_PAIRING_CODE",
+          payload: { code: code.trim() },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Request timed out. Check your network and extension configuration.")), 8000)
+        ),
+      ]);
       if (res?.ok) {
         onPaired();
       } else {
         setError(res?.error ?? "Invalid code. Please try again.");
       }
-    } catch {
-      setError("Connection failed. Make sure the dashboard is open.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Connection failed. Make sure the dashboard is open.");
     } finally {
       setLoading(false);
     }

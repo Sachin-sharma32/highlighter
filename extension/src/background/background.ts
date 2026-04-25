@@ -157,13 +157,19 @@ async function handleMessage(
     }
 
     case "EXCHANGE_PAIRING_CODE": {
-      const c = getClient();
-      const result = await c.mutation(api.extensionAuth.exchangePairingCode, {
-        code: msg.payload.code,
-      });
-      await setToken(result.token);
-      await setUserId(result.userId);
-      return { ok: true, data: result };
+      try {
+        const c = getClient();
+        const result = await c.mutation(api.extensionAuth.exchangePairingCode, {
+          code: msg.payload.code,
+        });
+        await setToken(result.token);
+        await setUserId(result.userId);
+        return { ok: true, data: result };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to exchange pairing code";
+        console.error("[Marginalia] Pairing failed:", message);
+        return { ok: false, error: message };
+      }
     }
 
     case "SIGN_OUT": {
