@@ -49,6 +49,18 @@
     overflow-y: auto;
   }
 
+  .marginalia-youtube-player-button {
+    @apply fixed items-center justify-center rounded-full border px-3.5 py-2 font-mono text-xs font-semibold uppercase tracking-widest text-paper shadow-paper-2 transition-transform;
+    background: oklch(18% 0.01 60 / 0.9);
+    border-color: rgb(255 255 255 / 0.25);
+    pointer-events: all;
+    backdrop-filter: blur(8px);
+  }
+
+  .marginalia-youtube-player-button:hover {
+    transform: translateY(-1px);
+  }
+
   .marginalia-youtube-clipper {
     @apply font-ui;
     width: min(460px, calc(100vw - 32px));

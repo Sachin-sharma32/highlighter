@@ -154,20 +154,6 @@ function ensureHostStyles() {
         left: 0;
         pointer-events: none;
       }
-      .marginalia-ytp-clip-button {
-        width: auto !important;
-        min-width: 54px !important;
-        padding: 0 10px !important;
-        font-family: "YouTube Noto", Roboto, Arial, sans-serif !important;
-        font-size: 12px !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.02em !important;
-        color: #fff !important;
-        opacity: 0.9;
-      }
-      .marginalia-ytp-clip-button:hover {
-        opacity: 1;
-      }
     `;
     document.head.appendChild(hostStyle);
   }
@@ -965,10 +951,18 @@ document.addEventListener("keydown", (e) => {
   dismissToolbar();
 });
 
-window.addEventListener("scroll", scheduleToolbarPosition, true);
+window.addEventListener(
+  "scroll",
+  () => {
+    scheduleToolbarPosition();
+    positionYouTubePlayerButton();
+  },
+  true
+);
 window.addEventListener("resize", () => {
   scheduleToolbarPosition();
   positionYouTubeClipper();
+  positionYouTubePlayerButton();
   scheduleYouTubePlayerButtonMount();
 });
 window.addEventListener("yt-navigate-finish", scheduleYouTubePlayerButtonMount);
@@ -980,6 +974,7 @@ const observer = new MutationObserver((mutations) => {
   }
   scheduleRepaintRetry();
   positionYouTubeClipper();
+  positionYouTubePlayerButton();
   scheduleYouTubePlayerButtonMount();
 });
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
@@ -1028,13 +1023,34 @@ function positionYouTubeClipper() {
   if (!rect || rect.width <= 0 || rect.height <= 0) {
     youtubeClipEl.style.top = "86px";
     youtubeClipEl.style.right = "24px";
+    youtubeClipEl.style.left = "";
     return;
   }
 
-  const right = Math.max(16, window.innerWidth - rect.right + 24);
-  const top = Math.max(16, rect.top + 24);
-  youtubeClipEl.style.right = `${right}px`;
+  const top = Math.max(16, rect.top + 16);
+  const sideLeft = rect.right + 24;
+  const hasSuggestionsSpace = window.innerWidth - sideLeft >= 480;
+
+  if (hasSuggestionsSpace) {
+    youtubeClipEl.style.left = `${sideLeft}px`;
+    youtubeClipEl.style.right = "";
+  } else {
+    youtubeClipEl.style.left = "";
+    youtubeClipEl.style.right = "24px";
+  }
   youtubeClipEl.style.top = `${top}px`;
+}
+
+function positionYouTubePlayerButton() {
+  if (!youtubePlayerButton) return;
+  const player = document.querySelector<HTMLElement>(".html5-video-player");
+  const rect = player?.getBoundingClientRect();
+  if (!rect || rect.width <= 0 || rect.height <= 0) return;
+  const isVisible = rect.bottom > 0 && rect.top < window.innerHeight;
+  youtubePlayerButton.style.display = isVisible ? "inline-flex" : "none";
+  if (!isVisible) return;
+  youtubePlayerButton.style.left = `${Math.max(12, rect.left + 14)}px`;
+  youtubePlayerButton.style.top = `${Math.max(12, rect.top + 14)}px`;
 }
 
 function showYouTubeClipTrimmer() {
@@ -1221,28 +1237,28 @@ function mountYouTubePlayerButton() {
     return;
   }
 
-  const controls =
-    document.querySelector<HTMLElement>(".ytp-right-controls") ||
-    document.querySelector<HTMLElement>(".ytp-left-controls");
-  if (!controls) return;
-
-  if (youtubePlayerButton && controls.contains(youtubePlayerButton)) return;
+  const sr = getShadow();
+  if (youtubePlayerButton && youtubePlayerButton.isConnected) {
+    positionYouTubePlayerButton();
+    return;
+  }
 
   youtubePlayerButton?.remove();
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "ytp-button marginalia-ytp-clip-button";
+  button.className = "marginalia-youtube-player-button";
   button.title = "Clip current moment with Marginalia";
   button.setAttribute("aria-label", "Clip current moment with Marginalia");
-  button.textContent = "Clip";
+  button.textContent = "Clip current moment";
   button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
     showYouTubeClipTrimmer();
   });
 
-  controls.prepend(button);
+  sr.appendChild(button);
   youtubePlayerButton = button;
+  positionYouTubePlayerButton();
 }
 
 function scheduleYouTubePlayerButtonMount() {
