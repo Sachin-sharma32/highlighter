@@ -1,9 +1,10 @@
 import { useQuery, useMutation } from "convex/react";
-import { StickyNote, Trash2 } from "lucide-react";
+import { Scissors, StickyNote, Trash2 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { formatClipTime } from "@/lib/youtube";
 
 type ListHighlight = {
   _id: Id<"highlights">;
@@ -15,6 +16,10 @@ type ListHighlight = {
   tags: string[];
   url: string;
   createdAt: number;
+  sourceType?: "web" | "youtube";
+  youtubeVideoId?: string;
+  clipStart?: number;
+  clipEnd?: number;
 };
 
 const COLOR_BAR: Record<string, string> = {
@@ -51,6 +56,16 @@ function collectionLabel(id: Id<"collections"> | "inbox" | "all" | "notes" | "re
   if (id === "notes") return "With notes";
   if (id === "review") return "Review";
   return null;
+}
+
+function highlightDisplayText(highlight: ListHighlight) {
+  if (highlight.sourceType === "youtube") {
+    if (highlight.clipStart !== undefined && highlight.clipEnd !== undefined) {
+      return `YouTube clip ${formatClipTime(highlight.clipStart)}-${formatClipTime(highlight.clipEnd)}`;
+    }
+    return "YouTube clip";
+  }
+  return highlight.text;
 }
 
 export function HighlightList() {
@@ -140,14 +155,17 @@ export function HighlightList() {
                 <div className={`w-[3px] shrink-0 rounded-sm ${COLOR_BAR[h.color] ?? COLOR_BAR.amber}`} />
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex justify-between gap-2">
-                    <div className="truncate text-xs text-ink-3">{h.title}</div>
+                    <div className="flex min-w-0 items-center gap-1.5 truncate text-xs text-ink-3">
+                      {h.sourceType === "youtube" && <Scissors size={11} className="shrink-0 text-accent" />}
+                      <span className="truncate">{h.title}</span>
+                    </div>
                     <div className="shrink-0 font-mono text-[10px] text-ink-4">{timeAgo(h.createdAt)}</div>
                   </div>
                   <p
                     data-testid="highlight-row-text"
                     className="overflow-hidden font-display text-sm leading-snug text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]"
                   >
-                    {h.text}
+                    {highlightDisplayText(h)}
                   </p>
                   {h.note && (
                     <div className="mt-1 flex items-center gap-1 text-ink-4">

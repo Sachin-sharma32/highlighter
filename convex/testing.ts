@@ -98,6 +98,11 @@ export const seedHighlight = mutation({
       )
     ),
     note: v.optional(v.string()),
+    sourceType: v.optional(v.union(v.literal("web"), v.literal("youtube"))),
+    youtubeVideoId: v.optional(v.string()),
+    clipStart: v.optional(v.number()),
+    clipEnd: v.optional(v.number()),
+    youtubeChannelTitle: v.optional(v.string()),
   },
   handler: async (
     ctx: any,
@@ -108,6 +113,11 @@ export const seedHighlight = mutation({
       text: string;
       color?: "amber" | "rose" | "sage" | "sky" | "violet";
       note?: string;
+      sourceType?: "web" | "youtube";
+      youtubeVideoId?: string;
+      clipStart?: number;
+      clipEnd?: number;
+      youtubeChannelTitle?: string;
     }
   ) => {
     assertTestMode();
@@ -119,6 +129,11 @@ export const seedHighlight = mutation({
       text: args.text,
       color: args.color ?? "amber",
       note: args.note,
+      sourceType: args.sourceType,
+      youtubeVideoId: args.youtubeVideoId,
+      clipStart: args.clipStart,
+      clipEnd: args.clipEnd,
+      youtubeChannelTitle: args.youtubeChannelTitle,
       tags: [],
       createdAt: Date.now(),
     });

@@ -8,6 +8,14 @@
     box-sizing: border-box;
   }
 
+  :root {
+    --hl-amber: oklch(90% 0.10 85);
+    --hl-rose: oklch(88% 0.08 20);
+    --hl-sage: oklch(90% 0.07 145);
+    --hl-sky: oklch(90% 0.06 230);
+    --hl-violet: oklch(88% 0.07 305);
+  }
+
   /* Elegant minimal scrollbar for shadow DOM */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }

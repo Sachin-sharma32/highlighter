@@ -4,6 +4,23 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { assertCanCreateHighlight } from "./plan";
 
 const colorValidator = v.string();
+const sourceTypeValidator = v.optional(v.union(v.literal("web"), v.literal("youtube")));
+
+function assertValidClip(args: {
+  sourceType?: "web" | "youtube";
+  youtubeVideoId?: string;
+  clipStart?: number;
+  clipEnd?: number;
+}) {
+  if (args.sourceType !== "youtube") return;
+  if (!args.youtubeVideoId?.trim()) throw new Error("YouTube video ID is required");
+  if (args.clipStart === undefined || args.clipEnd === undefined) {
+    throw new Error("Clip start and end are required");
+  }
+  if (args.clipStart < 0 || args.clipEnd <= args.clipStart) {
+    throw new Error("Clip end must be after clip start");
+  }
+}
 
 export const list = query({
   args: {
@@ -112,11 +129,17 @@ export const create = mutation({
     collectionId: v.optional(v.id("collections")),
     collectionIds: v.optional(v.array(v.id("collections"))),
     tags: v.array(v.string()),
+    sourceType: sourceTypeValidator,
+    youtubeVideoId: v.optional(v.string()),
+    clipStart: v.optional(v.number()),
+    clipEnd: v.optional(v.number()),
+    youtubeChannelTitle: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     await assertCanCreateHighlight(ctx, userId);
+    assertValidClip(args);
     return await ctx.db.insert("highlights", {
       ...args,
       userId,

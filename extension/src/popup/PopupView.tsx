@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   BookOpen,
+  Copy,
   Download,
+  Scissors,
   Terminal,
   Loader2,
   Link2,
@@ -15,6 +17,14 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { CONNECT_EXTENSION_URL, DASHBOARD_URL } from "@/lib/dashboard";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
+import {
+  buildDefaultClipRange,
+  formatClipTime,
+  getYouTubeVideoId,
+  isYouTubeWatchUrl,
+  type YouTubeClipContext,
+  youtubeWatchUrl,
+} from "@/lib/youtube";
 
 const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
 type HighlightColor = (typeof COLORS)[number];
@@ -48,6 +58,11 @@ interface Highlight {
   url: string;
   title: string;
   createdAt: number;
+  sourceType?: "web" | "youtube";
+  youtubeVideoId?: string;
+  clipStart?: number;
+  clipEnd?: number;
+  youtubeChannelTitle?: string;
 }
 
 interface UsageData {
@@ -57,6 +72,12 @@ interface UsageData {
 }
 
 type Scope = "page" | "all";
+
+type ClipDraft = YouTubeClipContext & {
+  start: number;
+  end: number;
+  note: string;
+};
 
 function PairingScreen({ onPaired }: { onPaired: () => void }) {
   const [code, setCode] = useState("");
@@ -167,6 +188,128 @@ function hostnameOf(url: string): string {
   }
 }
 
+function clipLabel(start?: number, end?: number) {
+  if (start === undefined || end === undefined) return "YouTube clip";
+  return `YouTube clip ${formatClipTime(start)}-${formatClipTime(end)}`;
+}
+
+function highlightDisplayText(highlight: Highlight) {
+  if (highlight.sourceType === "youtube") {
+    return clipLabel(highlight.clipStart, highlight.clipEnd);
+  }
+  return highlight.text;
+}
+
+function ClipCaptureCard({
+  draft,
+  loading,
+  error,
+  saving,
+  onDraftChange,
+  onRefresh,
+  onSave,
+}: {
+  draft: ClipDraft | null;
+  loading: boolean;
+  error: string;
+  saving: boolean;
+  onDraftChange: (draft: ClipDraft) => void;
+  onRefresh: () => void;
+  onSave: () => void;
+}) {
+  if (loading) {
+    return (
+      <div className="border-b border-rule bg-paper-2 px-4 py-3">
+        <div className="flex items-center gap-2 text-xs text-ink-3">
+          <Loader2 size={13} className="animate-spin" />
+          Reading current YouTube timestamp…
+        </div>
+      </div>
+    );
+  }
+
+  if (!draft) {
+    return error ? (
+      <div className="border-b border-rule bg-paper-2 px-4 py-2 text-[11px] text-red-600">
+        {error}
+      </div>
+    ) : null;
+  }
+
+  const invalid = draft.end <= draft.start;
+
+  return (
+    <div className="border-b border-rule bg-paper-2 px-4 py-3">
+      <div className="mb-2 flex items-center gap-2">
+        <Scissors size={13} className="text-accent" />
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-[13px] font-medium text-ink">
+            Save YouTube clip
+          </div>
+          <div className="truncate font-mono text-[10px] text-ink-4">
+            {formatClipTime(draft.start)}-{formatClipTime(draft.end)}
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          onClick={onRefresh}
+          title="Refresh timestamp"
+        >
+          <RefreshCw size={12} />
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-[10px] uppercase tracking-[0.06em] text-ink-4">
+          Start seconds
+          <Input
+            type="number"
+            min={0}
+            value={draft.start}
+            onChange={(e) => onDraftChange({ ...draft, start: Number(e.target.value) })}
+            className="mt-1 h-8 bg-paper text-xs"
+          />
+        </label>
+        <label className="text-[10px] uppercase tracking-[0.06em] text-ink-4">
+          End seconds
+          <Input
+            type="number"
+            min={draft.start + 1}
+            value={draft.end}
+            onChange={(e) => onDraftChange({ ...draft, end: Number(e.target.value) })}
+            className="mt-1 h-8 bg-paper text-xs"
+          />
+        </label>
+      </div>
+      <textarea
+        value={draft.note}
+        onChange={(e) => onDraftChange({ ...draft, note: e.target.value })}
+        placeholder="Optional note for this moment…"
+        className="mt-2 h-16 w-full resize-none rounded-md border border-rule bg-paper px-2.5 py-2 text-xs text-ink outline-none placeholder:text-ink-4"
+      />
+      {invalid && (
+        <div className="mt-1 text-[11px] text-red-600">
+          End must be after start.
+        </div>
+      )}
+      {error && <div className="mt-1 text-[11px] text-red-600">{error}</div>}
+      <Button
+        onClick={onSave}
+        disabled={saving || invalid}
+        className="mt-2 h-8 w-full text-xs"
+      >
+        {saving ? (
+          <Loader2 size={12} data-icon="inline-start" className="animate-spin" />
+        ) : (
+          <Scissors size={12} data-icon="inline-start" />
+        )}
+        Save clip
+      </Button>
+    </div>
+  );
+}
+
 function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   const [pageHighlights, setPageHighlights] = useState<Highlight[]>([]);
   const [allHighlights, setAllHighlights] = useState<Highlight[]>([]);
@@ -181,18 +324,53 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [highlightingEnabled, setHighlightingEnabled] = useState(true);
   const [usage, setUsage] = useState<UsageData | null>(null);
+  const [clipDraft, setClipDraft] = useState<ClipDraft | null>(null);
+  const [clipLoading, setClipLoading] = useState(false);
+  const [clipSaving, setClipSaving] = useState(false);
+  const [clipError, setClipError] = useState("");
+
+  const refreshClipDraft = useCallback(async (activeTabId: number | null, activeUrl: string) => {
+    setClipError("");
+    if (!activeTabId || !isYouTubeWatchUrl(activeUrl)) {
+      setClipDraft(null);
+      setClipLoading(false);
+      return;
+    }
+
+    setClipLoading(true);
+    try {
+      const res = await chrome.tabs.sendMessage(activeTabId, {
+        type: "GET_YOUTUBE_CLIP_CONTEXT",
+      });
+      if (!res?.ok || !res.data) {
+        throw new Error(res?.error ?? "Could not read YouTube player.");
+      }
+      const context = res.data as YouTubeClipContext;
+      const range = buildDefaultClipRange(context.currentTime, context.duration);
+      setClipDraft({ ...context, ...range, note: "" });
+    } catch (error) {
+      setClipDraft(null);
+      setClipError(error instanceof Error ? error.message : "Could not read YouTube player.");
+    } finally {
+      setClipLoading(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setClipError("");
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
     });
-    const url = stripMarginaliaTarget(tab?.url ?? "");
+    const rawUrl = stripMarginaliaTarget(tab?.url ?? "");
+    const videoId = getYouTubeVideoId(rawUrl);
+    const url = videoId ? youtubeWatchUrl(videoId) : rawUrl;
     setTabUrl(url);
     setTabTitle(tab?.title ?? "");
     setTabId(tab?.id ?? null);
     setWindowId(tab?.windowId ?? null);
+    void refreshClipDraft(tab?.id ?? null, url);
 
     const [pageRes, allRes, settingsRes, usageRes] = await Promise.all([
       url
@@ -219,7 +397,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
       setUsage(usageRes.data as UsageData);
     }
     setLoading(false);
-  }, []);
+  }, [refreshClipDraft]);
 
   useEffect(() => {
     void load();
@@ -259,6 +437,46 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
     setAllHighlights((prev) => prev.filter((x) => x._id !== h._id));
   }
 
+  async function copyHighlightText(text: string) {
+    setFooterError("");
+    try {
+      await navigator.clipboard.writeText(text);
+      setFooterMessage("Highlight copied");
+    } catch {
+      setFooterError("Could not copy highlight text.");
+    }
+  }
+
+  async function saveClip() {
+    if (!clipDraft || clipDraft.end <= clipDraft.start) return;
+    setClipSaving(true);
+    setClipError("");
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: "SAVE_HIGHLIGHT",
+        payload: {
+          url: youtubeWatchUrl(clipDraft.videoId),
+          title: clipDraft.title,
+          text: clipLabel(clipDraft.start, clipDraft.end),
+          color: "sky",
+          note: clipDraft.note.trim() || undefined,
+          sourceType: "youtube",
+          youtubeVideoId: clipDraft.videoId,
+          clipStart: Math.floor(clipDraft.start),
+          clipEnd: Math.floor(clipDraft.end),
+          youtubeChannelTitle: clipDraft.channelTitle,
+        },
+      });
+      if (!response?.ok) throw new Error(response?.error ?? "Could not save clip.");
+      setFooterMessage("YouTube clip saved");
+      await load();
+    } catch (error) {
+      setClipError(error instanceof Error ? error.message : "Could not save clip.");
+    } finally {
+      setClipSaving(false);
+    }
+  }
+
   async function exportMarkdown() {
     const highlights = scope === "page" ? pageHighlights : allHighlights;
     if (!highlights.length) return;
@@ -267,7 +485,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
     const title = scope === "page" ? tabTitle : "Marginalia Highlights";
     const md = `# ${title || "Highlights"}\n\n${highlights.map((h) => {
       const source = scope === "all" ? `\n\nSource: ${h.title || hostnameOf(h.url)} (${h.url})` : "";
-      return `> ${h.text}${h.note ? `\n\n${h.note}` : ""}${source}`;
+      return `> ${highlightDisplayText(h)}${h.note ? `\n\n${h.note}` : ""}${source}`;
     }).join("\n\n---\n\n")}`;
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
     const objectUrl = URL.createObjectURL(blob);
@@ -309,6 +527,12 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   }
 
   async function focusHighlight(h: Highlight) {
+    if (h.sourceType === "youtube" && h.youtubeVideoId) {
+      await chrome.tabs.create({ url: youtubeWatchUrl(h.youtubeVideoId, h.clipStart) });
+      window.close();
+      return;
+    }
+
     if (stripMarginaliaTarget(h.url) === tabUrl && tabId != null) {
       try {
         await chrome.tabs.sendMessage(tabId, {
@@ -392,6 +616,16 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
         </div>
       )}
 
+      <ClipCaptureCard
+        draft={clipDraft}
+        loading={clipLoading}
+        error={clipError}
+        saving={clipSaving}
+        onDraftChange={setClipDraft}
+        onRefresh={() => void refreshClipDraft(tabId, tabUrl)}
+        onSave={() => void saveClip()}
+      />
+
       <div className="flex border-b border-rule">
         {(
           [
@@ -465,17 +699,33 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
             <div
               key={highlight._id}
               data-testid="popup-highlight-row"
-              className={`flex w-full gap-2.5 py-2 group ${index < visible.length - 1 ? "border-b border-rule" : ""}`}
+              className={`group relative flex w-full gap-2.5 py-2 ${index < visible.length - 1 ? "border-b border-rule" : ""}`}
             >
+              <div className="absolute right-0 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                <button
+                  onClick={() => void copyHighlightText(highlightDisplayText(highlight))}
+                  title="Copy text"
+                  className="flex items-center justify-center rounded p-1 text-ink-4 transition-colors hover:text-ink"
+                >
+                  <Copy size={13} />
+                </button>
+                <button
+                  onClick={() => void deleteHighlight(highlight)}
+                  title="Delete highlight"
+                  className="flex items-center justify-center rounded p-1 text-ink-4 transition-colors hover:text-red-500"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
               <button
                 onClick={() => void focusHighlight(highlight)}
-                className="flex gap-2.5 flex-1 text-left hover:bg-paper-2 min-w-0"
+                className="flex min-w-0 flex-1 gap-2.5 pr-12 text-left hover:bg-paper-2"
               >
                 <div
                   className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className={CLAMPED_HIGHLIGHT_TEXT_CLASS}>{highlight.text}</p>
+                  <p className={CLAMPED_HIGHLIGHT_TEXT_CLASS}>{highlightDisplayText(highlight)}</p>
                   {highlight.note && (
                     <p className="mt-[3px] text-[11px] italic text-ink-3">
                       "{highlight.note}"
@@ -493,14 +743,6 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
                     </div>
                   )}
                 </div>
-              </button>
-              {/* Quick delete button */}
-              <button
-                onClick={() => void deleteHighlight(highlight)}
-                title="Delete highlight"
-                className="flex items-center justify-center rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity text-ink-4 hover:text-red-500"
-              >
-                <Trash2 size={13} />
               </button>
             </div>
           ))

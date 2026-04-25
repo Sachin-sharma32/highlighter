@@ -1,6 +1,7 @@
 import shadowCss from "./content.css?inline";
 import type { SaveHighlightPayload, TabMessage } from "../lib/messages";
 import { readMarginaliaTarget, stripMarginaliaTarget } from "../lib/urls";
+import { getYouTubeVideoId, youtubeWatchUrl } from "../lib/youtube";
 import { renderMultiSelect } from "./TooltipReact";
 
 // ── Settings cache (from chrome.storage.sync via background) ───────
@@ -78,6 +79,16 @@ const HIGHLIGHT_FILLS: Record<HighlightColor, string> = {
   sky: "#bae6fd",
   violet: "#ddd6fe",
 };
+
+function resolveHighlightFill(color: string) {
+  const custom = customColors.find(c => c.id === color)?.value;
+  if (!custom) return HIGHLIGHT_FILLS[color as HighlightColor] ?? HIGHLIGHT_FILLS.amber;
+
+  const cssVarMatch = custom.match(/^var\(\s*--hl-(amber|rose|sage|sky|violet)(?:\s*,[^)]*)?\s*\)$/);
+  if (cssVarMatch) return HIGHLIGHT_FILLS[cssVarMatch[1] as HighlightColor];
+
+  return custom;
+}
 
 function getAllColors() {
   if (customColors.length > 0) return customColors.map(c => ({ id: c.id, color: c.value }));
@@ -374,7 +385,6 @@ function showSelectionToolbar(rect: DOMRect, range: Range) {
     btn.className = "marginalia-swatch-big";
     btn.dataset.color = c.id;
     btn.title = `Highlight ${c.id}`;
-    btn.style.background = c.color;
     btn.addEventListener("mousedown", (e) => {
       e.preventDefault();
       void saveHighlight(range, c.id);
@@ -385,6 +395,12 @@ function showSelectionToolbar(rect: DOMRect, range: Range) {
   toolbarEl.appendChild(swatchRow);
 
   // Action rows
+  toolbarEl.appendChild(
+    makeActionRow("Copy text", "Y", () => {
+      dismissToolbar();
+      void navigator.clipboard.writeText(text).catch(() => {});
+    }),
+  );
   toolbarEl.appendChild(
     makeActionRow("Add note", "N", () => {
       dismissToolbar();
@@ -565,8 +581,7 @@ function writeTags(mark: HTMLElement, tags: string[]) {
 }
 
 function applyMarkColor(mark: HTMLElement, color: string) {
-  const custom = customColors.find(c => c.id === color);
-  const fill = custom ? custom.value : (HIGHLIGHT_FILLS[color as HighlightColor] ?? HIGHLIGHT_FILLS.amber);
+  const fill = resolveHighlightFill(color);
   mark.dataset.color = color;
   mark.style.setProperty("background-color", "transparent", "important");
   mark.style.setProperty("color", "#111827", "important");
@@ -646,7 +661,6 @@ function showEditCard(
       btn.className = `marginalia-swatch-big${c.id === currentColor ? " active" : ""}`;
       btn.dataset.color = c.id;
       btn.title = c.id;
-      btn.style.background = c.color;
       btn.addEventListener("mousedown", (e) => {
         e.preventDefault();
         currentColor = c.id;
@@ -945,6 +959,33 @@ const observer = new MutationObserver((mutations) => {
 });
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
+function getYouTubeChannelTitle() {
+  return (
+    document.querySelector<HTMLAnchorElement>("ytd-video-owner-renderer #channel-name a")?.textContent?.trim() ||
+    document.querySelector<HTMLElement>("#owner #channel-name")?.textContent?.trim() ||
+    undefined
+  );
+}
+
+function getYouTubeClipContext() {
+  const videoId = getYouTubeVideoId(location.href);
+  const video = document.querySelector<HTMLVideoElement>("video");
+  if (!videoId || !video) return null;
+
+  const duration = Number.isFinite(video.duration) && video.duration > 0
+    ? video.duration
+    : undefined;
+
+  return {
+    videoId,
+    title: document.title.replace(/\s*-\s*YouTube\s*$/i, "").trim() || "YouTube video",
+    url: youtubeWatchUrl(videoId),
+    currentTime: video.currentTime,
+    duration,
+    channelTitle: getYouTubeChannelTitle(),
+  };
+}
+
 // ── Message listener (from popup/sidepanel) ────────────────────────
 chrome.runtime.onMessage.addListener((msg: TabMessage, _sender, sendResponse) => {
   if (msg?.type === "SCROLL_TO_HIGHLIGHT" && msg.payload?.id) {
@@ -965,6 +1006,11 @@ chrome.runtime.onMessage.addListener((msg: TabMessage, _sender, sendResponse) =>
     highlightingEnabled = msg.payload.enabled;
     if (!highlightingEnabled) dismissToolbar();
     sendResponse({ ok: true });
+    return true;
+  }
+  if (msg?.type === "GET_YOUTUBE_CLIP_CONTEXT") {
+    const context = getYouTubeClipContext();
+    sendResponse(context ? { ok: true, data: context } : { ok: false, error: "No playable YouTube video found." });
     return true;
   }
 });

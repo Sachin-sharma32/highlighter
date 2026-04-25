@@ -21,7 +21,8 @@ export type ExtMessage =
 export type TabMessage =
   | { type: "SCROLL_TO_HIGHLIGHT"; payload: { id: string } }
   | { type: "DELETE_HIGHLIGHT_MARK"; payload: { id: string } }
-  | { type: "HIGHLIGHTING_TOGGLED"; payload: { enabled: boolean } };
+  | { type: "HIGHLIGHTING_TOGGLED"; payload: { enabled: boolean } }
+  | { type: "GET_YOUTUBE_CLIP_CONTEXT" };
 
 export interface SaveHighlightPayload {
   url: string;
@@ -37,6 +38,11 @@ export interface SaveHighlightPayload {
   note?: string;
   collectionIds?: string[];
   tags?: string[];
+  sourceType?: "web" | "youtube";
+  youtubeVideoId?: string;
+  clipStart?: number;
+  clipEnd?: number;
+  youtubeChannelTitle?: string;
 }
 
 export interface UpdateHighlightPayload {

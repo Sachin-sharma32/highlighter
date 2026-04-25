@@ -5,6 +5,23 @@ import type { Id } from "./_generated/dataModel";
 import { assertCanCreateHighlight, getUserPlan, getHighlightCount, FREE_HIGHLIGHT_LIMIT } from "./plan";
 
 const colorValidator = v.string();
+const sourceTypeValidator = v.optional(v.union(v.literal("web"), v.literal("youtube")));
+
+function assertValidClip(args: {
+  sourceType?: "web" | "youtube";
+  youtubeVideoId?: string;
+  clipStart?: number;
+  clipEnd?: number;
+}) {
+  if (args.sourceType !== "youtube") return;
+  if (!args.youtubeVideoId?.trim()) throw new Error("YouTube video ID is required");
+  if (args.clipStart === undefined || args.clipEnd === undefined) {
+    throw new Error("Clip start and end are required");
+  }
+  if (args.clipStart < 0 || args.clipEnd <= args.clipStart) {
+    throw new Error("Clip end must be after clip start");
+  }
+}
 
 async function userIdFromToken(
   ctx: QueryCtx | MutationCtx,
@@ -110,11 +127,17 @@ export const create = mutation({
     collectionId: v.optional(v.id("collections")),
     collectionIds: v.optional(v.array(v.id("collections"))),
     tags: v.optional(v.array(v.string())),
+    sourceType: sourceTypeValidator,
+    youtubeVideoId: v.optional(v.string()),
+    clipStart: v.optional(v.number()),
+    clipEnd: v.optional(v.number()),
+    youtubeChannelTitle: v.optional(v.string()),
   },
   handler: async (ctx, { token, tags, collectionId, ...data }) => {
     const userId = await userIdFromToken(ctx, token);
     if (!userId) throw new Error("Invalid extension session");
     await assertCanCreateHighlight(ctx, userId);
+    assertValidClip(data);
     if (collectionId) {
       const col = await ctx.db.get(collectionId);
       if (!col || col.userId !== userId) {

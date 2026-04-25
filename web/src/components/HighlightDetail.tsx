@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { ChevronLeft, ChevronRight, Copy, Share2, Link, MoreHorizontal, Trash2, Folder } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Share2, Link, MoreHorizontal, Trash2, Folder, Scissors } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { TagEditor } from "@/components/TagEditor";
 import { Textarea } from "@/components/ui/textarea";
+import { formatClipTime, youtubeEmbedUrl, youtubeWatchUrl } from "@/lib/youtube";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,11 @@ type DetailHighlight = {
   color: HighlightColor;
   note?: string;
   tags: string[];
+  sourceType?: "web" | "youtube";
+  youtubeVideoId?: string;
+  clipStart?: number;
+  clipEnd?: number;
+  youtubeChannelTitle?: string;
 };
 
 type ListHighlight = {
@@ -123,14 +129,81 @@ function NoteEditor({
   );
 }
 
+function isYouTubeClip(highlight: DetailHighlight) {
+  return (
+    highlight.sourceType === "youtube" &&
+    Boolean(highlight.youtubeVideoId) &&
+    highlight.clipStart !== undefined &&
+    highlight.clipEnd !== undefined
+  );
+}
+
+function highlightDisplayText(highlight: DetailHighlight) {
+  if (isYouTubeClip(highlight)) {
+    return `YouTube clip ${formatClipTime(highlight.clipStart)}-${formatClipTime(highlight.clipEnd)}`;
+  }
+  return highlight.text;
+}
+
+function sourceUrl(highlight: DetailHighlight) {
+  if (isYouTubeClip(highlight)) {
+    return youtubeWatchUrl(highlight.youtubeVideoId!, highlight.clipStart);
+  }
+  return highlight.url;
+}
+
+function YouTubeClipPlayer({ highlight }: { highlight: DetailHighlight }) {
+  if (!isYouTubeClip(highlight)) return null;
+  const watchUrl = sourceUrl(highlight);
+
+  return (
+    <div className="mb-6 overflow-hidden rounded-xl border border-rule bg-paper-2">
+      <div className="aspect-video w-full bg-black">
+        <iframe
+          title={highlightDisplayText(highlight)}
+          src={youtubeEmbedUrl(highlight.youtubeVideoId!, highlight.clipStart!, highlight.clipEnd!)}
+          className="h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">
+            <Scissors size={12} />
+            {formatClipTime(highlight.clipStart)}-{formatClipTime(highlight.clipEnd)}
+          </div>
+          {highlight.youtubeChannelTitle && (
+            <div className="mt-1 truncate text-xs text-ink-4">
+              {highlight.youtubeChannelTitle}
+            </div>
+          )}
+        </div>
+        <a
+          href={watchUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="shrink-0 rounded-md border border-rule bg-paper px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-ink-3 hover:text-ink"
+        >
+          Open on YouTube
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export function HighlightDetail() {
   const { activeCollectionId, activeTag, selectedHighlightId, setActiveTag, setSelectedHighlight, searchQuery, setCommandPaletteOpen } = useAppStore();
   const isSpecial = ["inbox", "all", "notes", "review"].includes(activeCollectionId as string);
-  const navigationHighlights = (useQuery(api.highlights.list, {
+  const rawNavigationHighlights = useQuery(api.highlights.list, {
     collectionId: isSpecial ? undefined : (activeCollectionId as Id<"collections">),
     filter: activeCollectionId === "notes" ? "notes" : undefined,
     search: searchQuery || undefined,
-  }) ?? []) as ListHighlight[];
+  });
+  const navigationHighlights = useMemo(
+    () => (rawNavigationHighlights ?? []) as ListHighlight[],
+    [rawNavigationHighlights],
+  );
   const collections = (useQuery(api.collections.list) ?? []) as Collection[];
   const highlight = useQuery(
     api.highlights.byId,
@@ -185,7 +258,7 @@ export function HighlightDetail() {
       }
       if (event.key.toLowerCase() === "c") {
         event.preventDefault();
-        void navigator.clipboard.writeText(highlight.text);
+        void navigator.clipboard.writeText(highlightDisplayText(highlight));
         toast.success("Copied to clipboard");
       }
     }
@@ -241,19 +314,20 @@ export function HighlightDetail() {
   }
 
   function handleCopy() {
-    void navigator.clipboard.writeText(highlight!.text);
+    void navigator.clipboard.writeText(highlightDisplayText(highlight!));
     toast.success("Copied to clipboard");
   }
 
   async function handleShare() {
     if (!highlight) return;
-    const shareText = `"${highlight.text}"\n\n${highlight.url}`;
+    const url = sourceUrl(highlight);
+    const shareText = `"${highlightDisplayText(highlight)}"\n\n${url}`;
     if (navigator.share) {
       try {
         await navigator.share({
           title: highlight.title || "Marginalia highlight",
           text: shareText,
-          url: highlight.url,
+          url,
         });
         return;
       } catch (error) {
@@ -266,7 +340,7 @@ export function HighlightDetail() {
 
   async function handleCopyLink() {
     if (!highlight) return;
-    await navigator.clipboard.writeText(highlight.url);
+    await navigator.clipboard.writeText(sourceUrl(highlight));
     toast.success("Source link copied");
   }
 
@@ -326,7 +400,7 @@ export function HighlightDetail() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
             {highlight.title}{highlight.author ? `  ·  ${highlight.author}` : ""}
             <a
-              href={highlight.url}
+              href={sourceUrl(highlight)}
               target="_blank"
               rel="noreferrer"
               className="ml-2 hover:underline"
@@ -335,6 +409,8 @@ export function HighlightDetail() {
               ↗
             </a>
           </div>
+
+          <YouTubeClipPlayer highlight={highlight} />
 
           {/* Highlight text as blockquote */}
           <blockquote
@@ -351,7 +427,7 @@ export function HighlightDetail() {
               borderBottom: "1px solid var(--rule)",
             }}
           >
-            <span className={hlClass}>{highlight.text}</span>
+            <span className={hlClass}>{highlightDisplayText(highlight)}</span>
           </blockquote>
 
           {/* Color swatches */}

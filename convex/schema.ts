@@ -32,6 +32,11 @@ export default defineSchema({
     collectionId: v.optional(v.id("collections")),
     collectionIds: v.optional(v.array(v.id("collections"))),
     tags: v.array(v.string()),
+    sourceType: v.optional(v.union(v.literal("web"), v.literal("youtube"))),
+    youtubeVideoId: v.optional(v.string()),
+    clipStart: v.optional(v.number()),
+    clipEnd: v.optional(v.number()),
+    youtubeChannelTitle: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
