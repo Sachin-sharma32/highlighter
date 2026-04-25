@@ -51,12 +51,6 @@
       "description": "Toggle Marginalia highlighting on/off"
     }
   },
-  "externally_connectable": {
-    "matches": [
-      "http://localhost:*/*",
-      "https://localhost:*/*"
-    ]
-  },
   "web_accessible_resources": [
     {
       "resources": ["icons/*"],

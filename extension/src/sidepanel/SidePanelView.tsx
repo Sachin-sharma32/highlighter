@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DASHBOARD_URL } from "@/lib/dashboard";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
 
 const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
@@ -286,7 +287,7 @@ export default function SidePanel() {
             className={HEADER_ICON_BUTTON_CLASS}
           >
             <a
-              href="http://localhost:5173"
+              href={DASHBOARD_URL}
               target="_blank"
               rel="noreferrer"
               title="Open dashboard"
@@ -389,7 +390,7 @@ export default function SidePanel() {
 
       <div className="shrink-0 border-t border-rule bg-paper-2 px-4 py-2.5">
         <Button
-          onClick={() => chrome.tabs.create({ url: "http://localhost:5173" })}
+          onClick={() => chrome.tabs.create({ url: DASHBOARD_URL })}
           className={FOOTER_ACTION_CLASS}
         >
           <BookOpen

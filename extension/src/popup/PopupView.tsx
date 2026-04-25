@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { CONNECT_EXTENSION_URL, DASHBOARD_URL } from "@/lib/dashboard";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
 
 const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
@@ -142,7 +143,7 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
       </div>
 
       <a
-        href="http://localhost:5173/connect-extension"
+        href={CONNECT_EXTENSION_URL}
         target="_blank"
         rel="noreferrer"
         className="text-[11px] text-accent no-underline"
@@ -220,7 +221,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   }, [load]);
 
   function openDashboard() {
-    chrome.tabs.create({ url: "http://localhost:5173" });
+    chrome.tabs.create({ url: DASHBOARD_URL });
   }
 
   async function toggleHighlighting() {
