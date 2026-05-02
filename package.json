@@ -3,17 +3,14 @@
   "private": true,
   "version": "0.1.0",
   "description": "Marginalia — a modern web highlighter (dashboard + Chrome extension)",
-  "workspaces": [
-    "web",
-    "extension"
-  ],
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "convex": "convex dev",
-    "dev:web": "npm run dev -w web",
-    "dev:ext": "npm run dev -w extension",
-    "build:web": "npm run build -w web",
-    "build:ext": "npm run build -w extension",
-    "build:ext:prod": "VITE_CONVEX_URL=https://blessed-finch-705.convex.cloud VITE_DASHBOARD_URL=https://highlighter-web-gdqs.vercel.app npm run build -w extension",
+    "dev:web": "pnpm --filter web dev",
+    "dev:ext": "pnpm --filter extension dev",
+    "build:web": "pnpm --filter web build",
+    "build:ext": "pnpm --filter extension build",
+    "build:ext:prod": "VITE_CONVEX_URL=https://blessed-finch-705.convex.cloud VITE_DASHBOARD_URL=https://highlighter-web-gdqs.vercel.app pnpm --filter ./extension build",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
@@ -24,5 +21,8 @@
   "dependencies": {
     "@auth/core": "^0.37.4",
     "@convex-dev/auth": "^0.0.91"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }
