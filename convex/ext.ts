@@ -2,10 +2,17 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { assertCanCreateHighlight, getUserPlan, getHighlightCount, FREE_HIGHLIGHT_LIMIT } from "./plan";
+import {
+  assertCanCreateHighlight,
+  getUserPlan,
+  getHighlightCount,
+  FREE_HIGHLIGHT_LIMIT,
+} from "./plan";
 
 const colorValidator = v.string();
-const sourceTypeValidator = v.optional(v.union(v.literal("web"), v.literal("youtube")));
+const sourceTypeValidator = v.optional(
+  v.union(v.literal("web"), v.literal("youtube")),
+);
 
 function assertValidClip(args: {
   sourceType?: "web" | "youtube";
@@ -14,7 +21,8 @@ function assertValidClip(args: {
   clipEnd?: number;
 }) {
   if (args.sourceType !== "youtube") return;
-  if (!args.youtubeVideoId?.trim()) throw new Error("YouTube video ID is required");
+  if (!args.youtubeVideoId?.trim())
+    throw new Error("YouTube video ID is required");
   if (args.clipStart === undefined || args.clipEnd === undefined) {
     throw new Error("Clip start and end are required");
   }
@@ -25,7 +33,7 @@ function assertValidClip(args: {
 
 async function userIdFromToken(
   ctx: QueryCtx | MutationCtx,
-  token: string
+  token: string,
 ): Promise<Id<"users"> | null> {
   const session = await ctx.db
     .query("extensionSessions")
@@ -103,7 +111,8 @@ export const usage = query({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
     const userId = await userIdFromToken(ctx, token);
-    if (!userId) return { plan: "free" as const, count: 0, limit: FREE_HIGHLIGHT_LIMIT };
+    if (!userId)
+      return { plan: "free" as const, count: 0, limit: FREE_HIGHLIGHT_LIMIT };
     const plan = await getUserPlan(ctx, userId);
     const count = await getHighlightCount(ctx, userId);
     return { plan, count, limit: FREE_HIGHLIGHT_LIMIT };
@@ -165,7 +174,10 @@ export const update = mutation({
     collectionId: v.optional(v.union(v.id("collections"), v.null())),
     collectionIds: v.optional(v.array(v.id("collections"))),
   },
-  handler: async (ctx, { token, id, collectionId, collectionIds, ...patch }) => {
+  handler: async (
+    ctx,
+    { token, id, collectionId, collectionIds, ...patch },
+  ) => {
     const userId = await userIdFromToken(ctx, token);
     if (!userId) throw new Error("Invalid extension session");
     const h = await ctx.db.get(id);

@@ -9,7 +9,7 @@
   }
 
   :root {
-    --hl-amber: oklch(90% 0.10 85);
+    --hl-amber: oklch(90% 0.1 85);
     --hl-rose: oklch(88% 0.08 20);
     --hl-sage: oklch(90% 0.07 145);
     --hl-sky: oklch(90% 0.06 230);
@@ -17,8 +17,13 @@
   }
 
   /* Elegant minimal scrollbar for shadow DOM */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
   ::-webkit-scrollbar-thumb {
     background: oklch(75% 0.01 60 / 0.25);
     border-radius: 9999px;
@@ -26,7 +31,10 @@
   ::-webkit-scrollbar-thumb:hover {
     background: oklch(60% 0.01 60 / 0.35);
   }
-  * { scrollbar-width: thin; scrollbar-color: oklch(75% 0.01 60 / 0.25) transparent; }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(75% 0.01 60 / 0.25) transparent;
+  }
 }
 
 @layer components {
@@ -183,11 +191,21 @@
     @apply ring-2 ring-ink ring-offset-1;
   }
 
-  .marginalia-swatch-big[data-color="amber"] { @apply bg-hl-amber; }
-  .marginalia-swatch-big[data-color="rose"] { @apply bg-hl-rose; }
-  .marginalia-swatch-big[data-color="sage"] { @apply bg-hl-sage; }
-  .marginalia-swatch-big[data-color="sky"] { @apply bg-hl-sky; }
-  .marginalia-swatch-big[data-color="violet"] { @apply bg-hl-violet; }
+  .marginalia-swatch-big[data-color="amber"] {
+    @apply bg-hl-amber;
+  }
+  .marginalia-swatch-big[data-color="rose"] {
+    @apply bg-hl-rose;
+  }
+  .marginalia-swatch-big[data-color="sage"] {
+    @apply bg-hl-sage;
+  }
+  .marginalia-swatch-big[data-color="sky"] {
+    @apply bg-hl-sky;
+  }
+  .marginalia-swatch-big[data-color="violet"] {
+    @apply bg-hl-violet;
+  }
 
   .marginalia-plus-btn {
     @apply ml-auto flex size-7 cursor-pointer items-center justify-center rounded-full border border-rule bg-paper font-mono text-sm text-ink-2 transition-colors;

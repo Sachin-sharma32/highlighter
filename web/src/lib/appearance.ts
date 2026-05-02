@@ -1,5 +1,10 @@
 export type AppTheme = "light" | "dark";
-export type TypographyChoice = "editorial" | "classic" | "literary" | "modern" | "mono";
+export type TypographyChoice =
+  | "editorial"
+  | "classic"
+  | "literary"
+  | "modern"
+  | "mono";
 
 export const TYPOGRAPHY_OPTIONS: Record<
   TypographyChoice,
@@ -39,14 +44,19 @@ export const TYPOGRAPHY_OPTIONS: Record<
 
 export function readStoredAppearance() {
   const theme = localStorage.getItem("marginalia.theme") as AppTheme | null;
-  const typography = localStorage.getItem("marginalia.typography") as TypographyChoice | null;
+  const typography = localStorage.getItem(
+    "marginalia.typography",
+  ) as TypographyChoice | null;
   return {
     theme: theme ?? "light",
     typography: typography ?? "editorial",
   };
 }
 
-export function applyAppearanceSettings(theme: AppTheme, typography: TypographyChoice) {
+export function applyAppearanceSettings(
+  theme: AppTheme,
+  typography: TypographyChoice,
+) {
   const root = document.documentElement;
   const type = TYPOGRAPHY_OPTIONS[typography] ?? TYPOGRAPHY_OPTIONS.editorial;
   root.dataset.theme = theme;

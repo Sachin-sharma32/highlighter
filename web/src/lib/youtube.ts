@@ -7,8 +7,14 @@ export function youtubeWatchUrl(videoId: string, startSeconds?: number) {
   return url.toString();
 }
 
-export function youtubeEmbedUrl(videoId: string, startSeconds: number, endSeconds: number) {
-  const url = new URL(`https://www.youtube.com/embed/${encodeURIComponent(videoId)}`);
+export function youtubeEmbedUrl(
+  videoId: string,
+  startSeconds: number,
+  endSeconds: number,
+) {
+  const url = new URL(
+    `https://www.youtube.com/embed/${encodeURIComponent(videoId)}`,
+  );
   url.searchParams.set("start", String(Math.max(0, Math.floor(startSeconds))));
   url.searchParams.set("end", String(Math.max(0, Math.floor(endSeconds))));
   url.searchParams.set("rel", "0");

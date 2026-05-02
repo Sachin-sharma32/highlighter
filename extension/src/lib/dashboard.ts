@@ -5,7 +5,8 @@ function trimTrailingSlash(url: string): string {
 }
 
 export const DASHBOARD_URL = trimTrailingSlash(
-  (import.meta.env.VITE_DASHBOARD_URL as string | undefined) || DEFAULT_DASHBOARD_URL
+  (import.meta.env.VITE_DASHBOARD_URL as string | undefined) ||
+    DEFAULT_DASHBOARD_URL,
 );
 
 export const CONNECT_EXTENSION_URL = `${DASHBOARD_URL}/connect-extension`;

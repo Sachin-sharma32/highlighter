@@ -7,16 +7,20 @@ const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 function randomCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "MARG-";
-  for (let i = 0; i < 4; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 4; i++)
+    out += chars[Math.floor(Math.random() * chars.length)];
   out += "-";
-  for (let i = 0; i < 4; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 4; i++)
+    out += chars[Math.floor(Math.random() * chars.length)];
   return out;
 }
 
 function randomToken(): string {
   const arr = new Uint8Array(32);
   for (let i = 0; i < 32; i++) arr[i] = Math.floor(Math.random() * 256);
-  return Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(arr)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export const createPairingCode = mutation({

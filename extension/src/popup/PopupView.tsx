@@ -23,8 +23,7 @@ import {
   youtubeWatchUrl,
 } from "@/lib/youtube";
 
-const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
-type HighlightColor = (typeof COLORS)[number];
+type HighlightColor = "amber" | "rose" | "sage" | "sky" | "violet";
 
 const HL_BG_CLASS: Record<HighlightColor, string> = {
   amber: "bg-hl-amber",
@@ -38,12 +37,9 @@ const PANEL_ROOT_CLASS =
   "flex h-full w-full flex-col overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2";
 const BRAND_BADGE_CLASS =
   "flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-ink font-display text-[17px] font-medium text-paper ring-[1.5px] ring-accent";
-const HEADER_ICON_BUTTON_CLASS =
-  "size-8 rounded p-1";
-const FOOTER_ACTION_CLASS =
-  "h-[34px] flex-1 text-xs";
-const FOOTER_ICON_BUTTON_CLASS =
-  "size-[34px]";
+const HEADER_ICON_BUTTON_CLASS = "size-8 rounded p-1";
+const FOOTER_ACTION_CLASS = "h-[34px] flex-1 text-xs";
+const FOOTER_ICON_BUTTON_CLASS = "size-[34px]";
 const CLAMPED_HIGHLIGHT_TEXT_CLASS =
   "overflow-hidden font-display text-[12.5px] leading-[1.45] text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]";
 
@@ -86,7 +82,15 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
           payload: { code: code.trim() },
         }),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Request timed out. Check your network and extension configuration.")), 8000)
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Request timed out. Check your network and extension configuration.",
+                ),
+              ),
+            8000,
+          ),
         ),
       ]);
       if (res?.ok) {
@@ -95,7 +99,11 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
         setError(res?.error ?? "Invalid code. Please try again.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Connection failed. Make sure the dashboard is open.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Connection failed. Make sure the dashboard is open.",
+      );
     } finally {
       setLoading(false);
     }
@@ -150,10 +158,7 @@ function PairingScreen({ onPaired }: { onPaired: () => void }) {
               className="animate-spin"
             />
           ) : (
-            <Link2
-              size={14}
-              data-icon="inline-start"
-            />
+            <Link2 size={14} data-icon="inline-start" />
           )}
           Connect
         </Button>
@@ -302,11 +307,14 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
       const response = await chrome.tabs.sendMessage(tabId, {
         type: "SHOW_YOUTUBE_CLIP_TRIMMER",
       });
-      if (!response?.ok) throw new Error(response?.error ?? "Could not open clip trimmer.");
+      if (!response?.ok)
+        throw new Error(response?.error ?? "Could not open clip trimmer.");
       setFooterMessage("Clip trimmer opened on YouTube");
       window.close();
     } catch (error) {
-      setFooterError(error instanceof Error ? error.message : "Could not open clip trimmer.");
+      setFooterError(
+        error instanceof Error ? error.message : "Could not open clip trimmer.",
+      );
     }
   }
 
@@ -316,15 +324,25 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
 
     setFooterError("");
     const title = scope === "page" ? tabTitle : "Marginalia Highlights";
-    const md = `# ${title || "Highlights"}\n\n${highlights.map((h) => {
-      const source = scope === "all" ? `\n\nSource: ${h.title || hostnameOf(h.url)} (${h.url})` : "";
-      return `> ${highlightDisplayText(h)}${h.note ? `\n\n${h.note}` : ""}${source}`;
-    }).join("\n\n---\n\n")}`;
+    const md = `# ${title || "Highlights"}\n\n${highlights
+      .map((h) => {
+        const source =
+          scope === "all"
+            ? `\n\nSource: ${h.title || hostnameOf(h.url)} (${h.url})`
+            : "";
+        return `> ${highlightDisplayText(h)}${h.note ? `\n\n${h.note}` : ""}${source}`;
+      })
+      .join("\n\n---\n\n")}`;
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = objectUrl;
-    a.download = `${(title || "marginalia-highlights").replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "marginalia-highlights"}.md`;
+    a.download = `${
+      (title || "marginalia-highlights")
+        .replace(/[^\w.-]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase() || "marginalia-highlights"
+    }.md`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -349,19 +367,28 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           payload: { tabId: tabId ?? undefined, windowId },
         });
         if (!res?.ok) {
-          throw new Error(res?.error ?? "Side panel could not be opened.");
+          throw new Error(res?.error ?? "Side panel could not be opened.", {
+            cause: directError,
+          });
         }
         window.close();
       } catch (messageError) {
-        const error = messageError instanceof Error ? messageError : directError;
-        setFooterError(error instanceof Error ? error.message : "Side panel could not be opened.");
+        const error =
+          messageError instanceof Error ? messageError : directError;
+        setFooterError(
+          error instanceof Error
+            ? error.message
+            : "Side panel could not be opened.",
+        );
       }
     }
   }
 
   async function focusHighlight(h: Highlight) {
     if (h.sourceType === "youtube" && h.youtubeVideoId) {
-      await chrome.tabs.create({ url: youtubeWatchUrl(h.youtubeVideoId, h.clipStart) });
+      await chrome.tabs.create({
+        url: youtubeWatchUrl(h.youtubeVideoId, h.clipStart),
+      });
       window.close();
       return;
     }
@@ -387,10 +414,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   const isYouTubeVideo = Boolean(getYouTubeVideoId(tabUrl));
 
   return (
-    <div
-      data-testid="popup-main"
-      className={`${PANEL_ROOT_CLASS} relative`}
-    >
+    <div data-testid="popup-main" className={`${PANEL_ROOT_CLASS} relative`}>
       <div className="flex items-center gap-2.5 border-b border-rule px-4 py-[14px]">
         <div className={BRAND_BADGE_CLASS}>M</div>
         <div className="min-w-0 flex-1">
@@ -441,9 +465,10 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
               className="h-full rounded-full transition-all"
               style={{
                 width: `${Math.min(100, (usage.count / usage.limit) * 100)}%`,
-                background: usage.count / usage.limit > 0.8
-                  ? "oklch(65% 0.2 25)"
-                  : "oklch(70% 0.14 145)",
+                background:
+                  usage.count / usage.limit > 0.8
+                    ? "oklch(65% 0.2 25)"
+                    : "oklch(70% 0.14 145)",
               }}
             />
           </div>
@@ -478,8 +503,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
                 : "border-transparent text-ink-4 hover:text-ink-2"
             }`}
           >
-            {tab.label}{" "}
-            <span className="ml-0.5 text-ink-4">({tab.count})</span>
+            {tab.label} <span className="ml-0.5 text-ink-4">({tab.count})</span>
           </button>
         ))}
       </div>
@@ -509,10 +533,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
       <div className="flex-1 overflow-y-auto px-4 py-2">
         {loading ? (
           <div className="flex justify-center pt-10">
-            <Loader2
-              size={18}
-              className="animate-spin text-ink-4"
-            />
+            <Loader2 size={18} className="animate-spin text-ink-4" />
           </div>
         ) : visible.length === 0 ? (
           <div className="pt-10 text-center text-xs leading-6 text-ink-4">
@@ -539,7 +560,9 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
             >
               <div className="absolute right-0 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                 <button
-                  onClick={() => void copyHighlightText(highlightDisplayText(highlight))}
+                  onClick={() =>
+                    void copyHighlightText(highlightDisplayText(highlight))
+                  }
                   title="Copy text"
                   className="flex items-center justify-center rounded p-1 text-ink-4 transition-colors hover:text-ink"
                 >
@@ -561,7 +584,9 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
                   className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className={CLAMPED_HIGHLIGHT_TEXT_CLASS}>{highlightDisplayText(highlight)}</p>
+                  <p className={CLAMPED_HIGHLIGHT_TEXT_CLASS}>
+                    {highlightDisplayText(highlight)}
+                  </p>
                   {highlight.note && (
                     <p className="mt-[3px] text-[11px] italic text-ink-3">
                       "{highlight.note}"
@@ -592,7 +617,8 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
               Disconnect extension?
             </div>
             <p className="mt-2 text-xs leading-5 text-ink-3">
-              You can reconnect later with a new pairing code from the dashboard.
+              You can reconnect later with a new pairing code from the
+              dashboard.
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <Button
@@ -617,20 +643,16 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
       )}
 
       {(footerError || footerMessage) && (
-        <div className={`border-t border-rule bg-paper px-3 py-1.5 text-[11px] leading-4 ${footerError ? "text-red-600" : "text-ink-3"}`}>
+        <div
+          className={`border-t border-rule bg-paper px-3 py-1.5 text-[11px] leading-4 ${footerError ? "text-red-600" : "text-ink-3"}`}
+        >
           {footerError || footerMessage}
         </div>
       )}
 
       <div className="flex gap-1.5 border-t border-rule bg-paper-2 p-2.5">
-        <Button
-          onClick={openDashboard}
-          className={FOOTER_ACTION_CLASS}
-        >
-          <BookOpen
-            size={12}
-            data-icon="inline-start"
-          />
+        <Button onClick={openDashboard} className={FOOTER_ACTION_CLASS}>
+          <BookOpen size={12} data-icon="inline-start" />
           Open Dashboard
         </Button>
         <Button
@@ -680,10 +702,7 @@ export default function Popup() {
   if (paired === null) {
     return (
       <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2">
-        <Loader2
-          size={20}
-          className="animate-spin text-ink-4"
-        />
+        <Loader2 size={20} className="animate-spin text-ink-4" />
       </div>
     );
   }

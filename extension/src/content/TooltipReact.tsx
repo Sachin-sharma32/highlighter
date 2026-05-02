@@ -1,4 +1,4 @@
-import { createRoot, Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -6,7 +6,7 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Folder } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 
 interface MultiSelectProps {
   collections: { _id: string; name: string }[];
@@ -15,10 +15,15 @@ interface MultiSelectProps {
   container: HTMLElement;
 }
 
-function MultiSelect({ collections, selectedIds, onChange, container }: MultiSelectProps) {
+function MultiSelect({
+  collections,
+  selectedIds,
+  onChange,
+  container,
+}: MultiSelectProps) {
   const toggle = (id: string) => {
     if (selectedIds.includes(id)) {
-      onChange(selectedIds.filter(x => x !== id));
+      onChange(selectedIds.filter((x) => x !== id));
     } else {
       onChange([...selectedIds, id]);
     }
@@ -35,14 +40,15 @@ function MultiSelect({ collections, selectedIds, onChange, container }: MultiSel
             {selectedCount === 0
               ? "No collections"
               : selectedCount === 1
-              ? collections.find(c => c._id === selectedIds[0])?.name || "1 collection"
-              : `${selectedCount} collections`}
+                ? collections.find((c) => c._id === selectedIds[0])?.name ||
+                  "1 collection"
+                : `${selectedCount} collections`}
           </span>
         </div>
         <ChevronDown size={12} className="text-ink-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent container={container} className="w-[200px] bg-paper">
-        {collections.map(c => (
+        {collections.map((c) => (
           <DropdownMenuCheckboxItem
             key={c._id}
             checked={selectedIds.includes(c._id)}
@@ -62,7 +68,7 @@ export function renderMultiSelect(
   collections: { _id: string; name: string }[],
   selectedIds: string[],
   onChange: (ids: string[]) => void,
-  shadowContainer: HTMLElement
+  shadowContainer: HTMLElement,
 ) {
   const root = createRoot(domElement);
   root.render(
@@ -71,7 +77,7 @@ export function renderMultiSelect(
       selectedIds={selectedIds}
       onChange={onChange}
       container={shadowContainer}
-    />
+    />,
   );
   return root;
 }

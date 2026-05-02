@@ -10,12 +10,17 @@ const TEST_EMAIL = "extension-e2e@marginalia.dev";
 const DASHBOARD_URL = "http://localhost:5173";
 
 async function signInThroughDashboard(page: Page, email: string) {
-  await page.goto(`${DASHBOARD_URL}/test-signin?email=${encodeURIComponent(email)}`);
+  await page.goto(
+    `${DASHBOARD_URL}/test-signin?email=${encodeURIComponent(email)}`,
+  );
   await page.waitForURL(`${DASHBOARD_URL}/`);
 }
 
 async function launchExtensionContext() {
-  execSync("npm run build -w extension", { cwd: path.resolve(__dirname, ".."), stdio: "pipe" });
+  execSync("npm run build -w extension", {
+    cwd: path.resolve(__dirname, ".."),
+    stdio: "pipe",
+  });
 
   const extensionPath = getExtensionDistPath();
   const userDataDir = mkdtempSync(path.join(tmpdir(), "marginalia-extension-"));
@@ -27,7 +32,9 @@ async function launchExtensionContext() {
     ],
   });
 
-  const serviceWorker = context.serviceWorkers()[0] ?? await context.waitForEvent("serviceworker");
+  const serviceWorker =
+    context.serviceWorkers()[0] ??
+    (await context.waitForEvent("serviceworker"));
   const extensionId = new URL(serviceWorker.url()).host;
 
   return {
@@ -42,7 +49,10 @@ async function launchExtensionContext() {
 }
 
 async function startArticleServer() {
-  const html = readFileSync(path.resolve(__dirname, "./fixtures/article.html"), "utf8");
+  const html = readFileSync(
+    path.resolve(__dirname, "./fixtures/article.html"),
+    "utf8",
+  );
 
   const server = await new Promise<Server>((resolve) => {
     const instance = createServer((_request, response) => {
@@ -60,7 +70,10 @@ async function startArticleServer() {
   return {
     server,
     url: `http://127.0.0.1:${address.port}`,
-    close: () => new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve()))),
+    close: () =>
+      new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      ),
   };
 }
 
@@ -76,11 +89,15 @@ test("pairs the extension, saves a highlight, and syncs it back to the dashboard
 
     await dashboardPage.goto(`${DASHBOARD_URL}/connect-extension`);
     await dashboardPage.getByTestId("generate-pairing-code-button").click();
-    const code = await dashboardPage.getByTestId("pairing-code-value").textContent();
+    const code = await dashboardPage
+      .getByTestId("pairing-code-value")
+      .textContent();
     if (!code) throw new Error("Failed to extract pairing code");
 
     const popupPage = await context.newPage();
-    await popupPage.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
+    await popupPage.goto(
+      `chrome-extension://${extensionId}/src/popup/index.html`,
+    );
     await popupPage.getByTestId("popup-pairing-input").fill(code);
     await popupPage.getByTestId("popup-connect-button").click();
     await expect(popupPage.getByTestId("popup-on-page-label")).toBeVisible();
@@ -106,10 +123,15 @@ test("pairs the extension, saves a highlight, and syncs it back to the dashboard
     });
 
     await articlePage.waitForFunction(
-      () => !!document.querySelector("#marginalia-host")?.shadowRoot?.querySelector(".swatch")
+      () =>
+        !!document
+          .querySelector("#marginalia-host")
+          ?.shadowRoot?.querySelector(".swatch"),
     );
     await articlePage.evaluate(() => {
-      const button = document.querySelector("#marginalia-host")?.shadowRoot?.querySelector(".swatch") as HTMLButtonElement | null;
+      const button = document
+        .querySelector("#marginalia-host")
+        ?.shadowRoot?.querySelector(".swatch") as HTMLButtonElement | null;
       button?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
     });
 
@@ -119,7 +141,9 @@ test("pairs the extension, saves a highlight, and syncs it back to the dashboard
     await expect(articlePage.locator("mark.marg-h.marg-amber")).toHaveCount(1);
 
     await dashboardPage.goto(DASHBOARD_URL);
-    await expect(dashboardPage.getByTestId("highlight-row").first()).toBeVisible();
+    await expect(
+      dashboardPage.getByTestId("highlight-row").first(),
+    ).toBeVisible();
   } finally {
     await articleServer.close();
     await cleanup();

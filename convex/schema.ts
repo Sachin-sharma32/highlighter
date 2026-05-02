@@ -68,7 +68,7 @@ export default defineSchema({
       v.literal("active"),
       v.literal("pending"),
       v.literal("cancelled"),
-      v.literal("expired")
+      v.literal("expired"),
     ),
     razorpayOrderId: v.optional(v.string()),
     razorpayPaymentId: v.optional(v.string()),

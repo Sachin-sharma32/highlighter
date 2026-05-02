@@ -4,40 +4,41 @@ import { createAccount, retrieveAccount } from "@convex-dev/auth/server";
 import Google from "@auth/core/providers/google";
 
 const DEV_JWT_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCwZIwGnPjzgjoi
-SwNdhx8M4sI/bAFJ4RbIqgZStf7qhSAwkpD7WguosurWrIDmeiF952IeOU9yUezF
-2zhDt5B/51VDzyQATJOeTSj2F+GapzDmRAT6Ua/nzU/6aAReT9w4misFKqhjd2ZG
-crFXLsn0QsAuHDglVgoZqEF5RwqzJVUAhsNpF/Q6kNsy6kauHtlf2MvAJgo8JZYS
-0XaaSJ2V63d/Suz9M3TIEoj1xlTCqvFlEORwVbHOUwV3wnLzxtnXzmA8meESVOta
-WWLqqdkUw/KibDKZ9PHwy7OIgSnGmrK8KegewsChehZBCncVq0EGh+XXqi0U0kC1
-MjuNbnatAgMBAAECggEAAhrkZQyjeJIJkaRMPUnggq418pSFYCXCzlipMkp+uitL
-mCIqkhAR5xYQsqNHFnqbf6QK4krw972ZHEVEHiDpf86gijI/NzEpZIMzMiYccgBk
-Obi59rmrDtQvY0qlDbnDZywC2pEdIrkWVj2+YMJ5vA3v7O1WPMfUJBPUj508gxlX
-Ia5zsjcXAuR1vtVcdfayxqVrQnUjLc+w9HTPH5ico0Rd9BsTKCl7SmUcgZAHYnzJ
-VrZf2ZTVfYqSQwBStPzvtX4Zzsmfwnr15cljtjh0YYtw8wY4LbehaaEpS0GHuAmj
-B72aknNxf2E9Web1HdyEgavAW2AuPh/w16yJwPtfBwKBgQDgMSGOb9OqNDYAkYwO
-UHNqS3fu4n0Hs3AQjmxolrVMxNsLpjO39XRpgschLWGdbXHGuILlf2U1YvfG71EG
-FlOXa75BaC+blcy7Z5fnK1Tt3X8cWHghL89OgZwD3jvam8Xq2vPS6cz4oCvJ3X2Y
-gfTOdRjqvA7gsXASvRFdFxoBhwKBgQDJa03PywuEUEE31BRmrNQ27WMwV0PoP9zv
-szsXgFfOf8qeNEy/7pG0rdp5/ew3QPQKFAF6vAJTTT4lNbUKWgpRIoWufea5rL1U
-Myjnq8ghTLsIjT8GlPbz6/iAgJQ90Cm0vmI4dawrzsThVC5T5o1wqIJLrcAnrB7E
-MwyTKP9jKwKBgHitWZ+/SBNNKWhi8B3gZk/oMbWvypdzmjX/RBGEVjDtoe8CVsKF
-6FTHJYMRV4MTH3RVa3g3e/YhwLgfp+B78iEGyRGSEFZSazLRT24K4Btt5/cNFBTh
-FFjw4Vcfr947jWye0TJN0ZxfM1Lk269U/L6JP5FTCzsdp/MePJN8VO5PAoGBAIQT
-8CdlTv0Jn2qbkHEvvczy54sIfkgqsJciIYqsp2eK1vPc+cMWDse7BTvfrWkiF6UQ
-L1QrOx8i1LCTwk6ycnd3us+MUaLJyjEPhzA7rfVgGnlmHcEUJ8gVoZOqPQs3mFGk
-UkYRq7/iS6oyiFqOIYuRhDdaDVo2fMpNa16IkMeXAoGAIsGmLQYUjhOwbEawNjE9
-ZemR7qyXhGPiIZ4ux8YrjgLokLedOG32BRJGPAJ7PLoD5LeCsOm2bm4fwbgN7Ngt
-djxPAiBznYPGkybWI2L46qw9DZt5WZYvgBehOfugQGWTmGXZg939sW3xGXu50Vt7
-ZxWN7yenx0f0F91+3OVPXqA=
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDQiCvs4hSt4arh
+CNANrCvyOUA/Nfuo0f15iJQLca7kvQokbGi+x+YEo1U+WYtT8TyIBqgeq7HdAaVI
+nq7qbUezWn999au6YDHcaEsx3zy1dgLZI4+fFGjGGI4zBHEvzjTL1qnwGGtNh7NC
+W/VLSiAAssr1FqNtT83/IUE14P08VTMyfP/yHmA0h0sE+IWoEnBN5zoL5Cryf+Bb
+wgKq1cyOkf/l1nZCc2kuQRPu7OugOQtuX5586rJdVsmPQBKHSMuLAVSr3WXOqRER
+JXSufTJvJr+63LS3mFSfcF2NsFoVbA59aupYLpkGAs2Kbq9/3xOhn9NibS6JhRzb
+4/3PzFF9AgMBAAECggEAC7lEIu648+emiD1LGSGvXNBcLNGXou+fXQhRLm2HRCPe
+oJqZrvQlGeim37kADMmYuhsJs6O6fa7cgH8vXU2khNBXL5kyvOkwlHAmnhirXJZU
+ZanKpspqc4yo3fRneqUQsc8RQcbVrYeuC9KIsWFq+C8VGv9ZU8lzTt8rP+C0zAHy
+NqdOwAOqB8dIDdf25/WlLKs336ivngLU9sMb0ezwvjEM55l1un3mSqTyXDXi11zE
+j2WaOcysvK0M+EsJMtr2EQ43pVXSPVrtX55lwwc6y6+QiDmO8g/qISHoxGuagqHE
+qGoOVhf39qRTpWcANUfpVpQuoz2K39zWqlrxQqXabwKBgQD1UcSf/NGgeeisV3RX
+60MsCzB2E8tRFaHW9NR8H1dTfx7Sm7U2mPpSwCs3SsYQZwwdZT5pXrNlWbnK48fN
+3b9+c0Iwr0Pe/Pd9dv/T9Ni8JcBPZbbXCEcm0BpfDIHSkyCza17YnpYJE1hKHb18
+F9mCfGSn8w4/m+r6Iq3u890ewwKBgQDZnGKJ5uN7tjh+2N7nC/GvTs+aC9ws8ox3
++S3BHUe+2BaoQluFE32wOLU/0DhK03vLmMTTMUKxbGd8IJQPlj6Unxvzw4Yi7dJS
+FD1dF18z1bDEfOJjh7kbrBtTNn/cXNwh6Qn3qNR8LFCENSrRfTR1Nw0ooGBrTevy
+Wgzq7npKvwKBgFrBHkGlsRNyJi6jx+nCoj4IAaydFAlyPEYemwE0QwUjsQ5vBjIl
+k+3LI/G3muB0jtnNG7K1kx56fC5f6Anz8CTilOkX3b7/zLtAq9II8alhOezljyer
+606jjC3/nYN+ZImbviHbQVwoKPB6YiAnXpNUW5R6aZoEn4BcFgahdvsrAoGAPRvx
+gBBaqY8OZnC4h+GOyVA0dGoINocWc0qCUszKLQm5sx6PXNuQXEBQhc8PP9QL26zW
++QfIVtK+bNkpOwdSI6Ja0yWBMaXffjU41j+N+Jx1u3fmi1S94st+EOwpE9Tv7IXo
+yqeapBQ9uCLGF3Y1mQUQqOwAp6GGNNSc9AxsQzkCgYEAx+htQdtMSVFlFRHjs0b6
+IW1bcIu2qCp83wa9IUQjJK7lHrHv3aZmQCLf1HkDzdKeo8gyrLLepITqvBRX3Fk5
+AgneyPKY7Lfq3q4SmKnbdVXjQrxNhQs9JRUI2W8sTB3HQj+OhQV8N1tmU+elQlCW
+N/rbdniFhhFdJaG6W0kbMjE=
 -----END PRIVATE KEY-----`;
 
 const isProduction =
-  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV ===
-  "production";
+  (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.NODE_ENV === "production";
 
-const runtimeEnv =
-  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+const runtimeEnv = (
+  globalThis as { process?: { env?: Record<string, string | undefined> } }
+).process?.env;
 
 if (!isProduction && runtimeEnv) {
   if (!runtimeEnv.JWT_PRIVATE_KEY) {
@@ -49,46 +50,53 @@ if (!isProduction && runtimeEnv) {
 }
 
 const enableLocalCredentials =
-  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
-    ?.AUTH_ENABLE_PLAYWRIGHT === "1";
+  (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.AUTH_ENABLE_PLAYWRIGHT === "1";
 
-const testProvider = !isProduction || enableLocalCredentials
-  ? ConvexCredentials({
-      id: "playwright",
-      authorize: async (credentials, ctx) => {
-        const email = String(credentials.email ?? "").trim().toLowerCase();
-        if (!email) {
-          throw new Error("Missing email");
-        }
+const testProvider =
+  !isProduction || enableLocalCredentials
+    ? ConvexCredentials({
+        id: "playwright",
+        authorize: async (credentials, ctx) => {
+          const email = String(credentials.email ?? "")
+            .trim()
+            .toLowerCase();
+          if (!email) {
+            throw new Error("Missing email");
+          }
 
-        let existing: Awaited<ReturnType<typeof retrieveAccount>> | null = null;
-        try {
-          existing = await retrieveAccount(ctx, {
+          let existing: Awaited<ReturnType<typeof retrieveAccount>> | null =
+            null;
+          try {
+            existing = await retrieveAccount(ctx, {
+              provider: "playwright",
+              account: { id: email },
+            });
+          } catch (error) {
+            if (
+              !(error instanceof Error) ||
+              error.message !== "InvalidAccountId"
+            ) {
+              throw error;
+            }
+          }
+
+          if (existing) {
+            return { userId: existing.user._id };
+          }
+
+          const { user } = await createAccount(ctx, {
             provider: "playwright",
             account: { id: email },
+            profile: {
+              email,
+              name: email.split("@")[0],
+            },
           });
-        } catch (error) {
-          if (!(error instanceof Error) || error.message !== "InvalidAccountId") {
-            throw error;
-          }
-        }
-
-        if (existing) {
-          return { userId: existing.user._id };
-        }
-
-        const { user } = await createAccount(ctx, {
-          provider: "playwright",
-          account: { id: email },
-          profile: {
-            email,
-            name: email.split("@")[0],
-          } as any,
-        });
-        return { userId: user._id };
-      },
-    })
-  : undefined;
+          return { userId: user._id };
+        },
+      })
+    : undefined;
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Google, testProvider].filter(Boolean) as [typeof Google],

@@ -1,10 +1,10 @@
-import { mutation } from "./_generated/server";
+import { mutation, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { createAccount, retrieveAccount } from "@convex-dev/auth/server";
 
 const isProduction =
-  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV ===
-  "production";
+  (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.NODE_ENV === "production";
 
 function assertTestMode() {
   if (isProduction) {
@@ -12,7 +12,7 @@ function assertTestMode() {
   }
 }
 
-async function getOrCreatePlaywrightUser(ctx: any, email: string) {
+async function getOrCreatePlaywrightUser(ctx: MutationCtx, email: string) {
   const normalizedEmail = email.trim().toLowerCase();
   let existing: Awaited<ReturnType<typeof retrieveAccount>> | null = null;
   try {
@@ -36,14 +36,14 @@ async function getOrCreatePlaywrightUser(ctx: any, email: string) {
     profile: {
       email: normalizedEmail,
       name: normalizedEmail.split("@")[0],
-    } as any,
+    },
   });
   return user;
 }
 
 export const resetUserData = mutation({
   args: { email: v.string() },
-  handler: async (ctx: any, { email }: { email: string }) => {
+  handler: async (ctx, { email }: { email: string }) => {
     assertTestMode();
 
     let existing: Awaited<ReturnType<typeof retrieveAccount>> | null = null;
@@ -64,7 +64,7 @@ export const resetUserData = mutation({
 
     const collections = await ctx.db
       .query("collections")
-      .withIndex("by_user", (q: any) => q.eq("userId", existing.user._id))
+      .withIndex("by_user", (q) => q.eq("userId", existing.user._id))
       .collect();
     for (const collection of collections) {
       await ctx.db.delete(collection._id);
@@ -72,7 +72,7 @@ export const resetUserData = mutation({
 
     const highlights = await ctx.db
       .query("highlights")
-      .withIndex("by_user", (q: any) => q.eq("userId", existing.user._id))
+      .withIndex("by_user", (q) => q.eq("userId", existing.user._id))
       .collect();
     for (const highlight of highlights) {
       await ctx.db.delete(highlight._id);
@@ -94,8 +94,8 @@ export const seedHighlight = mutation({
         v.literal("rose"),
         v.literal("sage"),
         v.literal("sky"),
-        v.literal("violet")
-      )
+        v.literal("violet"),
+      ),
     ),
     note: v.optional(v.string()),
     sourceType: v.optional(v.union(v.literal("web"), v.literal("youtube"))),
@@ -105,7 +105,7 @@ export const seedHighlight = mutation({
     youtubeChannelTitle: v.optional(v.string()),
   },
   handler: async (
-    ctx: any,
+    ctx,
     args: {
       email: string;
       url: string;
@@ -118,7 +118,7 @@ export const seedHighlight = mutation({
       clipStart?: number;
       clipEnd?: number;
       youtubeChannelTitle?: string;
-    }
+    },
   ) => {
     assertTestMode();
     const user = await getOrCreatePlaywrightUser(ctx, args.email);

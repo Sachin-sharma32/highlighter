@@ -30,10 +30,17 @@
 }
 
 @layer base {
-  * { @apply border-border box-border; }
+  * {
+    @apply border-border box-border;
+  }
   body {
     @apply bg-paper text-ink;
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.005em;
@@ -57,19 +64,22 @@
   --accent-color: oklch(62% 0.16 40);
   --accent-2: oklch(52% 0.17 40);
   --accent-tint: oklch(94% 0.05 70);
-  --hl-amber: oklch(90% 0.10 85);
+  --hl-amber: oklch(90% 0.1 85);
   --hl-rose: oklch(88% 0.08 20);
   --hl-sage: oklch(90% 0.07 145);
   --hl-sky: oklch(90% 0.06 230);
   --hl-violet: oklch(88% 0.07 305);
-  --hl-amber-ink: oklch(42% 0.10 75);
+  --hl-amber-ink: oklch(42% 0.1 75);
   --hl-rose-ink: oklch(42% 0.12 20);
   --hl-sage-ink: oklch(38% 0.08 145);
   --hl-sky-ink: oklch(40% 0.09 230);
-  --hl-violet-ink: oklch(40% 0.10 305);
-  --shadow-1: 0 1px 2px rgba(50,30,10,0.04), 0 2px 6px rgba(50,30,10,0.05);
-  --shadow-2: 0 2px 4px rgba(50,30,10,0.05), 0 8px 24px rgba(50,30,10,0.08);
-  --shadow-3: 0 4px 12px rgba(50,30,10,0.08), 0 24px 60px rgba(50,30,10,0.12);
+  --hl-violet-ink: oklch(40% 0.1 305);
+  --shadow-1:
+    0 1px 2px rgba(50, 30, 10, 0.04), 0 2px 6px rgba(50, 30, 10, 0.05);
+  --shadow-2:
+    0 2px 4px rgba(50, 30, 10, 0.05), 0 8px 24px rgba(50, 30, 10, 0.08);
+  --shadow-3:
+    0 4px 12px rgba(50, 30, 10, 0.08), 0 24px 60px rgba(50, 30, 10, 0.12);
 }
 
 :root[data-theme="dark"] {
@@ -83,28 +93,86 @@
   --ink-3: oklch(70% 0.01 85);
   --ink-4: oklch(56% 0.012 85);
   --accent-tint: oklch(30% 0.06 70);
-  --shadow-1: 0 1px 2px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.2);
-  --shadow-2: 0 2px 8px rgba(0,0,0,0.22), 0 12px 32px rgba(0,0,0,0.24);
-  --shadow-3: 0 6px 18px rgba(0,0,0,0.28), 0 30px 70px rgba(0,0,0,0.3);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.22), 0 12px 32px rgba(0, 0, 0, 0.24);
+  --shadow-3: 0 6px 18px rgba(0, 0, 0, 0.28), 0 30px 70px rgba(0, 0, 0, 0.3);
 }
 
 .h {
-  background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-amber) 12%, var(--hl-amber) 92%, transparent 92%);
-  padding: 1px 1px; border-radius: 1px;
-  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-amber) 12%,
+    var(--hl-amber) 92%,
+    transparent 92%
+  );
+  padding: 1px 1px;
+  border-radius: 1px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
-.h.rose   { background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-rose)   12%, var(--hl-rose)   92%, transparent 92%); }
-.h.sage   { background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-sage)   12%, var(--hl-sage)   92%, transparent 92%); }
-.h.sky    { background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-sky)    12%, var(--hl-sky)    92%, transparent 92%); }
-.h.violet { background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-violet) 12%, var(--hl-violet) 92%, transparent 92%); }
-.h.has-note { text-decoration: underline dotted; text-decoration-color: rgba(0,0,0,0.35); text-underline-offset: 3px; }
+.h.rose {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-rose) 12%,
+    var(--hl-rose) 92%,
+    transparent 92%
+  );
+}
+.h.sage {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-sage) 12%,
+    var(--hl-sage) 92%,
+    transparent 92%
+  );
+}
+.h.sky {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-sky) 12%,
+    var(--hl-sky) 92%,
+    transparent 92%
+  );
+}
+.h.violet {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-violet) 12%,
+    var(--hl-violet) 92%,
+    transparent 92%
+  );
+}
+.h.has-note {
+  text-decoration: underline dotted;
+  text-decoration-color: rgba(0, 0, 0, 0.35);
+  text-underline-offset: 3px;
+}
 
-.noscroll::-webkit-scrollbar { display: none; }
-.noscroll { scrollbar-width: none; }
+.noscroll::-webkit-scrollbar {
+  display: none;
+}
+.noscroll {
+  scrollbar-width: none;
+}
 
 /* Elegant minimal scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: oklch(75% 0.01 60 / 0.25);
   border-radius: 9999px;
@@ -112,4 +180,7 @@
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(60% 0.01 60 / 0.35);
 }
-* { scrollbar-width: thin; scrollbar-color: oklch(75% 0.01 60 / 0.25) transparent; }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(75% 0.01 60 / 0.25) transparent;
+}

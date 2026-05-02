@@ -50,7 +50,7 @@ export const remove = mutation({
     const highlights = await ctx.db
       .query("highlights")
       .withIndex("by_user_collection", (q) =>
-        q.eq("userId", userId).eq("collectionId", id)
+        q.eq("userId", userId).eq("collectionId", id),
       )
       .collect();
     for (const h of highlights) {

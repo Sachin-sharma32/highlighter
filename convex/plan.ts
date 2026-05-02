@@ -9,7 +9,7 @@ export type Plan = "free" | "premium";
 
 export async function getUserPlan(
   ctx: QueryCtx | MutationCtx,
-  userId: Id<"users">
+  userId: Id<"users">,
 ): Promise<Plan> {
   const sub = await ctx.db
     .query("subscriptions")
@@ -23,7 +23,7 @@ export async function getUserPlan(
 
 export async function getHighlightCount(
   ctx: QueryCtx | MutationCtx,
-  userId: Id<"users">
+  userId: Id<"users">,
 ): Promise<number> {
   const rows = await ctx.db
     .query("highlights")
@@ -34,14 +34,14 @@ export async function getHighlightCount(
 
 export async function assertCanCreateHighlight(
   ctx: MutationCtx,
-  userId: Id<"users">
+  userId: Id<"users">,
 ): Promise<void> {
   const plan = await getUserPlan(ctx, userId);
   if (plan === "premium") return;
   const count = await getHighlightCount(ctx, userId);
   if (count >= FREE_HIGHLIGHT_LIMIT) {
     throw new Error(
-      `Free plan limit reached (${FREE_HIGHLIGHT_LIMIT} highlights). Upgrade to premium to save more.`
+      `Free plan limit reached (${FREE_HIGHLIGHT_LIMIT} highlights). Upgrade to premium to save more.`,
     );
   }
 }

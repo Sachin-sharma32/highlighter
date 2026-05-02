@@ -35,18 +35,34 @@ export default function TestSignIn() {
   }, [navigate, searchParams, signIn]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--paper-2)" }}>
+    <div
+      className="flex min-h-screen items-center justify-center"
+      style={{ background: "var(--paper-2)" }}
+    >
       <div
         className="flex flex-col items-center gap-3 rounded-xl px-8 py-10 text-center"
-        style={{ background: "var(--paper)", border: "1px solid var(--rule)", boxShadow: "var(--shadow-2)" }}
+        style={{
+          background: "var(--paper)",
+          border: "1px solid var(--rule)",
+          boxShadow: "var(--shadow-2)",
+        }}
       >
-        <p style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--ink)", margin: 0 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 22,
+            color: "var(--ink)",
+            margin: 0,
+          }}
+        >
           Signing in test user…
         </p>
         <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0 }}>
           This route is available in development only.
         </p>
-        {error && <p style={{ fontSize: 12, color: "#dc2626", margin: 0 }}>{error}</p>}
+        {error && (
+          <p style={{ fontSize: 12, color: "#dc2626", margin: 0 }}>{error}</p>
+        )}
       </div>
     </div>
   );

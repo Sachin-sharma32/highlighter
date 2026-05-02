@@ -1,0 +1,6 @@
+dist
+build
+convex/_generated
+test-results
+playwright-report
+pnpm-lock.yaml

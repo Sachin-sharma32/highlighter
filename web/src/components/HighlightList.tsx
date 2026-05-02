@@ -50,7 +50,9 @@ function timeAgo(ts: number) {
   return `${Math.floor(d / 7)}w`;
 }
 
-function collectionLabel(id: Id<"collections"> | "inbox" | "all" | "notes" | "review") {
+function collectionLabel(
+  id: Id<"collections"> | "inbox" | "all" | "notes" | "review",
+) {
   if (id === "inbox") return "Inbox";
   if (id === "all") return "All highlights";
   if (id === "notes") return "With notes";
@@ -69,12 +71,23 @@ function highlightDisplayText(highlight: ListHighlight) {
 }
 
 export function HighlightList() {
-  const { activeCollectionId, activeTag, activeDomain, selectedHighlightId, setSelectedHighlight, searchQuery } = useAppStore();
+  const {
+    activeCollectionId,
+    activeTag,
+    activeDomain,
+    selectedHighlightId,
+    setSelectedHighlight,
+    searchQuery,
+  } = useAppStore();
 
-  const isSpecial = ["inbox", "all", "notes", "review"].includes(activeCollectionId as string);
+  const isSpecial = ["inbox", "all", "notes", "review"].includes(
+    activeCollectionId as string,
+  );
 
   const highlights = (useQuery(api.highlights.list, {
-    collectionId: isSpecial ? undefined : (activeCollectionId as Id<"collections">),
+    collectionId: isSpecial
+      ? undefined
+      : (activeCollectionId as Id<"collections">),
     filter: activeCollectionId === "notes" ? "notes" : undefined,
     search: searchQuery || undefined,
   }) ?? []) as ListHighlight[];
@@ -96,7 +109,7 @@ export function HighlightList() {
     ? activeDomain
     : activeTag
       ? `#${activeTag}`
-      : collectionLabel(activeCollectionId) ?? "Collection";
+      : (collectionLabel(activeCollectionId) ?? "Collection");
 
   async function handleDelete(id: Id<"highlights">) {
     try {
@@ -121,7 +134,9 @@ export function HighlightList() {
           <h2 className="m-0 font-display text-[22px] font-medium tracking-tight text-ink">
             {title}
           </h2>
-          <span className="font-mono text-[11px] text-ink-4">{filtered.length}</span>
+          <span className="font-mono text-[11px] text-ink-4">
+            {filtered.length}
+          </span>
         </div>
       </div>
 
@@ -152,14 +167,20 @@ export function HighlightList() {
                 onClick={() => setSelectedHighlight(h._id)}
                 className="flex min-w-0 flex-1 gap-2.5 px-4 py-3 text-left"
               >
-                <div className={`w-[3px] shrink-0 rounded-sm ${COLOR_BAR[h.color] ?? COLOR_BAR.amber}`} />
+                <div
+                  className={`w-[3px] shrink-0 rounded-sm ${COLOR_BAR[h.color] ?? COLOR_BAR.amber}`}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-1.5 truncate text-xs text-ink-3">
-                      {h.sourceType === "youtube" && <Scissors size={11} className="shrink-0 text-accent" />}
+                      {h.sourceType === "youtube" && (
+                        <Scissors size={11} className="shrink-0 text-accent" />
+                      )}
                       <span className="truncate">{h.title}</span>
                     </div>
-                    <div className="shrink-0 font-mono text-[10px] text-ink-4">{timeAgo(h.createdAt)}</div>
+                    <div className="shrink-0 font-mono text-[10px] text-ink-4">
+                      {timeAgo(h.createdAt)}
+                    </div>
                   </div>
                   <p
                     data-testid="highlight-row-text"

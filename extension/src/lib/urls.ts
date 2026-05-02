@@ -69,7 +69,8 @@ export function withMarginaliaTarget(urlString: string, highlightId: string) {
     return url.toString();
   } catch {
     const hashIndex = cleanUrl.indexOf("#");
-    if (hashIndex === -1) return `${cleanUrl}#${MARGINALIA_HASH_KEY}=${encodedId}`;
+    if (hashIndex === -1)
+      return `${cleanUrl}#${MARGINALIA_HASH_KEY}=${encodedId}`;
 
     const base = cleanUrl.slice(0, hashIndex);
     const hashParts = splitHash(cleanUrl.slice(hashIndex));

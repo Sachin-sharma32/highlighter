@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Command,
   CommandInput,
@@ -38,11 +35,20 @@ const COLOR_DOT: Record<string, string> = {
 };
 
 export function CommandPalette() {
-  const { commandPaletteOpen, setCommandPaletteOpen, setSelectedHighlight, setActiveCollection, searchQuery } = useAppStore();
+  const {
+    commandPaletteOpen,
+    setCommandPaletteOpen,
+    setSelectedHighlight,
+    setActiveCollection,
+    searchQuery,
+  } = useAppStore();
   const [query, setQuery] = useState(searchQuery);
 
-  const highlights = (useQuery(api.highlights.list, { search: query || undefined }) ?? []) as CommandHighlight[];
-  const collections = (useQuery(api.collections.list) ?? []) as CommandCollection[];
+  const highlights = (useQuery(api.highlights.list, {
+    search: query || undefined,
+  }) ?? []) as CommandHighlight[];
+  const collections = (useQuery(api.collections.list) ??
+    []) as CommandCollection[];
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -81,11 +87,15 @@ export function CommandPalette() {
               onValueChange={setQuery}
               className="flex-1 border-0 outline-none bg-transparent text-sm font-display text-ink h-full p-0"
             />
-            <kbd className="font-mono text-[10px] px-1.5 py-[1px] rounded bg-paper-2 border border-rule-2 text-ink-3 shrink-0">esc</kbd>
+            <kbd className="font-mono text-[10px] px-1.5 py-[1px] rounded bg-paper-2 border border-rule-2 text-ink-3 shrink-0">
+              esc
+            </kbd>
           </div>
           <CommandList className="max-h-96 noscroll bg-paper">
             <CommandEmpty>
-              <div className="py-8 text-center text-sm text-ink-4">No results found</div>
+              <div className="py-8 text-center text-sm text-ink-4">
+                No results found
+              </div>
             </CommandEmpty>
 
             {highlights.length > 0 && (
@@ -98,14 +108,24 @@ export function CommandPalette() {
                     data-testid="command-highlight-result"
                     className="flex gap-2.5 rounded-lg cursor-pointer px-3 py-2.5"
                   >
-                    <div className="w-[3px] rounded-sm shrink-0 self-stretch" style={{ background: COLOR_DOT[h.color] ?? COLOR_DOT.amber }} />
+                    <div
+                      className="w-[3px] rounded-sm shrink-0 self-stretch"
+                      style={{
+                        background: COLOR_DOT[h.color] ?? COLOR_DOT.amber,
+                      }}
+                    />
                     <div className="flex-1 min-w-0">
-                      <div className="font-mono text-[10px] text-ink-4 mb-0.5">{h.title}</div>
+                      <div className="font-mono text-[10px] text-ink-4 mb-0.5">
+                        {h.title}
+                      </div>
                       <div className="font-display text-[13px] text-ink-2 leading-tight truncate">
                         {h.text}
                       </div>
                     </div>
-                    <FileText size={12} className="text-ink-4 shrink-0 mt-0.5" />
+                    <FileText
+                      size={12}
+                      className="text-ink-4 shrink-0 mt-0.5"
+                    />
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -129,12 +149,19 @@ export function CommandPalette() {
           </CommandList>
 
           {/* Footer */}
-          <div
-            className="flex gap-4 px-3.5 py-2 border-t border-rule bg-paper-2"
-          >
-            {[["↑↓", "navigate"], ["↵", "open"], ["esc", "close"]].map(([key, label]) => (
-              <span key={label} className="flex items-center gap-1.5 text-[10px] text-ink-4">
-                <kbd className="font-mono text-[10px] px-1 py-[1px] rounded bg-paper border border-rule-2 text-ink-3">{key}</kbd>
+          <div className="flex gap-4 px-3.5 py-2 border-t border-rule bg-paper-2">
+            {[
+              ["↑↓", "navigate"],
+              ["↵", "open"],
+              ["esc", "close"],
+            ].map(([key, label]) => (
+              <span
+                key={label}
+                className="flex items-center gap-1.5 text-[10px] text-ink-4"
+              >
+                <kbd className="font-mono text-[10px] px-1 py-[1px] rounded bg-paper border border-rule-2 text-ink-3">
+                  {key}
+                </kbd>
                 {label}
               </span>
             ))}

@@ -4,7 +4,9 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { assertCanCreateHighlight } from "./plan";
 
 const colorValidator = v.string();
-const sourceTypeValidator = v.optional(v.union(v.literal("web"), v.literal("youtube")));
+const sourceTypeValidator = v.optional(
+  v.union(v.literal("web"), v.literal("youtube")),
+);
 
 function assertValidClip(args: {
   sourceType?: "web" | "youtube";
@@ -13,7 +15,8 @@ function assertValidClip(args: {
   clipEnd?: number;
 }) {
   if (args.sourceType !== "youtube") return;
-  if (!args.youtubeVideoId?.trim()) throw new Error("YouTube video ID is required");
+  if (!args.youtubeVideoId?.trim())
+    throw new Error("YouTube video ID is required");
   if (args.clipStart === undefined || args.clipEnd === undefined) {
     throw new Error("Clip start and end are required");
   }
@@ -37,7 +40,7 @@ export const list = query({
       rows = await ctx.db
         .query("highlights")
         .withIndex("by_user_collection", (q) =>
-          q.eq("userId", userId).eq("collectionId", collectionId)
+          q.eq("userId", userId).eq("collectionId", collectionId),
         )
         .order("desc")
         .collect();
@@ -60,7 +63,7 @@ export const list = query({
           h.text.toLowerCase().includes(q) ||
           h.title.toLowerCase().includes(q) ||
           (h.note && h.note.toLowerCase().includes(q)) ||
-          h.tags.some((t) => t.toLowerCase().includes(q))
+          h.tags.some((t) => t.toLowerCase().includes(q)),
       );
     }
 

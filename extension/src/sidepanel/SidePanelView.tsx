@@ -8,7 +8,6 @@ import {
   ExternalLink,
   Trash2,
   Globe,
-  ChevronDown,
   Folder,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,14 +35,6 @@ const HL_BG_CLASS: Record<HighlightColor, string> = {
   sage: "bg-hl-sage",
   sky: "bg-hl-sky",
   violet: "bg-hl-violet",
-};
-
-const HL_BORDER_CLASS: Record<HighlightColor, string> = {
-  amber: "border-l-hl-amber",
-  rose: "border-l-hl-rose",
-  sage: "border-l-hl-sage",
-  sky: "border-l-hl-sky",
-  violet: "border-l-hl-violet",
 };
 
 const PANEL_ROOT_CLASS =
@@ -305,9 +296,12 @@ export default function SidePanel() {
       const response = await chrome.tabs.sendMessage(tabId, {
         type: "SHOW_YOUTUBE_CLIP_TRIMMER",
       });
-      if (!response?.ok) throw new Error(response?.error ?? "Could not open clip trimmer.");
+      if (!response?.ok)
+        throw new Error(response?.error ?? "Could not open clip trimmer.");
     } catch (error) {
-      setClipError(error instanceof Error ? error.message : "Could not open clip trimmer.");
+      setClipError(
+        error instanceof Error ? error.message : "Could not open clip trimmer.",
+      );
     }
   }
 
@@ -398,7 +392,9 @@ export default function SidePanel() {
             <Scissors size={12} data-icon="inline-start" />
             Clip current moment
           </Button>
-          {clipError && <div className="mt-1 text-[11px] text-red-600">{clipError}</div>}
+          {clipError && (
+            <div className="mt-1 text-[11px] text-red-600">{clipError}</div>
+          )}
         </div>
       )}
 
@@ -423,10 +419,7 @@ export default function SidePanel() {
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex justify-center pt-16">
-            <Loader2
-              size={18}
-              className="animate-spin text-ink-4"
-            />
+            <Loader2 size={18} className="animate-spin text-ink-4" />
           </div>
         ) : activeTab === "highlights" ? (
           <HighlightsTab
@@ -472,10 +465,7 @@ export default function SidePanel() {
           onClick={() => chrome.tabs.create({ url: DASHBOARD_URL })}
           className={FOOTER_ACTION_CLASS}
         >
-          <BookOpen
-            size={12}
-            data-icon="inline-start"
-          />
+          <BookOpen size={12} data-icon="inline-start" />
           Open dashboard
         </Button>
       </div>
@@ -508,14 +498,8 @@ function HighlightsTab({
       {/* Domain filter dropdown */}
       <div className="px-4 py-2.5 border-b border-rule ">
         <div className="flex items-center gap-2">
-          <Globe
-            size={12}
-            className="text-ink-4"
-          />
-          <Select
-            value={domainFilter}
-            onValueChange={setDomainFilter}
-          >
+          <Globe size={12} className="text-ink-4" />
+          <Select value={domainFilter} onValueChange={setDomainFilter}>
             <SelectTrigger className="flex-1 h-8 bg-transparent text-xs text-ink outline-none font-mono cursor-pointer border-none shadow-none focus:ring-0 px-0">
               <SelectValue placeholder="Current page" />
             </SelectTrigger>
@@ -525,10 +509,7 @@ function HighlightsTab({
               </SelectItem>
               <SelectItem value="__all__">All domains</SelectItem>
               {domains.map(({ domain, count }) => (
-                <SelectItem
-                  key={domain}
-                  value={domain}
-                >
+                <SelectItem key={domain} value={domain}>
                   {domain} ({count})
                 </SelectItem>
               ))}
@@ -550,7 +531,9 @@ function HighlightsTab({
           >
             <div className="absolute right-4 top-3 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
               <button
-                onClick={() => void copyHighlightText(highlightDisplayText(highlight))}
+                onClick={() =>
+                  void copyHighlightText(highlightDisplayText(highlight))
+                }
                 title="Copy text"
                 className="flex items-center justify-center rounded p-1 text-ink-4 transition-colors hover:text-ink"
               >
@@ -620,10 +603,7 @@ function CollectionsTab({
       {/* Collection filter */}
       <div className="px-4 py-2.5 border-b border-rule">
         <div className="flex items-center gap-2">
-          <Folder
-            size={12}
-            className="text-ink-4"
-          />
+          <Folder size={12} className="text-ink-4" />
           <Select
             value={selectedCollection ?? "__all__"}
             onValueChange={(val) =>
@@ -645,10 +625,7 @@ function CollectionsTab({
                   (h) => h.collectionId === c._id,
                 ).length;
                 return (
-                  <SelectItem
-                    key={c._id}
-                    value={c._id}
-                  >
+                  <SelectItem key={c._id} value={c._id}>
                     {c.name} ({count})
                   </SelectItem>
                 );
@@ -673,7 +650,9 @@ function CollectionsTab({
             >
               <div className="absolute right-4 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                 <button
-                  onClick={() => void copyHighlightText(highlightDisplayText(highlight))}
+                  onClick={() =>
+                    void copyHighlightText(highlightDisplayText(highlight))
+                  }
                   title="Copy text"
                   className="flex items-center justify-center rounded p-1 text-ink-4 transition-colors hover:text-ink"
                 >
@@ -739,10 +718,7 @@ function AllPagesTab({ highlights, onRowClick, onDelete }: RowProps) {
   return (
     <div className="flex flex-col">
       {groups.map((group) => (
-        <div
-          key={group.url}
-          className="border-b border-rule"
-        >
+        <div key={group.url} className="border-b border-rule">
           <div className="px-4 pb-1.5 pt-3">
             <div className="truncate font-display text-[12px] font-medium text-ink-2">
               {group.title || hostnameOf(group.url)}
@@ -759,7 +735,9 @@ function AllPagesTab({ highlights, onRowClick, onDelete }: RowProps) {
             >
               <div className="absolute right-4 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                 <button
-                  onClick={() => void copyHighlightText(highlightDisplayText(highlight))}
+                  onClick={() =>
+                    void copyHighlightText(highlightDisplayText(highlight))
+                  }
                   title="Copy text"
                   className="flex items-center justify-center rounded p-1 text-ink-4 transition-colors hover:text-ink"
                 >
@@ -801,12 +779,10 @@ function AllPagesTab({ highlights, onRowClick, onDelete }: RowProps) {
 
 function StatsTab({
   highlights,
-  allHighlights,
   colorCounts,
   domains,
   statsDomain,
   setStatsDomain,
-  setActiveTab,
   setDomainFilter,
 }: {
   highlights: Highlight[];
@@ -865,10 +841,7 @@ function StatsTab({
           Colours
         </div>
         {colorCounts.map(({ color, count }) => (
-          <div
-            key={color}
-            className="flex items-center gap-2 py-1"
-          >
+          <div key={color} className="flex items-center gap-2 py-1">
             <div className={`size-2.5 rounded-sm ${HL_BG_CLASS[color]}`} />
             <span className="flex-1 text-xs capitalize text-ink-2">
               {color}
@@ -914,10 +887,7 @@ function StatsTab({
               }`}
             >
               <span className="flex items-center gap-2 truncate">
-                <Globe
-                  size={11}
-                  className="text-ink-4 shrink-0"
-                />
+                <Globe size={11} className="text-ink-4 shrink-0" />
                 {domain}
               </span>
               <span className="font-mono text-[10px] text-ink-4">{count}</span>

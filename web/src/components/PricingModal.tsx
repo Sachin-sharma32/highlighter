@@ -3,10 +3,7 @@ import { useAction, useQuery } from "convex/react";
 import { Check, Zap, Loader2, Crown } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 declare global {
@@ -119,7 +116,7 @@ export function PricingModal() {
       rzp.open();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to start payment"
+        err instanceof Error ? err.message : "Failed to start payment",
       );
       setLoading(false);
     }
@@ -160,7 +157,10 @@ export function PricingModal() {
             </div>
             <ul className="flex flex-1 flex-col gap-2">
               {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-xs text-ink-3">
+                <li
+                  key={f}
+                  className="flex items-start gap-2 text-xs text-ink-3"
+                >
                   <Check size={13} className="mt-0.5 shrink-0 text-ink-4" />
                   {f}
                 </li>
@@ -189,8 +189,14 @@ export function PricingModal() {
             </div>
             <ul className="flex flex-1 flex-col gap-2">
               {PREMIUM_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-xs text-ink-2">
-                  <Check size={13} className="mt-0.5 shrink-0 text-violet-600" />
+                <li
+                  key={f}
+                  className="flex items-start gap-2 text-xs text-ink-2"
+                >
+                  <Check
+                    size={13}
+                    className="mt-0.5 shrink-0 text-violet-600"
+                  />
                   {f}
                 </li>
               ))}

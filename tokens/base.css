@@ -24,30 +24,35 @@
   --accent-tint: oklch(94% 0.05 70);
 
   /* Highlight pigments */
-  --hl-amber:  oklch(90% 0.10 85);
-  --hl-rose:   oklch(88% 0.08 20);
-  --hl-sage:   oklch(90% 0.07 145);
-  --hl-sky:    oklch(90% 0.06 230);
+  --hl-amber: oklch(90% 0.1 85);
+  --hl-rose: oklch(88% 0.08 20);
+  --hl-sage: oklch(90% 0.07 145);
+  --hl-sky: oklch(90% 0.06 230);
   --hl-violet: oklch(88% 0.07 305);
 
-  --hl-amber-ink:  oklch(42% 0.10 75);
-  --hl-rose-ink:   oklch(42% 0.12 20);
-  --hl-sage-ink:   oklch(38% 0.08 145);
-  --hl-sky-ink:    oklch(40% 0.09 230);
-  --hl-violet-ink: oklch(40% 0.10 305);
+  --hl-amber-ink: oklch(42% 0.1 75);
+  --hl-rose-ink: oklch(42% 0.12 20);
+  --hl-sage-ink: oklch(38% 0.08 145);
+  --hl-sky-ink: oklch(40% 0.09 230);
+  --hl-violet-ink: oklch(40% 0.1 305);
 
   /* Shadows */
-  --shadow-1: 0 1px 2px rgba(50,30,10,0.04), 0 2px 6px rgba(50,30,10,0.05);
-  --shadow-2: 0 2px 4px rgba(50,30,10,0.05), 0 8px 24px rgba(50,30,10,0.08);
-  --shadow-3: 0 4px 12px rgba(50,30,10,0.08), 0 24px 60px rgba(50,30,10,0.12);
+  --shadow-1:
+    0 1px 2px rgba(50, 30, 10, 0.04), 0 2px 6px rgba(50, 30, 10, 0.05);
+  --shadow-2:
+    0 2px 4px rgba(50, 30, 10, 0.05), 0 8px 24px rgba(50, 30, 10, 0.08);
+  --shadow-3:
+    0 4px 12px rgba(50, 30, 10, 0.08), 0 24px 60px rgba(50, 30, 10, 0.12);
 }
 
 /* ── Highlight paint — mimics marker ink on text ──────────────────── */
 .h {
   background-image: linear-gradient(
     180deg,
-    transparent 0%, transparent 12%,
-    var(--hl-amber) 12%, var(--hl-amber) 92%,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-amber) 12%,
+    var(--hl-amber) 92%,
     transparent 92%
   );
   padding: 1px 1px;
@@ -55,14 +60,50 @@
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
-.h.rose   { background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-rose)   12%, var(--hl-rose)   92%, transparent 92%); }
-.h.sage   { background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-sage)   12%, var(--hl-sage)   92%, transparent 92%); }
-.h.sky    { background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-sky)    12%, var(--hl-sky)    92%, transparent 92%); }
-.h.violet { background-image: linear-gradient(180deg, transparent 0%, transparent 12%, var(--hl-violet) 12%, var(--hl-violet) 92%, transparent 92%); }
+.h.rose {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-rose) 12%,
+    var(--hl-rose) 92%,
+    transparent 92%
+  );
+}
+.h.sage {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-sage) 12%,
+    var(--hl-sage) 92%,
+    transparent 92%
+  );
+}
+.h.sky {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-sky) 12%,
+    var(--hl-sky) 92%,
+    transparent 92%
+  );
+}
+.h.violet {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    var(--hl-violet) 12%,
+    var(--hl-violet) 92%,
+    transparent 92%
+  );
+}
 
 .h.has-note {
   text-decoration: underline dotted;
-  text-decoration-color: rgba(0,0,0,0.35);
+  text-decoration-color: rgba(0, 0, 0, 0.35);
   text-underline-offset: 3px;
 }
 
@@ -95,12 +136,20 @@ kbd {
 }
 
 /* ── Scrollbar-less overflow ──────────────────────────────────────── */
-.noscroll::-webkit-scrollbar { display: none; }
-.noscroll { scrollbar-width: none; }
+.noscroll::-webkit-scrollbar {
+  display: none;
+}
+.noscroll {
+  scrollbar-width: none;
+}
 
 /* ── Typography helpers ───────────────────────────────────────────── */
-.font-display { font-family: var(--font-display); }
-.font-mono    { font-family: var(--font-mono); }
+.font-display {
+  font-family: var(--font-display);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
 
 /* ── Text smoothing ───────────────────────────────────────────────── */
 * {

@@ -2,7 +2,13 @@ import { v } from "convex/values";
 import { action, mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
-import { getUserPlan, getHighlightCount, FREE_HIGHLIGHT_LIMIT, PREMIUM_PRICE_PAISE, PREMIUM_PERIOD_MS } from "./plan";
+import {
+  getUserPlan,
+  getHighlightCount,
+  FREE_HIGHLIGHT_LIMIT,
+  PREMIUM_PRICE_PAISE,
+  PREMIUM_PERIOD_MS,
+} from "./plan";
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -45,12 +51,20 @@ export const isPaymentsConfigured = query({
 
 export const createOrder = action({
   args: {},
-  handler: async (ctx): Promise<{ orderId: string; keyId: string; amount: number; currency: string }> => {
+  handler: async (
+    ctx,
+  ): Promise<{
+    orderId: string;
+    keyId: string;
+    amount: number;
+    currency: string;
+  }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
     const creds = getRazorpayCreds();
-    if (!creds) throw new Error("Payments not configured. Please try again later.");
+    if (!creds)
+      throw new Error("Payments not configured. Please try again later.");
 
     const auth = btoa(`${creds.keyId}:${creds.keySecret}`);
     const receipt = `marg_${userId.slice(0, 10)}_${Date.now().toString(36)}`;
@@ -73,7 +87,11 @@ export const createOrder = action({
       throw new Error(`Razorpay order creation failed: ${body}`);
     }
 
-    const order = (await res.json()) as { id: string; amount: number; currency: string };
+    const order = (await res.json()) as {
+      id: string;
+      amount: number;
+      currency: string;
+    };
 
     await ctx.runMutation(internal.billing.recordPendingOrder, {
       userId,
@@ -103,7 +121,10 @@ export const recordPendingOrder = internalMutation({
       .unique();
     if (existing) {
       await ctx.db.patch(existing._id, {
-        plan: existing.plan === "premium" && existing.status === "active" ? "premium" : "free",
+        plan:
+          existing.plan === "premium" && existing.status === "active"
+            ? "premium"
+            : "free",
         status: "pending",
         razorpayOrderId: orderId,
         amountInPaise,
@@ -126,7 +147,10 @@ export const verifyPayment = action({
     paymentId: v.string(),
     signature: v.string(),
   },
-  handler: async (ctx, { orderId, paymentId, signature }): Promise<{ ok: true }> => {
+  handler: async (
+    ctx,
+    { orderId, paymentId, signature },
+  ): Promise<{ ok: true }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -140,9 +164,13 @@ export const verifyPayment = action({
       encoder.encode(creds.keySecret),
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["sign"]
+      ["sign"],
     );
-    const sigBuf = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+    const sigBuf = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(payload),
+    );
     const expected = Array.from(new Uint8Array(sigBuf))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");

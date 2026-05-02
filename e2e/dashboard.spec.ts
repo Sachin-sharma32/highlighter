@@ -8,7 +8,9 @@ test.beforeEach(async ({ page }) => {
   await signInAs(page, TEST_EMAIL);
 });
 
-test("renders the authenticated dashboard and creates a collection", async ({ page }) => {
+test("renders the authenticated dashboard and creates a collection", async ({
+  page,
+}) => {
   await expect(page.getByTestId("topnav-logo")).toBeVisible();
   await expect(page.getByTestId("new-collection-button")).toBeVisible();
   await expect(page.getByTestId("library-all-highlights")).toBeVisible();
@@ -17,7 +19,9 @@ test("renders the authenticated dashboard and creates a collection", async ({ pa
   await page.getByTestId("new-collection-input").fill("Field Notes");
   await page.getByTestId("create-collection-submit").click();
 
-  await expect(page.locator("[data-testid^='collection-item-']").first()).toContainText("Field Notes");
+  await expect(
+    page.locator("[data-testid^='collection-item-']").first(),
+  ).toContainText("Field Notes");
 });
 
 test("loads a seeded highlight and persists note edits", async ({ page }) => {
@@ -40,7 +44,9 @@ test("loads a seeded highlight and persists note edits", async ({ page }) => {
   await expect(noteField).toHaveValue("A saved test note.");
 });
 
-test("opens the command palette and selects a highlight result", async ({ page }) => {
+test("opens the command palette and selects a highlight result", async ({
+  page,
+}) => {
   await seedHighlight({
     email: TEST_EMAIL,
     url: "https://example.com/article",
@@ -56,5 +62,7 @@ test("opens the command palette and selects a highlight result", async ({ page }
   await searchInput.fill("annotation");
 
   await page.getByTestId("command-highlight-result").first().click();
-  await expect(page.getByTestId("highlight-detail-quote")).toContainText("Every annotation is an act of faith.");
+  await expect(page.getByTestId("highlight-detail-quote")).toContainText(
+    "Every annotation is an act of faith.",
+  );
 });

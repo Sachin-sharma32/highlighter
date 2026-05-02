@@ -38,7 +38,8 @@ export function TagEditor({
             padding: "0 8px",
             borderRadius: 999,
             fontSize: 11,
-            background: activeTag === tag ? "var(--accent-tint)" : "var(--paper-2)",
+            background:
+              activeTag === tag ? "var(--accent-tint)" : "var(--paper-2)",
             border: `1px solid ${activeTag === tag ? "var(--accent-color)" : "var(--rule)"}`,
             color: "var(--ink-2)",
           }}
@@ -46,7 +47,10 @@ export function TagEditor({
           <button
             type="button"
             onClick={() => onSelectTag?.(tag)}
-            style={{ color: "inherit", cursor: onSelectTag ? "pointer" : "default" }}
+            style={{
+              color: "inherit",
+              cursor: onSelectTag ? "pointer" : "default",
+            }}
           >
             #{tag}
           </button>

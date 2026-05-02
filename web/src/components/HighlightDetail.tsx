@@ -1,11 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { ChevronLeft, ChevronRight, Copy, Share2, Link, MoreHorizontal, Trash2, Folder, Scissors } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Share2,
+  Link,
+  MoreHorizontal,
+  Trash2,
+  Folder,
+  Scissors,
+} from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { TagEditor } from "@/components/TagEditor";
 import { Textarea } from "@/components/ui/textarea";
-import { formatClipTime, youtubeEmbedUrl, youtubeWatchUrl } from "@/lib/youtube";
+import {
+  formatClipTime,
+  youtubeEmbedUrl,
+  youtubeWatchUrl,
+} from "@/lib/youtube";
 import {
   Select,
   SelectContent,
@@ -24,7 +38,7 @@ import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 const COLORS = ["amber", "rose", "sage", "sky", "violet"] as const;
-type HighlightColor = typeof COLORS[number];
+type HighlightColor = (typeof COLORS)[number];
 
 type DetailHighlight = {
   _id: Id<"highlights">;
@@ -161,7 +175,11 @@ function YouTubeClipPlayer({ highlight }: { highlight: DetailHighlight }) {
       <div className="aspect-video w-full bg-black">
         <iframe
           title={highlightDisplayText(highlight)}
-          src={youtubeEmbedUrl(highlight.youtubeVideoId!, highlight.clipStart!, highlight.clipEnd!)}
+          src={youtubeEmbedUrl(
+            highlight.youtubeVideoId!,
+            highlight.clipStart!,
+            highlight.clipEnd!,
+          )}
           className="h-full w-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
@@ -171,7 +189,8 @@ function YouTubeClipPlayer({ highlight }: { highlight: DetailHighlight }) {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">
             <Scissors size={12} />
-            {formatClipTime(highlight.clipStart)}-{formatClipTime(highlight.clipEnd)}
+            {formatClipTime(highlight.clipStart)}-
+            {formatClipTime(highlight.clipEnd)}
           </div>
           {highlight.youtubeChannelTitle && (
             <div className="mt-1 truncate text-xs text-ink-4">
@@ -193,10 +212,22 @@ function YouTubeClipPlayer({ highlight }: { highlight: DetailHighlight }) {
 }
 
 export function HighlightDetail() {
-  const { activeCollectionId, activeTag, selectedHighlightId, setActiveTag, setSelectedHighlight, searchQuery, setCommandPaletteOpen } = useAppStore();
-  const isSpecial = ["inbox", "all", "notes", "review"].includes(activeCollectionId as string);
+  const {
+    activeCollectionId,
+    activeTag,
+    selectedHighlightId,
+    setActiveTag,
+    setSelectedHighlight,
+    searchQuery,
+    setCommandPaletteOpen,
+  } = useAppStore();
+  const isSpecial = ["inbox", "all", "notes", "review"].includes(
+    activeCollectionId as string,
+  );
   const rawNavigationHighlights = useQuery(api.highlights.list, {
-    collectionId: isSpecial ? undefined : (activeCollectionId as Id<"collections">),
+    collectionId: isSpecial
+      ? undefined
+      : (activeCollectionId as Id<"collections">),
     filter: activeCollectionId === "notes" ? "notes" : undefined,
     search: searchQuery || undefined,
   });
@@ -207,7 +238,7 @@ export function HighlightDetail() {
   const collections = (useQuery(api.collections.list) ?? []) as Collection[];
   const highlight = useQuery(
     api.highlights.byId,
-    selectedHighlightId ? { id: selectedHighlightId } : "skip"
+    selectedHighlightId ? { id: selectedHighlightId } : "skip",
   ) as DetailHighlight | null | undefined;
   const setNote = useMutation(api.highlights.setNote);
   const setColor = useMutation(api.highlights.setColor);
@@ -226,10 +257,12 @@ export function HighlightDetail() {
   const currentIndex = selectedHighlightId
     ? visibleHighlightIds.findIndex((id) => id === selectedHighlightId)
     : -1;
-  const previousHighlightId = currentIndex > 0 ? visibleHighlightIds[currentIndex - 1] : null;
-  const nextHighlightId = currentIndex >= 0 && currentIndex < visibleHighlightIds.length - 1
-    ? visibleHighlightIds[currentIndex + 1]
-    : null;
+  const previousHighlightId =
+    currentIndex > 0 ? visibleHighlightIds[currentIndex - 1] : null;
+  const nextHighlightId =
+    currentIndex >= 0 && currentIndex < visibleHighlightIds.length - 1
+      ? visibleHighlightIds[currentIndex + 1]
+      : null;
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -264,20 +297,43 @@ export function HighlightDetail() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [highlight, nextHighlightId, previousHighlightId, setColor, setCommandPaletteOpen, setSelectedHighlight]);
+  }, [
+    highlight,
+    nextHighlightId,
+    previousHighlightId,
+    setColor,
+    setCommandPaletteOpen,
+    setSelectedHighlight,
+  ]);
 
   if (!selectedHighlightId) {
     return (
-      <div className="flex-1 flex items-center justify-center" style={{ background: "var(--paper)" }}>
-        <p data-testid="highlight-detail-empty" style={{ fontSize: 13, color: "var(--ink-4)" }}>Select a highlight to read it here</p>
+      <div
+        className="flex-1 flex items-center justify-center"
+        style={{ background: "var(--paper)" }}
+      >
+        <p
+          data-testid="highlight-detail-empty"
+          style={{ fontSize: 13, color: "var(--ink-4)" }}
+        >
+          Select a highlight to read it here
+        </p>
       </div>
     );
   }
 
   if (!highlight) {
     return (
-      <div className="flex-1 flex items-center justify-center" style={{ background: "var(--paper)" }}>
-        <p data-testid="highlight-detail-loading" style={{ fontSize: 13, color: "var(--ink-4)" }}>Loading…</p>
+      <div
+        className="flex-1 flex items-center justify-center"
+        style={{ background: "var(--paper)" }}
+      >
+        <p
+          data-testid="highlight-detail-loading"
+          style={{ fontSize: 13, color: "var(--ink-4)" }}
+        >
+          Loading…
+        </p>
       </div>
     );
   }
@@ -294,14 +350,18 @@ export function HighlightDetail() {
 
   async function handleRemoveTag(tag: string) {
     if (!highlight) return;
-    await update({ id: highlight._id, tags: highlight.tags.filter((t: string) => t !== tag) });
+    await update({
+      id: highlight._id,
+      tags: highlight.tags.filter((t: string) => t !== tag),
+    });
   }
 
   async function handleCollectionChange(value: string) {
     if (!highlight) return;
     await update({
       id: highlight._id,
-      collectionId: value === "inbox" ? undefined : (value as Id<"collections">),
+      collectionId:
+        value === "inbox" ? undefined : (value as Id<"collections">),
     });
     toast.success(value === "inbox" ? "Moved to inbox" : "Added to collection");
   }
@@ -344,41 +404,66 @@ export function HighlightDetail() {
     toast.success("Source link copied");
   }
 
-  const hlClass = `h ${highlight.color !== "amber" ? highlight.color : ""}`.trim();
+  const hlClass =
+    `h ${highlight.color !== "amber" ? highlight.color : ""}`.trim();
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" data-testid="highlight-detail" style={{ background: "var(--paper)" }}>
+    <div
+      className="flex-1 flex flex-col overflow-hidden"
+      data-testid="highlight-detail"
+      style={{ background: "var(--paper)" }}
+    >
       {/* Toolbar */}
-      <div className="flex items-center gap-1.5 px-5 shrink-0" style={{ height: 44, borderBottom: "1px solid var(--rule)" }}>
+      <div
+        className="flex items-center gap-1.5 px-5 shrink-0"
+        style={{ height: 44, borderBottom: "1px solid var(--rule)" }}
+      >
         <IconBtn
-          onClick={() => previousHighlightId && setSelectedHighlight(previousHighlightId)}
+          onClick={() =>
+            previousHighlightId && setSelectedHighlight(previousHighlightId)
+          }
           disabled={!previousHighlightId}
         >
           <ChevronLeft size={13} />
         </IconBtn>
         <IconBtn
-          onClick={() => nextHighlightId && setSelectedHighlight(nextHighlightId)}
+          onClick={() =>
+            nextHighlightId && setSelectedHighlight(nextHighlightId)
+          }
           disabled={!nextHighlightId}
         >
           <ChevronRight size={13} />
         </IconBtn>
         <div className="flex-1" />
-        <IconBtn onClick={handleCopy}><Copy size={13} /></IconBtn>
-        <IconBtn onClick={() => void handleShare()}><Share2 size={13} /></IconBtn>
-        <IconBtn onClick={() => void handleCopyLink()}><Link size={13} /></IconBtn>
+        <IconBtn onClick={handleCopy}>
+          <Copy size={13} />
+        </IconBtn>
+        <IconBtn onClick={() => void handleShare()}>
+          <Share2 size={13} />
+        </IconBtn>
+        <IconBtn onClick={() => void handleCopyLink()}>
+          <Link size={13} />
+        </IconBtn>
         <button
           onClick={() => void handleDelete()}
           title="Delete highlight"
           className="flex items-center justify-center rounded-md transition-colors"
           style={{ width: 28, height: 28, color: "var(--ink-4)" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "oklch(60% 0.2 25)"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--ink-4)"; }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.color = "oklch(60% 0.2 25)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.color = "var(--ink-4)";
+          }}
         >
           <Trash2 size={13} />
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center justify-center rounded-md" style={{ width: 28, height: 28, color: "var(--ink-3)" }}>
+            <button
+              className="flex items-center justify-center rounded-md"
+              style={{ width: 28, height: 28, color: "var(--ink-3)" }}
+            >
               <MoreHorizontal size={13} />
             </button>
           </DropdownMenuTrigger>
@@ -397,8 +482,18 @@ export function HighlightDetail() {
       <div className="flex-1 overflow-y-auto noscroll px-14 py-10">
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           {/* Source metadata */}
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-            {highlight.title}{highlight.author ? `  ·  ${highlight.author}` : ""}
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--ink-4)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 12,
+            }}
+          >
+            {highlight.title}
+            {highlight.author ? `  ·  ${highlight.author}` : ""}
             <a
               href={sourceUrl(highlight)}
               target="_blank"
@@ -443,7 +538,10 @@ export function HighlightDetail() {
                   width: 20,
                   height: 20,
                   background: HL_COLORS[c],
-                  border: highlight.color === c ? "2px solid var(--ink)" : "2px solid transparent",
+                  border:
+                    highlight.color === c
+                      ? "2px solid var(--ink)"
+                      : "2px solid transparent",
                   borderRadius: 4,
                 }}
               />
@@ -461,8 +559,14 @@ export function HighlightDetail() {
             />
           </div>
 
-          <div className="mt-5 rounded-lg border p-3" style={{ borderColor: "var(--rule)", background: "var(--paper-2)" }}>
-            <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em]" style={{ color: "var(--ink-4)" }}>
+          <div
+            className="mt-5 rounded-lg border p-3"
+            style={{ borderColor: "var(--rule)", background: "var(--paper-2)" }}
+          >
+            <div
+              className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em]"
+              style={{ color: "var(--ink-4)" }}
+            >
               <Folder size={12} /> Collection
             </div>
             <Select
@@ -487,7 +591,16 @@ export function HighlightDetail() {
 
           {/* Note */}
           <div className="mt-7">
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                color: "var(--ink-4)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                marginBottom: 8,
+              }}
+            >
               Your note
             </div>
             <NoteEditor
@@ -499,12 +612,34 @@ export function HighlightDetail() {
           </div>
 
           {/* Related in your library — placeholder */}
-          <div className="mt-7 p-4 rounded-lg" style={{ background: "var(--paper-2)", border: "1px solid var(--rule)" }}>
+          <div
+            className="mt-7 p-4 rounded-lg"
+            style={{
+              background: "var(--paper-2)",
+              border: "1px solid var(--rule)",
+            }}
+          >
             <div className="flex items-center gap-2 mb-2">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--accent-2)" }}>
-                <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.8 7 18.2l1.9-5.8L4 8.8h6.1L12 3z"/>
+              <svg
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                style={{ color: "var(--accent-2)" }}
+              >
+                <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.8 7 18.2l1.9-5.8L4 8.8h6.1L12 3z" />
               </svg>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--accent-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "var(--accent-2)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
                 Related in your library
               </span>
             </div>

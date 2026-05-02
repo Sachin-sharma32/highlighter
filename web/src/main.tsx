@@ -4,7 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import { Toaster } from "@/components/ui/sonner";
-import { applyAppearanceSettings, readStoredAppearance } from "@/lib/appearance";
+import {
+  applyAppearanceSettings,
+  readStoredAppearance,
+} from "@/lib/appearance";
 import App from "./App";
 import "./index.css";
 
@@ -20,5 +23,5 @@ createRoot(document.getElementById("root")!).render(
         <Toaster position="bottom-right" />
       </BrowserRouter>
     </ConvexAuthProvider>
-  </StrictMode>
+  </StrictMode>,
 );

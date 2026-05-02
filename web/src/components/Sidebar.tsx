@@ -1,6 +1,16 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { Highlighter, BookOpen, StickyNote, Folder, Plus, RefreshCw, Globe, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Highlighter,
+  BookOpen,
+  StickyNote,
+  Folder,
+  Plus,
+  RefreshCw,
+  Globe,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { Button } from "@/components/ui/button";
@@ -83,11 +93,22 @@ function NavItem({
 }
 
 export function Sidebar() {
-  const { activeCollectionId, activeTag, activeDomain, setActiveCollection, setActiveTag, setActiveDomain } = useAppStore();
-  const collections = (useQuery(api.collections.list) ?? []) as SidebarCollection[];
+  const {
+    activeCollectionId,
+    activeTag,
+    activeDomain,
+    setActiveCollection,
+    setActiveTag,
+    setActiveDomain,
+  } = useAppStore();
+  const collections = (useQuery(api.collections.list) ??
+    []) as SidebarCollection[];
   const allTags = (useQuery(api.highlights.allTags) ?? []) as SidebarTag[];
   const rawHighlights = useQuery(api.highlights.list, {});
-  const allHighlights = useMemo(() => (rawHighlights ?? []) as SidebarHighlight[], [rawHighlights]);
+  const allHighlights = useMemo(
+    () => (rawHighlights ?? []) as SidebarHighlight[],
+    [rawHighlights],
+  );
 
   const createCollection = useMutation(api.collections.create);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -95,7 +116,9 @@ export function Sidebar() {
   const [domainsExpanded, setDomainsExpanded] = useState(false);
 
   const inboxCount = allHighlights.filter((h) => !h.collectionId).length;
-  const notesCount = allHighlights.filter((h) => h.note && h.note.trim()).length;
+  const notesCount = allHighlights.filter(
+    (h) => h.note && h.note.trim(),
+  ).length;
 
   // Compute domains
   const domains = useMemo(() => {
@@ -141,10 +164,37 @@ export function Sidebar() {
 
         <div className="flex-1 overflow-y-auto">
           <SectionLabel label="Library" />
-          <NavItem icon={<Highlighter size={13} />} label="Inbox" count={inboxCount || undefined} active={activeCollectionId === "inbox" && !activeDomain} onClick={() => setActiveCollection("inbox")} testId="library-inbox" />
-          <NavItem icon={<BookOpen size={13} />} label="All highlights" count={allHighlights.length || undefined} active={activeCollectionId === "all" && !activeDomain} onClick={() => setActiveCollection("all")} testId="library-all-highlights" />
-          <NavItem icon={<StickyNote size={13} />} label="With notes" count={notesCount || undefined} active={activeCollectionId === "notes" && !activeDomain} onClick={() => setActiveCollection("notes")} testId="library-notes" />
-          <NavItem icon={<RefreshCw size={13} />} label="Review" active={activeCollectionId === "review" && !activeDomain} onClick={() => setActiveCollection("review")} testId="library-review" />
+          <NavItem
+            icon={<Highlighter size={13} />}
+            label="Inbox"
+            count={inboxCount || undefined}
+            active={activeCollectionId === "inbox" && !activeDomain}
+            onClick={() => setActiveCollection("inbox")}
+            testId="library-inbox"
+          />
+          <NavItem
+            icon={<BookOpen size={13} />}
+            label="All highlights"
+            count={allHighlights.length || undefined}
+            active={activeCollectionId === "all" && !activeDomain}
+            onClick={() => setActiveCollection("all")}
+            testId="library-all-highlights"
+          />
+          <NavItem
+            icon={<StickyNote size={13} />}
+            label="With notes"
+            count={notesCount || undefined}
+            active={activeCollectionId === "notes" && !activeDomain}
+            onClick={() => setActiveCollection("notes")}
+            testId="library-notes"
+          />
+          <NavItem
+            icon={<RefreshCw size={13} />}
+            label="Review"
+            active={activeCollectionId === "review" && !activeDomain}
+            onClick={() => setActiveCollection("review")}
+            testId="library-review"
+          />
 
           {collections.length > 0 && (
             <>
@@ -154,7 +204,10 @@ export function Sidebar() {
                   key={col._id}
                   icon={<Folder size={13} />}
                   label={col.name}
-                  count={allHighlights.filter((h) => h.collectionId === col._id).length || undefined}
+                  count={
+                    allHighlights.filter((h) => h.collectionId === col._id)
+                      .length || undefined
+                  }
                   active={activeCollectionId === col._id && !activeDomain}
                   onClick={() => setActiveCollection(col._id)}
                   testId={`collection-item-${col._id}`}
@@ -170,7 +223,11 @@ export function Sidebar() {
                 onClick={() => setDomainsExpanded(!domainsExpanded)}
                 className="flex w-full items-center gap-1 px-3.5 pb-1.5 pt-3.5 text-left font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4"
               >
-                {domainsExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                {domainsExpanded ? (
+                  <ChevronDown size={10} />
+                ) : (
+                  <ChevronRight size={10} />
+                )}
                 Domains ({domains.length})
               </button>
               {domainsExpanded &&
@@ -220,22 +277,39 @@ export function Sidebar() {
 
       {/* New collection dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent data-testid="new-collection-dialog" className="max-w-[400px]">
+        <DialogContent
+          data-testid="new-collection-dialog"
+          className="max-w-[400px]"
+        >
           <DialogHeader>
-            <DialogTitle className="font-display text-lg">New collection</DialogTitle>
+            <DialogTitle className="font-display text-lg">
+              New collection
+            </DialogTitle>
           </DialogHeader>
           <Input
             data-testid="new-collection-input"
             placeholder="e.g. Attention economy"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void handleCreateCollection()}
+            onKeyDown={(e) =>
+              e.key === "Enter" && void handleCreateCollection()
+            }
             autoFocus
             className="mt-1"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="text-xs">Cancel</Button>
-            <Button data-testid="create-collection-submit" onClick={() => void handleCreateCollection()} className="bg-ink text-xs text-paper">
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              data-testid="create-collection-submit"
+              onClick={() => void handleCreateCollection()}
+              className="bg-ink text-xs text-paper"
+            >
               Create
             </Button>
           </DialogFooter>

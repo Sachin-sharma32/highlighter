@@ -16,7 +16,10 @@ export function getYouTubeVideoId(urlString: string): string | null {
 
     if (host === "youtube.com" || host === "m.youtube.com") {
       if (url.pathname === "/watch") return url.searchParams.get("v");
-      if (url.pathname.startsWith("/embed/") || url.pathname.startsWith("/shorts/")) {
+      if (
+        url.pathname.startsWith("/embed/") ||
+        url.pathname.startsWith("/shorts/")
+      ) {
         return url.pathname.split("/").filter(Boolean)[1] ?? null;
       }
     }
@@ -45,12 +48,18 @@ export function youtubeWatchUrl(videoId: string, startSeconds?: number) {
 }
 
 export function buildDefaultClipRange(currentTime: number, duration?: number) {
-  const safeCurrent = Number.isFinite(currentTime) ? Math.max(0, currentTime) : 0;
-  const start = Math.max(0, Math.floor(safeCurrent - DEFAULT_CLIP_WINDOW_SECONDS));
+  const safeCurrent = Number.isFinite(currentTime)
+    ? Math.max(0, currentTime)
+    : 0;
+  const start = Math.max(
+    0,
+    Math.floor(safeCurrent - DEFAULT_CLIP_WINDOW_SECONDS),
+  );
   const unclampedEnd = Math.ceil(safeCurrent + DEFAULT_CLIP_WINDOW_SECONDS);
-  const end = duration && Number.isFinite(duration)
-    ? Math.min(Math.ceil(duration), unclampedEnd)
-    : unclampedEnd;
+  const end =
+    duration && Number.isFinite(duration)
+      ? Math.min(Math.ceil(duration), unclampedEnd)
+      : unclampedEnd;
   return { start, end: Math.max(start + 1, end) };
 }
 

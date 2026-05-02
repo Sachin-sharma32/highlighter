@@ -4,10 +4,26 @@
 @tailwind components;
 @tailwind utilities;
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  width: 380px;
+  height: 520px;
+  overflow: hidden;
+}
 
 body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -29,23 +45,39 @@ body {
   --ink-4: oklch(62% 0.014 60);
   --accent: oklch(62% 0.16 40);
   --accent-2: oklch(52% 0.17 40);
-  --hl-amber: oklch(90% 0.10 85);
+  --hl-amber: oklch(90% 0.1 85);
   --hl-rose: oklch(88% 0.08 20);
   --hl-sage: oklch(90% 0.07 145);
   --hl-sky: oklch(90% 0.06 230);
   --hl-violet: oklch(88% 0.07 305);
-  --shadow-2: 0 2px 4px rgba(50,30,10,0.05), 0 8px 24px rgba(50,30,10,0.08);
-  --shadow-3: 0 4px 12px rgba(50,30,10,0.08), 0 24px 60px rgba(50,30,10,0.12);
+  --shadow-2:
+    0 2px 4px rgba(50, 30, 10, 0.05), 0 8px 24px rgba(50, 30, 10, 0.08);
+  --shadow-3:
+    0 4px 12px rgba(50, 30, 10, 0.08), 0 24px 60px rgba(50, 30, 10, 0.12);
 }
 
-button { font-family: inherit; cursor: pointer; border: none; background: none; }
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
 
-.noscroll::-webkit-scrollbar { display: none; }
-.noscroll { scrollbar-width: none; }
+.noscroll::-webkit-scrollbar {
+  display: none;
+}
+.noscroll {
+  scrollbar-width: none;
+}
 
 /* Elegant minimal scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: oklch(75% 0.01 60 / 0.25);
   border-radius: 9999px;
@@ -53,7 +85,15 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(60% 0.01 60 / 0.35);
 }
-* { scrollbar-width: thin; scrollbar-color: oklch(75% 0.01 60 / 0.25) transparent; }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(75% 0.01 60 / 0.25) transparent;
+}
 
-.serif { font-family: "Fraunces", Georgia, serif; letter-spacing: -0.02em; }
-.mono  { font-family: "JetBrains Mono", monospace; }
+.serif {
+  font-family: "Fraunces", Georgia, serif;
+  letter-spacing: -0.02em;
+}
+.mono {
+  font-family: "JetBrains Mono", monospace;
+}

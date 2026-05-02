@@ -1,12 +1,21 @@
 import shadowCss from "./content.css?inline";
 import type { SaveHighlightPayload, TabMessage } from "../lib/messages";
 import { readMarginaliaTarget, stripMarginaliaTarget } from "../lib/urls";
-import { formatClipTime, getYouTubeVideoId, youtubeWatchUrl } from "../lib/youtube";
+import {
+  formatClipTime,
+  getYouTubeVideoId,
+  youtubeWatchUrl,
+} from "../lib/youtube";
 import { renderMultiSelect } from "./TooltipReact";
 
 // ── Settings cache (from chrome.storage.sync via background) ───────
 let highlightingEnabled = true;
-let customColors: { id: string; label: string; value: string; isDefault?: boolean }[] = [];
+let customColors: {
+  id: string;
+  label: string;
+  value: string;
+  isDefault?: boolean;
+}[] = [];
 
 void chrome.runtime
   .sendMessage({ type: "GET_SETTINGS" })
@@ -37,7 +46,9 @@ async function refreshCollections() {
     if (res?.ok && Array.isArray(res.data)) {
       cachedCollections = res.data as Collection[];
     }
-    const stored = await chrome.storage.sync.get("marginalia_last_collection_id");
+    const stored = await chrome.storage.sync.get(
+      "marginalia_last_collection_id",
+    );
     const id = stored["marginalia_last_collection_id"];
     lastUsedCollectionId = typeof id === "string" ? id : null;
   } catch {
@@ -50,7 +61,7 @@ async function persistLastCollection(id: string | null) {
   if (id === null) {
     await chrome.storage.sync.remove("marginalia_last_collection_id");
   } else {
-    await chrome.storage.sync.set({ "marginalia_last_collection_id": id });
+    await chrome.storage.sync.set({ marginalia_last_collection_id: id });
   }
 }
 
@@ -81,18 +92,22 @@ const HIGHLIGHT_FILLS: Record<HighlightColor, string> = {
 };
 
 function resolveHighlightFill(color: string) {
-  const custom = customColors.find(c => c.id === color)?.value;
-  if (!custom) return HIGHLIGHT_FILLS[color as HighlightColor] ?? HIGHLIGHT_FILLS.amber;
+  const custom = customColors.find((c) => c.id === color)?.value;
+  if (!custom)
+    return HIGHLIGHT_FILLS[color as HighlightColor] ?? HIGHLIGHT_FILLS.amber;
 
-  const cssVarMatch = custom.match(/^var\(\s*--hl-(amber|rose|sage|sky|violet)(?:\s*,[^)]*)?\s*\)$/);
+  const cssVarMatch = custom.match(
+    /^var\(\s*--hl-(amber|rose|sage|sky|violet)(?:\s*,[^)]*)?\s*\)$/,
+  );
   if (cssVarMatch) return HIGHLIGHT_FILLS[cssVarMatch[1] as HighlightColor];
 
   return custom;
 }
 
 function getAllColors() {
-  if (customColors.length > 0) return customColors.map(c => ({ id: c.id, color: c.value }));
-  return COLORS.map(c => ({ id: c, color: HIGHLIGHT_FILLS[c] }));
+  if (customColors.length > 0)
+    return customColors.map((c) => ({ id: c.id, color: c.value }));
+  return COLORS.map((c) => ({ id: c, color: HIGHLIGHT_FILLS[c] }));
 }
 
 // ── Shadow DOM container ───────────────────────────────────────────
@@ -199,7 +214,11 @@ function syncFloatingPositions() {
 function shouldSkipTextNode(node: Text) {
   const parent = node.parentElement;
   if (!parent) return true;
-  if (parent.closest("#marginalia-host, script, style, noscript, textarea, input, select")) {
+  if (
+    parent.closest(
+      "#marginalia-host, script, style, noscript, textarea, input, select",
+    )
+  ) {
     return true;
   }
   return false;
@@ -207,12 +226,18 @@ function shouldSkipTextNode(node: Text) {
 
 function collectTextNodes() {
   const nodes: Text[] = [];
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      if (shouldSkipTextNode(node as Text)) return NodeFilter.FILTER_REJECT;
-      return node.textContent ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        if (shouldSkipTextNode(node as Text)) return NodeFilter.FILTER_REJECT;
+        return node.textContent
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
+      },
     },
-  });
+  );
   let node: Text | null;
   while ((node = walker.nextNode() as Text | null)) nodes.push(node);
   return nodes;
@@ -298,8 +323,14 @@ function findAnchoredRange(h: SavedHighlight) {
     const before = snapshot.text.slice(Math.max(0, start - 120), start);
     const after = snapshot.text.slice(end, end + 120);
     const textContextIndex = h.textContext?.indexOf(h.text) ?? -1;
-    const legacyPrefix = textContextIndex >= 0 ? h.textContext?.slice(0, textContextIndex) : undefined;
-    const legacySuffix = textContextIndex >= 0 ? h.textContext?.slice(textContextIndex + h.text.length) : undefined;
+    const legacyPrefix =
+      textContextIndex >= 0
+        ? h.textContext?.slice(0, textContextIndex)
+        : undefined;
+    const legacySuffix =
+      textContextIndex >= 0
+        ? h.textContext?.slice(textContextIndex + h.text.length)
+        : undefined;
     const prefixScore = h.anchorPrefix
       ? commonAffixScore(before, h.anchorPrefix, true)
       : legacyPrefix
@@ -310,8 +341,15 @@ function findAnchoredRange(h: SavedHighlight) {
       : legacySuffix
         ? commonAffixScore(after, legacySuffix, false)
         : 0;
-    const positionScore = typeof h.anchorStart === "number" ? Math.max(0, 80 - Math.abs(start - h.anchorStart) / 8) : 0;
-    candidates.push({ start, end, score: prefixScore + suffixScore + positionScore });
+    const positionScore =
+      typeof h.anchorStart === "number"
+        ? Math.max(0, 80 - Math.abs(start - h.anchorStart) / 8)
+        : 0;
+    candidates.push({
+      start,
+      end,
+      score: prefixScore + suffixScore + positionScore,
+    });
     from = start + Math.max(1, h.text.length);
   }
 
@@ -326,10 +364,13 @@ function findAnchoredRange(h: SavedHighlight) {
 function positionToolbarForRect(rect: DOMRect) {
   const CARD_WIDTH = 260;
   toolbarPosition = {
-    left: Math.max(8, Math.min(
-      rect.left + rect.width / 2 - CARD_WIDTH / 2,
-      window.innerWidth - CARD_WIDTH - 8,
-    )),
+    left: Math.max(
+      8,
+      Math.min(
+        rect.left + rect.width / 2 - CARD_WIDTH / 2,
+        window.innerWidth - CARD_WIDTH - 8,
+      ),
+    ),
     top: Math.min(rect.bottom + 8, window.innerHeight - 320),
   };
   syncFloatingPositions();
@@ -407,13 +448,17 @@ function showSelectionToolbar(rect: DOMRect, range: Range) {
   toolbarEl.appendChild(
     makeActionRow("Add note", "N", () => {
       dismissToolbar();
-      void saveHighlightAndShowEdit(range, resolveDefaultColor(), { focus: "note" });
+      void saveHighlightAndShowEdit(range, resolveDefaultColor(), {
+        focus: "note",
+      });
     }),
   );
   toolbarEl.appendChild(
     makeActionRow("Tag…", "T", () => {
       dismissToolbar();
-      void saveHighlightAndShowEdit(range, resolveDefaultColor(), { focus: "tag" });
+      void saveHighlightAndShowEdit(range, resolveDefaultColor(), {
+        focus: "tag",
+      });
     }),
   );
   toolbarEl.appendChild(
@@ -508,7 +553,10 @@ async function saveHighlight(
     title: document.title,
     text,
     textContext,
-    anchorPrefix: offsets?.documentText.slice(Math.max(0, offsets.start - 100), offsets.start),
+    anchorPrefix: offsets?.documentText.slice(
+      Math.max(0, offsets.start - 100),
+      offsets.start,
+    ),
     anchorSuffix: offsets?.documentText.slice(offsets.end, offsets.end + 100),
     anchorStart: offsets?.start,
     anchorEnd: offsets?.end,
@@ -517,7 +565,11 @@ async function saveHighlight(
     collectionIds:
       options.collectionId === null
         ? undefined
-        : options.collectionId ? [options.collectionId] : lastUsedCollectionId ? [lastUsedCollectionId] : undefined,
+        : options.collectionId
+          ? [options.collectionId]
+          : lastUsedCollectionId
+            ? [lastUsedCollectionId]
+            : undefined,
     tags: options.tags,
   };
 
@@ -550,7 +602,15 @@ async function saveHighlightAndShowEdit(
     `mark.marg-h[data-id="${CSS.escape(id)}"]`,
   );
   if (!mark) return;
-  showEditCard(mark, id, color, "", [], lastUsedCollectionId ? [lastUsedCollectionId] : [], opts.focus ?? "note");
+  showEditCard(
+    mark,
+    id,
+    color,
+    "",
+    [],
+    lastUsedCollectionId ? [lastUsedCollectionId] : [],
+    opts.focus ?? "note",
+  );
 }
 
 // ── Wrap range in a <mark> ─────────────────────────────────────────
@@ -564,7 +624,15 @@ function attachMarkClick(mark: HTMLElement) {
     const currentCollectionIds = readTags(mark.dataset.collectionIds);
     if (!currentId || currentId === "pending") return;
     void refreshCollections().then(() =>
-      showEditCard(mark, currentId, currentColor, currentNote, currentTags, currentCollectionIds, "note"),
+      showEditCard(
+        mark,
+        currentId,
+        currentColor,
+        currentNote,
+        currentTags,
+        currentCollectionIds,
+        "note",
+      ),
     );
   });
 }
@@ -573,7 +641,9 @@ function readTags(value?: string) {
   if (!value) return [];
   try {
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.filter((tag) => typeof tag === "string") : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((tag) => typeof tag === "string")
+      : [];
   } catch {
     return [];
   }
@@ -596,7 +666,14 @@ function applyMarkColor(mark: HTMLElement, color: string) {
   mark.style.setProperty("background-repeat", "repeat", "important");
 }
 
-function wrapRange(range: Range, color: string, id: string, note?: string, tags: string[] = [], collectionIds: string[] = []) {
+function wrapRange(
+  range: Range,
+  color: string,
+  id: string,
+  note?: string,
+  tags: string[] = [],
+  collectionIds: string[] = [],
+) {
   try {
     const mark = document.createElement("mark");
     mark.className = `marg-h marginalia-mark`;
@@ -604,7 +681,8 @@ function wrapRange(range: Range, color: string, id: string, note?: string, tags:
     applyMarkColor(mark, color);
     if (note) mark.dataset.note = note;
     writeTags(mark, tags);
-    if (collectionIds.length) mark.dataset.collectionIds = JSON.stringify(collectionIds);
+    if (collectionIds.length)
+      mark.dataset.collectionIds = JSON.stringify(collectionIds);
     range.surroundContents(mark);
     attachMarkClick(mark);
   } catch {
@@ -616,7 +694,8 @@ function wrapRange(range: Range, color: string, id: string, note?: string, tags:
       applyMarkColor(mark, color);
       if (note) mark.dataset.note = note;
       writeTags(mark, tags);
-      if (collectionIds.length) mark.dataset.collectionIds = JSON.stringify(collectionIds);
+      if (collectionIds.length)
+        mark.dataset.collectionIds = JSON.stringify(collectionIds);
       mark.appendChild(fragment);
       range.insertNode(mark);
       attachMarkClick(mark);
@@ -710,7 +789,7 @@ function showEditCard(
         payload: { id, collectionIds: currentCollectionIds },
       });
     },
-    sr as unknown as HTMLElement
+    sr as unknown as HTMLElement,
   );
 
   // Need to unmount React when toolbar closes
@@ -847,7 +926,6 @@ function showEditCard(
   });
 }
 
-
 // ── Re-paint saved highlights on load ─────────────────────────────
 async function repaintHighlights() {
   if (repaintPromise) return repaintPromise;
@@ -899,11 +977,18 @@ function paintHighlight(h: SavedHighlight) {
 }
 
 function hasUnpaintedHighlights() {
-  return savedHighlights.some((h) => !document.querySelector(`[data-id="${h._id}"]`));
+  return savedHighlights.some(
+    (h) => !document.querySelector(`[data-id="${h._id}"]`),
+  );
 }
 
 function scheduleRepaintRetry() {
-  if (!savedHighlights.length || !hasUnpaintedHighlights() || repaintRetryTimer != null) return;
+  if (
+    !savedHighlights.length ||
+    !hasUnpaintedHighlights() ||
+    repaintRetryTimer != null
+  )
+    return;
   repaintRetryTimer = window.setTimeout(() => {
     repaintRetryTimer = null;
     void repaintHighlights();
@@ -945,7 +1030,8 @@ document.addEventListener("keydown", (e) => {
   const target = e.target as HTMLElement | null;
   if (target?.closest?.("input, textarea, [contenteditable='true']")) return;
   const index = Number(e.key) - 1;
-  if (!toolbarEl || !toolbarRange || index < 0 || index >= COLORS.length) return;
+  if (!toolbarEl || !toolbarRange || index < 0 || index >= COLORS.length)
+    return;
   e.preventDefault();
   void saveHighlight(toolbarRange, COLORS[index]);
   dismissToolbar();
@@ -957,7 +1043,7 @@ window.addEventListener(
     scheduleToolbarPosition();
     positionYouTubePlayerButton();
   },
-  true
+  true,
 );
 window.addEventListener("resize", () => {
   scheduleToolbarPosition();
@@ -966,10 +1052,19 @@ window.addEventListener("resize", () => {
   scheduleYouTubePlayerButtonMount();
 });
 window.addEventListener("yt-navigate-finish", scheduleYouTubePlayerButtonMount);
-window.addEventListener("yt-page-data-updated", scheduleYouTubePlayerButtonMount);
+window.addEventListener(
+  "yt-page-data-updated",
+  scheduleYouTubePlayerButtonMount,
+);
 
 const observer = new MutationObserver((mutations) => {
-  if (mutations.some((mutation) => mutation.target instanceof Element && mutation.target.closest("#marginalia-host"))) {
+  if (
+    mutations.some(
+      (mutation) =>
+        mutation.target instanceof Element &&
+        mutation.target.closest("#marginalia-host"),
+    )
+  ) {
     return;
   }
   scheduleRepaintRetry();
@@ -977,12 +1072,22 @@ const observer = new MutationObserver((mutations) => {
   positionYouTubePlayerButton();
   scheduleYouTubePlayerButtonMount();
 });
-observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+observer.observe(document.body, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+});
 
 function getYouTubeChannelTitle() {
   return (
-    document.querySelector<HTMLAnchorElement>("ytd-video-owner-renderer #channel-name a")?.textContent?.trim() ||
-    document.querySelector<HTMLElement>("#owner #channel-name")?.textContent?.trim() ||
+    document
+      .querySelector<HTMLAnchorElement>(
+        "ytd-video-owner-renderer #channel-name a",
+      )
+      ?.textContent?.trim() ||
+    document
+      .querySelector<HTMLElement>("#owner #channel-name")
+      ?.textContent?.trim() ||
     undefined
   );
 }
@@ -992,13 +1097,16 @@ function getYouTubeClipContext() {
   const video = document.querySelector<HTMLVideoElement>("video");
   if (!videoId || !video) return null;
 
-  const duration = Number.isFinite(video.duration) && video.duration > 0
-    ? video.duration
-    : undefined;
+  const duration =
+    Number.isFinite(video.duration) && video.duration > 0
+      ? video.duration
+      : undefined;
 
   return {
     videoId,
-    title: document.title.replace(/\s*-\s*YouTube\s*$/i, "").trim() || "YouTube video",
+    title:
+      document.title.replace(/\s*-\s*YouTube\s*$/i, "").trim() ||
+      "YouTube video",
     url: youtubeWatchUrl(videoId),
     currentTime: video.currentTime,
     duration,
@@ -1101,7 +1209,8 @@ function showYouTubeClipTrimmer() {
 
   const helper = document.createElement("div");
   helper.className = "marginalia-youtube-clipper-helper";
-  helper.textContent = "Play the video, then mark the beginning and end of the moment you want to save.";
+  helper.textContent =
+    "Play the video, then mark the beginning and end of the moment you want to save.";
 
   const rangeLabel = document.createElement("div");
   rangeLabel.className = "marginalia-youtube-clipper-range";
@@ -1144,7 +1253,8 @@ function showYouTubeClipTrimmer() {
   card.append(header, helper, rangeLabel, marks, noteInput, status, actions);
 
   function readCurrentTime() {
-    const currentVideo = document.querySelector<HTMLVideoElement>("video") ?? video;
+    const currentVideo =
+      document.querySelector<HTMLVideoElement>("video") ?? video;
     if (!currentVideo || !Number.isFinite(currentVideo.currentTime)) return 0;
     return Math.max(0, Math.floor(currentVideo.currentTime));
   }
@@ -1154,9 +1264,10 @@ function showYouTubeClipTrimmer() {
 
     startBtn.innerHTML = `<span>Set start</span><strong>${start === null ? "Not set" : formatClipTime(start)}</strong>`;
     endBtn.innerHTML = `<span>Set end</span><strong>${end === null ? "Not set" : formatClipTime(end)}</strong>`;
-    rangeLabel.textContent = start !== null && end !== null
-      ? `${formatClipTime(start)}-${formatClipTime(end)}`
-      : "Mark start and end while the video plays";
+    rangeLabel.textContent =
+      start !== null && end !== null
+        ? `${formatClipTime(start)}-${formatClipTime(end)}`
+        : "Mark start and end while the video plays";
 
     const missing = start === null || end === null;
     const invalid = !missing && end <= start;
@@ -1203,17 +1314,22 @@ function showYouTubeClipTrimmer() {
       youtubeChannelTitle: context.channelTitle,
     };
 
-    void chrome.runtime.sendMessage({ type: "SAVE_HIGHLIGHT", payload })
+    void chrome.runtime
+      .sendMessage({ type: "SAVE_HIGHLIGHT", payload })
       .then((response) => {
-        if (!response?.ok) throw new Error(response?.error ?? "Could not save clip.");
+        if (!response?.ok)
+          throw new Error(response?.error ?? "Could not save clip.");
         status.textContent = "Saved to dashboard.";
         status.dataset.tone = "success";
-        void chrome.runtime.sendMessage({ type: "YOUTUBE_CLIP_SAVED" }).catch(() => {});
+        void chrome.runtime
+          .sendMessage({ type: "YOUTUBE_CLIP_SAVED" })
+          .catch(() => {});
         window.setTimeout(dismissYouTubeClipTrimmer, 900);
       })
       .catch((error) => {
         saving = false;
-        status.textContent = error instanceof Error ? error.message : "Could not save clip.";
+        status.textContent =
+          error instanceof Error ? error.message : "Could not save clip.";
         status.dataset.tone = "error";
         syncState();
       });
@@ -1226,7 +1342,10 @@ function showYouTubeClipTrimmer() {
 }
 
 function isYouTubeVideoPage() {
-  return Boolean(getYouTubeVideoId(location.href) && document.querySelector<HTMLVideoElement>("video"));
+  return Boolean(
+    getYouTubeVideoId(location.href) &&
+    document.querySelector<HTMLVideoElement>("video"),
+  );
 }
 
 function mountYouTubePlayerButton() {
@@ -1270,42 +1389,54 @@ function scheduleYouTubePlayerButtonMount() {
 }
 
 // ── Message listener (from popup/sidepanel) ────────────────────────
-chrome.runtime.onMessage.addListener((msg: TabMessage, _sender, sendResponse) => {
-  if (msg?.type === "SCROLL_TO_HIGHLIGHT" && msg.payload?.id) {
-    void focusHighlight(msg.payload.id).then((focused) =>
-      sendResponse({ ok: focused }),
-    );
-    return true;
-  }
-  if (msg?.type === "DELETE_HIGHLIGHT_MARK" && msg.payload?.id) {
-    const marks = document.querySelectorAll<HTMLElement>(
-      `mark.marg-h[data-id="${CSS.escape(msg.payload.id)}"]`,
-    );
-    marks.forEach((m) => m.replaceWith(...Array.from(m.childNodes)));
-    sendResponse({ ok: true });
-    return true;
-  }
-  if (msg?.type === "HIGHLIGHTING_TOGGLED") {
-    highlightingEnabled = msg.payload.enabled;
-    if (!highlightingEnabled) dismissToolbar();
-    sendResponse({ ok: true });
-    return true;
-  }
-  if (msg?.type === "GET_YOUTUBE_CLIP_CONTEXT") {
-    const context = getYouTubeClipContext();
-    sendResponse(context ? { ok: true, data: context } : { ok: false, error: "No playable YouTube video found." });
-    return true;
-  }
-  if (msg?.type === "SHOW_YOUTUBE_CLIP_TRIMMER") {
-    try {
-      showYouTubeClipTrimmer();
-      sendResponse({ ok: true });
-    } catch (error) {
-      sendResponse({ ok: false, error: error instanceof Error ? error.message : "Could not open clip trimmer." });
+chrome.runtime.onMessage.addListener(
+  (msg: TabMessage, _sender, sendResponse) => {
+    if (msg?.type === "SCROLL_TO_HIGHLIGHT" && msg.payload?.id) {
+      void focusHighlight(msg.payload.id).then((focused) =>
+        sendResponse({ ok: focused }),
+      );
+      return true;
     }
-    return true;
-  }
-});
+    if (msg?.type === "DELETE_HIGHLIGHT_MARK" && msg.payload?.id) {
+      const marks = document.querySelectorAll<HTMLElement>(
+        `mark.marg-h[data-id="${CSS.escape(msg.payload.id)}"]`,
+      );
+      marks.forEach((m) => m.replaceWith(...Array.from(m.childNodes)));
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (msg?.type === "HIGHLIGHTING_TOGGLED") {
+      highlightingEnabled = msg.payload.enabled;
+      if (!highlightingEnabled) dismissToolbar();
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (msg?.type === "GET_YOUTUBE_CLIP_CONTEXT") {
+      const context = getYouTubeClipContext();
+      sendResponse(
+        context
+          ? { ok: true, data: context }
+          : { ok: false, error: "No playable YouTube video found." },
+      );
+      return true;
+    }
+    if (msg?.type === "SHOW_YOUTUBE_CLIP_TRIMMER") {
+      try {
+        showYouTubeClipTrimmer();
+        sendResponse({ ok: true });
+      } catch (error) {
+        sendResponse({
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Could not open clip trimmer.",
+        });
+      }
+      return true;
+    }
+  },
+);
 
 // ── Init ───────────────────────────────────────────────────────────
 repaintHighlights()

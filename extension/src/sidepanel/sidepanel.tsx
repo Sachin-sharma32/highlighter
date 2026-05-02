@@ -6,5 +6,5 @@ import "../popup/popup.css";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <SidePanel />
-  </StrictMode>
+  </StrictMode>,
 );

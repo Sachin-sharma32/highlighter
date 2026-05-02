@@ -31,9 +31,7 @@ export function UsageBanner() {
             className="h-full rounded-full transition-all"
             style={{
               width: `${pct}%`,
-              background: isHigh
-                ? "oklch(65% 0.2 25)"
-                : "oklch(70% 0.14 145)",
+              background: isHigh ? "oklch(65% 0.2 25)" : "oklch(70% 0.14 145)",
             }}
           />
         </div>

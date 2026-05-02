@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import type { Id } from "../../convex/_generated/dataModel";
 
-type ActiveCollection = Id<"collections"> | "inbox" | "all" | "notes" | "review";
+type ActiveCollection =
+  | Id<"collections">
+  | "inbox"
+  | "all"
+  | "notes"
+  | "review";
 
 interface AppStore {
   activeCollectionId: ActiveCollection;
@@ -28,9 +33,22 @@ export const useAppStore = create<AppStore>((set) => ({
   commandPaletteOpen: false,
   searchQuery: "",
   pricingModalOpen: false,
-  setActiveCollection: (id) => set({ activeCollectionId: id, activeTag: null, activeDomain: null, selectedHighlightId: null }),
-  setActiveTag: (tag) => set({ activeTag: tag, activeCollectionId: "all", activeDomain: null, selectedHighlightId: null }),
-  setActiveDomain: (domain) => set({ activeDomain: domain, activeTag: null, selectedHighlightId: null }),
+  setActiveCollection: (id) =>
+    set({
+      activeCollectionId: id,
+      activeTag: null,
+      activeDomain: null,
+      selectedHighlightId: null,
+    }),
+  setActiveTag: (tag) =>
+    set({
+      activeTag: tag,
+      activeCollectionId: "all",
+      activeDomain: null,
+      selectedHighlightId: null,
+    }),
+  setActiveDomain: (domain) =>
+    set({ activeDomain: domain, activeTag: null, selectedHighlightId: null }),
   setSelectedHighlight: (id) => set({ selectedHighlightId: id }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setSearchQuery: (q) => set({ searchQuery: q }),

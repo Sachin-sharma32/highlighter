@@ -47,7 +47,10 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "open-side-panel") {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
     if (tab?.windowId != null) {
       await chrome.sidePanel.open({ windowId: tab.windowId });
     }
@@ -59,15 +62,23 @@ chrome.commands.onCommand.addListener(async (command) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "marginalia-open-side-panel" && tab?.windowId != null) {
+  if (
+    info.menuItemId === "marginalia-open-side-panel" &&
+    tab?.windowId != null
+  ) {
     await chrome.sidePanel.open({ windowId: tab.windowId });
   } else if (info.menuItemId === "marginalia-toggle-highlighting") {
     const current = await isHighlightingEnabled();
     await setHighlightingEnabled(!current);
     await broadcastHighlightingToggle(!current);
-  } else if (info.menuItemId === "marginalia-save-youtube-clip" && tab?.id != null) {
+  } else if (
+    info.menuItemId === "marginalia-save-youtube-clip" &&
+    tab?.id != null
+  ) {
     try {
-      await chrome.tabs.sendMessage(tab.id, { type: "SHOW_YOUTUBE_CLIP_TRIMMER" });
+      await chrome.tabs.sendMessage(tab.id, {
+        type: "SHOW_YOUTUBE_CLIP_TRIMMER",
+      });
     } catch {
       /* content script not ready on this page */
     }
@@ -95,19 +106,25 @@ chrome.runtime.onMessage.addListener(
     handleMessage(message, sender)
       .then(sendResponse)
       .catch((err: unknown) =>
-        sendResponse({ ok: false, error: (err as Error).message ?? "Unknown error" })
+        sendResponse({
+          ok: false,
+          error: (err as Error).message ?? "Unknown error",
+        }),
       );
     return true;
-  }
+  },
 );
 
 async function requireToken(): Promise<string> {
   const token = await getToken();
-  if (!token) throw new Error("Not paired. Open the extension popup to connect.");
+  if (!token)
+    throw new Error("Not paired. Open the extension popup to connect.");
   return token;
 }
 
-async function openSidePanel(payload: { tabId?: number; windowId?: number } = {}) {
+async function openSidePanel(
+  payload: { tabId?: number; windowId?: number } = {},
+) {
   if (!chrome.sidePanel?.open) {
     throw new Error("Side panel is not available in this browser.");
   }
@@ -121,7 +138,10 @@ async function openSidePanel(payload: { tabId?: number; windowId?: number } = {}
     return;
   }
 
-  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
   if (tab?.windowId != null) {
     await chrome.sidePanel.open({ windowId: tab.windowId });
     return;
@@ -136,7 +156,7 @@ async function openSidePanel(payload: { tabId?: number; windowId?: number } = {}
 
 async function handleMessage(
   msg: ExtMessage,
-  sender: chrome.runtime.MessageSender
+  sender: chrome.runtime.MessageSender,
 ): Promise<ExtResponse> {
   switch (msg.type) {
     case "GET_AUTH_STATUS": {
@@ -176,7 +196,10 @@ async function handleMessage(
         await setUserId(result.userId);
         return { ok: true, data: result };
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to exchange pairing code";
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to exchange pairing code";
         console.error("[Marginalia] Pairing failed:", message);
         return { ok: false, error: message };
       }
@@ -242,7 +265,10 @@ async function handleMessage(
       const token = await getToken();
       if (!token) return { ok: true, data: [] };
       const c = getClient();
-      const highlights = await c.query(api.ext.listByUrl, { token, url: msg.payload.url });
+      const highlights = await c.query(api.ext.listByUrl, {
+        token,
+        url: msg.payload.url,
+      });
       return { ok: true, data: highlights };
     }
 
