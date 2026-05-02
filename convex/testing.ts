@@ -1,4 +1,5 @@
-import { mutation, MutationCtx } from "./_generated/server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { createAccount, retrieveAccount } from "@convex-dev/auth/server";
 
@@ -12,7 +13,7 @@ function assertTestMode() {
   }
 }
 
-async function getOrCreatePlaywrightUser(ctx: MutationCtx, email: string) {
+async function getOrCreatePlaywrightUser(ctx: any, email: string) {
   const normalizedEmail = email.trim().toLowerCase();
   let existing: Awaited<ReturnType<typeof retrieveAccount>> | null = null;
   try {
@@ -36,14 +37,14 @@ async function getOrCreatePlaywrightUser(ctx: MutationCtx, email: string) {
     profile: {
       email: normalizedEmail,
       name: normalizedEmail.split("@")[0],
-    },
+    } as any,
   });
   return user;
 }
 
 export const resetUserData = mutation({
   args: { email: v.string() },
-  handler: async (ctx, { email }: { email: string }) => {
+  handler: async (ctx: any, { email }: { email: string }) => {
     assertTestMode();
 
     let existing: Awaited<ReturnType<typeof retrieveAccount>> | null = null;
@@ -64,7 +65,7 @@ export const resetUserData = mutation({
 
     const collections = await ctx.db
       .query("collections")
-      .withIndex("by_user", (q) => q.eq("userId", existing.user._id))
+      .withIndex("by_user", (q: any) => q.eq("userId", existing.user._id))
       .collect();
     for (const collection of collections) {
       await ctx.db.delete(collection._id);
@@ -72,7 +73,7 @@ export const resetUserData = mutation({
 
     const highlights = await ctx.db
       .query("highlights")
-      .withIndex("by_user", (q) => q.eq("userId", existing.user._id))
+      .withIndex("by_user", (q: any) => q.eq("userId", existing.user._id))
       .collect();
     for (const highlight of highlights) {
       await ctx.db.delete(highlight._id);
@@ -105,7 +106,7 @@ export const seedHighlight = mutation({
     youtubeChannelTitle: v.optional(v.string()),
   },
   handler: async (
-    ctx,
+    ctx: any,
     args: {
       email: string;
       url: string;
