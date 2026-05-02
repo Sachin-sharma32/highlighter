@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
+    "@types/node": "^24.12.2",
     "convex": "^1.36.1"
   },
   "dependencies": {
@@ -23,6 +24,8 @@
     "@convex-dev/auth": "^0.0.91"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
