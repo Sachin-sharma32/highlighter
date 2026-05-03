@@ -6,22 +6,21 @@ import {
   Scissors,
   Terminal,
   Loader2,
-  Link2,
   RefreshCw,
   LogOut,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { CONNECT_EXTENSION_URL, DASHBOARD_URL } from "@/lib/dashboard";
+import { DASHBOARD_URL } from "@/lib/dashboard";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
 import {
   formatClipTime,
   getYouTubeVideoId,
   youtubeWatchUrl,
 } from "@/lib/youtube";
+import PairingScreen from "./components/PairingScreen";
 
 type HighlightColor = "amber" | "rose" | "sage" | "sky" | "violet";
 
@@ -32,16 +31,6 @@ const HL_BG_CLASS: Record<HighlightColor, string> = {
   sky: "bg-hl-sky",
   violet: "bg-hl-violet",
 };
-
-const PANEL_ROOT_CLASS =
-  "flex h-full w-full flex-col overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2";
-const BRAND_BADGE_CLASS =
-  "flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-ink font-display text-[17px] font-medium text-paper ring-[1.5px] ring-accent";
-const HEADER_ICON_BUTTON_CLASS = "size-8 rounded p-1";
-const FOOTER_ACTION_CLASS = "h-[34px] flex-1 text-xs";
-const FOOTER_ICON_BUTTON_CLASS = "size-[34px]";
-const CLAMPED_HIGHLIGHT_TEXT_CLASS =
-  "overflow-hidden font-display text-[12.5px] leading-[1.45] text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]";
 
 interface Highlight {
   _id: string;
@@ -65,116 +54,6 @@ interface UsageData {
 }
 
 type Scope = "page" | "all";
-
-function PairingScreen({ onPaired }: { onPaired: () => void }) {
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleConnect() {
-    if (!code.trim()) return;
-    setLoading(true);
-    setError("");
-    try {
-      const res = await Promise.race([
-        chrome.runtime.sendMessage({
-          type: "EXCHANGE_PAIRING_CODE",
-          payload: { code: code.trim() },
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  "Request timed out. Check your network and extension configuration.",
-                ),
-              ),
-            8000,
-          ),
-        ),
-      ]);
-      if (res?.ok) {
-        onPaired();
-      } else {
-        setError(res?.error ?? "Invalid code. Please try again.");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Connection failed. Make sure the dashboard is open.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div
-      data-testid="popup-pairing-screen"
-      className="flex h-full w-full flex-col items-center justify-center gap-6 overflow-hidden rounded-[16px] border border-rule bg-paper p-8 font-ui shadow-paper-2"
-    >
-      <div className="flex items-center gap-2.5">
-        <div className="flex size-[34px] items-center justify-center rounded-lg bg-ink font-display text-xl font-medium text-paper ring-2 ring-accent">
-          M
-        </div>
-        <span className="font-display text-[18px] font-medium tracking-[-0.02em] text-ink">
-          Marginalia
-        </span>
-      </div>
-
-      <div className="text-center">
-        <p className="mb-1.5 font-display text-[20px] font-medium tracking-[-0.02em] text-ink">
-          Connect your account
-        </p>
-        <p className="text-xs leading-6 text-ink-3">
-          Open the Marginalia dashboard and go to
-          <br />
-          <strong className="text-ink-2">Avatar → Connect extension</strong> to
-          get a code.
-        </p>
-      </div>
-
-      <div className="flex w-full flex-col gap-2">
-        <Input
-          data-testid="popup-pairing-input"
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          onKeyDown={(e) => e.key === "Enter" && void handleConnect()}
-          placeholder="MARG-XXXX-XXXX"
-          className="h-11 border-rule-2 bg-paper-2 px-3.5 font-mono text-base tracking-[0.06em]"
-        />
-        {error && <p className="text-[11px] text-red-600">{error}</p>}
-        <Button
-          onClick={() => void handleConnect()}
-          data-testid="popup-connect-button"
-          disabled={loading || !code.trim()}
-          className="h-10 w-full text-[13px] disabled:bg-paper-3 disabled:text-ink-4 disabled:opacity-100"
-        >
-          {loading ? (
-            <Loader2
-              size={14}
-              data-icon="inline-start"
-              className="animate-spin"
-            />
-          ) : (
-            <Link2 size={14} data-icon="inline-start" />
-          )}
-          Connect
-        </Button>
-      </div>
-
-      <a
-        href={CONNECT_EXTENSION_URL}
-        target="_blank"
-        rel="noreferrer"
-        className="text-[11px] text-accent no-underline"
-      >
-        Open dashboard to generate a code →
-      </a>
-    </div>
-  );
-}
 
 function hostnameOf(url: string): string {
   try {
@@ -414,9 +293,14 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   const isYouTubeVideo = Boolean(getYouTubeVideoId(tabUrl));
 
   return (
-    <div data-testid="popup-main" className={`${PANEL_ROOT_CLASS} relative`}>
+    <div
+      data-testid="popup-main"
+      className="flex h-full w-full flex-col overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2 relative"
+    >
       <div className="flex items-center gap-2.5 border-b border-rule px-4 py-[14px]">
-        <div className={BRAND_BADGE_CLASS}>M</div>
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-ink font-display text-[17px] font-medium text-paper ring-[1.5px] ring-accent">
+          M
+        </div>
         <div className="min-w-0 flex-1">
           <div className="font-display text-[15px] font-medium text-ink">
             Marginalia
@@ -443,7 +327,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           title="Disconnect"
           variant="ghost"
           size="icon"
-          className={HEADER_ICON_BUTTON_CLASS}
+          className="size-8 rounded p-1"
         >
           <LogOut size={14} />
         </Button>
@@ -584,7 +468,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
                   className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className={CLAMPED_HIGHLIGHT_TEXT_CLASS}>
+                  <p className="overflow-hidden font-display text-[12.5px] leading-[1.45] text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                     {highlightDisplayText(highlight)}
                   </p>
                   {highlight.note && (
@@ -651,7 +535,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
       )}
 
       <div className="flex gap-1.5 border-t border-rule bg-paper-2 p-2.5">
-        <Button onClick={openDashboard} className={FOOTER_ACTION_CLASS}>
+        <Button onClick={openDashboard} className="h-[34px] flex-1 text-xs">
           <BookOpen size={12} data-icon="inline-start" />
           Open Dashboard
         </Button>
@@ -660,7 +544,6 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           title="Export as Markdown"
           variant="outline"
           size="icon"
-          className={FOOTER_ICON_BUTTON_CLASS}
         >
           <Download size={12} />
         </Button>
@@ -669,7 +552,6 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           title="Open side panel"
           variant="outline"
           size="icon"
-          className={FOOTER_ICON_BUTTON_CLASS}
         >
           <Terminal size={12} />
         </Button>
@@ -678,7 +560,6 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
           title="Refresh"
           variant="outline"
           size="icon"
-          className={FOOTER_ICON_BUTTON_CLASS}
         >
           <RefreshCw size={12} />
         </Button>

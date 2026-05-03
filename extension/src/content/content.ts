@@ -1270,7 +1270,7 @@ function showYouTubeClipTrimmer() {
         : "Mark start and end while the video plays";
 
     const missing = start === null || end === null;
-    const invalid = !missing && end <= start;
+    const invalid = !missing && end! <= start!;
     saveBtn.toggleAttribute("disabled", missing || invalid || saving);
     if (missing) {
       status.textContent = "Save unlocks once both start and end are marked.";
