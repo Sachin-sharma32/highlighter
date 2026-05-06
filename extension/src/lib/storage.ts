@@ -32,7 +32,6 @@ export async function isPaired(): Promise<boolean> {
 
 export async function isHighlightingEnabled(): Promise<boolean> {
   const result = await chrome.storage.sync.get(HIGHLIGHTING_ENABLED_KEY);
-  console.log({ result });
   const value = result[HIGHLIGHTING_ENABLED_KEY];
   return value === undefined ? true : Boolean(value);
 }
