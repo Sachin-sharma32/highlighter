@@ -22,7 +22,6 @@ export default defineConfig({
     {
       name: "extension",
       use: {
-        // Extension tests launch their own browser context in globalSetup
         ...devices["Desktop Chrome"],
       },
       testMatch: "e2e/extension.spec.ts",
