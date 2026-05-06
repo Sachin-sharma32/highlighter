@@ -23,24 +23,24 @@ const tokens = {
   },
   colors: {
     paper: {
-      DEFAULT: "oklch(98.5% 0.006 85)",
-      2: "oklch(96.5% 0.008 85)",
-      3: "oklch(93.5% 0.01 85)",
+      DEFAULT: "var(--paper)",
+      2: "var(--paper-2)",
+      3: "var(--paper-3)",
     },
     rule: {
-      DEFAULT: "oklch(88% 0.012 85)",
-      2: "oklch(82% 0.014 85)",
+      DEFAULT: "var(--rule)",
+      2: "var(--rule-2)",
     },
     ink: {
-      DEFAULT: "oklch(18% 0.01 60)",
-      2: "oklch(32% 0.012 60)",
-      3: "oklch(48% 0.014 60)",
-      4: "oklch(62% 0.014 60)",
+      DEFAULT: "var(--ink)",
+      2: "var(--ink-2)",
+      3: "var(--ink-3)",
+      4: "var(--ink-4)",
     },
     accent: {
-      DEFAULT: "oklch(62% 0.16 40)",
-      2: "oklch(52% 0.17 40)",
-      tint: "oklch(94% 0.05 70)",
+      DEFAULT: "var(--accent-color)",
+      2: "var(--accent-2)",
+      tint: "var(--accent-tint)",
     },
     hl: {
       amber: "oklch(90% 0.10 85)",
