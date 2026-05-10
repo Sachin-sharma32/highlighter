@@ -1,79 +1,20 @@
-import { useEffect, useState, useCallback } from "react";
-import {
-  BookOpen,
-  Copy,
-  Download,
-  Scissors,
-  Terminal,
-  Loader2,
-  RefreshCw,
-  LogOut,
-  Trash2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { DASHBOARD_URL } from "@/lib/dashboard";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
-import {
-  formatClipTime,
-  getYouTubeVideoId,
-  youtubeWatchUrl,
-} from "@/lib/youtube";
+import { getYouTubeVideoId, youtubeWatchUrl } from "@/lib/youtube";
 import PairingScreen from "./components/PairingScreen";
-
-type HighlightColor = "amber" | "rose" | "sage" | "sky" | "violet";
-
-const HL_BG_CLASS: Record<HighlightColor, string> = {
-  amber: "bg-hl-amber",
-  rose: "bg-hl-rose",
-  sage: "bg-hl-sage",
-  sky: "bg-hl-sky",
-  violet: "bg-hl-violet",
-};
-
-interface Highlight {
-  _id: string;
-  text: string;
-  color: HighlightColor;
-  note?: string;
-  url: string;
-  title: string;
-  createdAt: number;
-  sourceType?: "web" | "youtube";
-  youtubeVideoId?: string;
-  clipStart?: number;
-  clipEnd?: number;
-  youtubeChannelTitle?: string;
-}
-
-interface UsageData {
-  plan: "free" | "premium";
-  count: number;
-  limit: number;
-}
-
-type Scope = "page" | "all";
-
-function hostnameOf(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url;
-  }
-}
-
-function clipLabel(start?: number, end?: number) {
-  if (start === undefined || end === undefined) return "YouTube clip";
-  return `YouTube clip ${formatClipTime(start)}-${formatClipTime(end)}`;
-}
-
-function highlightDisplayText(highlight: Highlight) {
-  if (highlight.sourceType === "youtube") {
-    return clipLabel(highlight.clipStart, highlight.clipEnd);
-  }
-  return highlight.text;
-}
+import { PopupHeader } from "./components/PopupHeader";
+import { UsageBar } from "./components/UsageBar";
+import { YouTubeClipBar } from "./components/YouTubeClipBar";
+import { ScopeTabs } from "./components/ScopeTabs";
+import { PageHighlightsHeader } from "./components/PageHighlightsHeader";
+import { HighlightList } from "./components/HighlightList";
+import { DisconnectDialog } from "./components/DisconnectDialog";
+import { FooterStatus } from "./components/FooterStatus";
+import { PopupFooter } from "./components/PopupFooter";
+import { buildMarkdown, downloadMarkdown, hostnameOf } from "./helpers";
+import type { Highlight, Scope, UsageData } from "./types";
 
 function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   const [pageHighlights, setPageHighlights] = useState<Highlight[]>([]);
@@ -135,10 +76,6 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
     void load();
   }, [load]);
 
-  function openDashboard() {
-    chrome.tabs.create({ url: DASHBOARD_URL });
-  }
-
   async function toggleHighlighting() {
     const newState = !highlightingEnabled;
     setHighlightingEnabled(newState);
@@ -153,7 +90,6 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
       type: "DELETE_HIGHLIGHT",
       payload: { id: h._id },
     });
-    // Try to remove the mark from the current page
     if (tabId != null && stripMarginaliaTarget(h.url) === tabUrl) {
       try {
         await chrome.tabs.sendMessage(tabId, {
@@ -164,7 +100,6 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
         /* content script not loaded */
       }
     }
-    // Refresh lists
     setPageHighlights((prev) => prev.filter((x) => x._id !== h._id));
     setAllHighlights((prev) => prev.filter((x) => x._id !== h._id));
   }
@@ -197,35 +132,12 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
     }
   }
 
-  async function exportMarkdown() {
+  function exportMarkdown() {
     const highlights = scope === "page" ? pageHighlights : allHighlights;
     if (!highlights.length) return;
-
     setFooterError("");
-    const title = scope === "page" ? tabTitle : "Marginalia Highlights";
-    const md = `# ${title || "Highlights"}\n\n${highlights
-      .map((h) => {
-        const source =
-          scope === "all"
-            ? `\n\nSource: ${h.title || hostnameOf(h.url)} (${h.url})`
-            : "";
-        return `> ${highlightDisplayText(h)}${h.note ? `\n\n${h.note}` : ""}${source}`;
-      })
-      .join("\n\n---\n\n")}`;
-    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = `${
-      (title || "marginalia-highlights")
-        .replace(/[^\w.-]+/g, "-")
-        .replace(/^-|-$/g, "")
-        .toLowerCase() || "marginalia-highlights"
-    }.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(objectUrl);
+    const { title, content } = buildMarkdown(highlights, scope, tabTitle);
+    downloadMarkdown(title, content);
     setFooterMessage("Markdown downloaded");
   }
 
@@ -289,281 +201,63 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   }
 
   const visible = scope === "page" ? pageHighlights : allHighlights;
-  const hostname = hostnameOf(tabUrl);
-  const isYouTubeVideo = Boolean(getYouTubeVideoId(tabUrl));
 
   return (
     <div
       data-testid="popup-main"
-      className="flex h-full w-full flex-col overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2 relative"
+      className="relative flex h-full w-full flex-col overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2"
     >
-      <div className="flex items-center gap-2.5 border-b border-rule px-4 py-[14px]">
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-ink font-display text-[17px] font-medium text-paper ring-[1.5px] ring-accent">
-          M
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-[15px] font-medium text-ink">
-            Marginalia
-          </div>
-          <div
-            data-testid="popup-on-page-label"
-            className="truncate font-mono text-[10px] tracking-[0.04em] text-ink-4"
-          >
-            {hostname}
-          </div>
-        </div>
-        {/* Highlighting toggle */}
-        <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[10px] text-ink-4">
-            {highlightingEnabled ? "On" : "Off"}
-          </span>
-          <Switch
-            checked={highlightingEnabled}
-            onCheckedChange={() => void toggleHighlighting()}
-          />
-        </div>
-        <Button
-          onClick={() => setConfirmDisconnect(true)}
-          title="Disconnect"
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded p-1"
-        >
-          <LogOut size={14} />
-        </Button>
-      </div>
+      <PopupHeader
+        hostname={hostnameOf(tabUrl)}
+        highlightingEnabled={highlightingEnabled}
+        onToggleHighlighting={() => void toggleHighlighting()}
+        onDisconnect={() => setConfirmDisconnect(true)}
+      />
 
-      {/* Usage bar */}
-      {usage && usage.plan === "free" && (
-        <div className="px-4 py-2 border-b border-rule">
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-4">
-              {usage.count} / {usage.limit} highlights used
-            </span>
-            <span className="font-mono text-[10px] text-ink-4">
-              {Math.round((usage.count / usage.limit) * 100)}%
-            </span>
-          </div>
-          <div className="h-1.5 rounded-full overflow-hidden bg-rule">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${Math.min(100, (usage.count / usage.limit) * 100)}%`,
-                background:
-                  usage.count / usage.limit > 0.8
-                    ? "oklch(65% 0.2 25)"
-                    : "oklch(70% 0.14 145)",
-              }}
-            />
-          </div>
-        </div>
+      {usage && usage.plan === "free" && <UsageBar usage={usage} />}
+
+      {Boolean(getYouTubeVideoId(tabUrl)) && (
+        <YouTubeClipBar onOpenTrimmer={() => void openClipTrimmer()} />
       )}
 
-      {isYouTubeVideo && (
-        <div className="border-b border-rule bg-paper-2 px-4 py-2">
-          <Button
-            onClick={() => void openClipTrimmer()}
-            className="h-8 w-full text-xs"
-          >
-            <Scissors size={12} data-icon="inline-start" />
-            Clip current moment
-          </Button>
-        </div>
-      )}
-
-      <div className="flex border-b border-rule">
-        {(
-          [
-            { key: "page", label: "This page", count: pageHighlights.length },
-            { key: "all", label: "All pages", count: allHighlights.length },
-          ] as const
-        ).map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setScope(tab.key)}
-            className={`h-9 flex-1 border-b-2 font-mono text-[10px] font-medium uppercase tracking-[0.06em] transition-colors ${
-              scope === tab.key
-                ? "border-accent text-ink"
-                : "border-transparent text-ink-4 hover:text-ink-2"
-            }`}
-          >
-            {tab.label} <span className="ml-0.5 text-ink-4">({tab.count})</span>
-          </button>
-        ))}
-      </div>
+      <ScopeTabs
+        scope={scope}
+        pageCount={pageHighlights.length}
+        allCount={allHighlights.length}
+        onChange={setScope}
+      />
 
       {scope === "page" && pageHighlights.length > 0 && (
-        <>
-          <div className="px-4 pt-2.5">
-            <div
-              className="mb-2 truncate font-display text-[13px] text-ink-2"
-              data-testid="popup-tab-title"
-            >
-              {tabTitle}
-            </div>
-            <div className="flex h-1.5 gap-px overflow-hidden rounded-full">
-              {pageHighlights.map((highlight) => (
-                <div
-                  key={`${highlight._id}-bar`}
-                  className={`flex-1 rounded-full ${HL_BG_CLASS[highlight.color]}`}
-                />
-              ))}
-            </div>
-          </div>
-          <Separator className="mx-4 mt-2.5" />
-        </>
+        <PageHighlightsHeader title={tabTitle} highlights={pageHighlights} />
       )}
 
-      <div className="flex-1 overflow-y-auto px-4 py-2">
-        {loading ? (
-          <div className="flex justify-center pt-10">
-            <Loader2 size={18} className="animate-spin text-ink-4" />
-          </div>
-        ) : visible.length === 0 ? (
-          <div className="pt-10 text-center text-xs leading-6 text-ink-4">
-            {scope === "page" ? (
-              <>
-                <p>No highlights on this page yet.</p>
-                <p className="mt-1">Select text to start highlighting.</p>
-              </>
-            ) : (
-              <>
-                <p>No highlights saved yet.</p>
-                <p className="mt-1">
-                  Highlights you save across the web will appear here.
-                </p>
-              </>
-            )}
-          </div>
-        ) : (
-          visible.map((highlight, index) => (
-            <div
-              key={highlight._id}
-              data-testid="popup-highlight-row"
-              className={`group relative flex w-full gap-2.5 py-2 ${index < visible.length - 1 ? "border-b border-rule" : ""}`}
-            >
-              <div className="absolute right-0 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                <button
-                  onClick={() =>
-                    void copyHighlightText(highlightDisplayText(highlight))
-                  }
-                  title="Copy text"
-                  className="flex items-center justify-center rounded p-1 text-ink-4 transition-colors hover:text-ink"
-                >
-                  <Copy size={13} />
-                </button>
-                <button
-                  onClick={() => void deleteHighlight(highlight)}
-                  title="Delete highlight"
-                  className="flex items-center justify-center rounded p-1 text-ink-4 transition-colors hover:text-red-500"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-              <button
-                onClick={() => void focusHighlight(highlight)}
-                className="flex min-w-0 flex-1 gap-2.5 pr-12 text-left hover:bg-paper-2"
-              >
-                <div
-                  className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="overflow-hidden font-display text-[12.5px] leading-[1.45] text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-                    {highlightDisplayText(highlight)}
-                  </p>
-                  {highlight.note && (
-                    <p className="mt-[3px] text-[11px] italic text-ink-3">
-                      "{highlight.note}"
-                    </p>
-                  )}
-                  {scope === "all" && (
-                    <div className="mt-1 flex items-baseline gap-1.5 truncate font-mono text-[10px] text-ink-4">
-                      <span className="truncate text-ink-3">
-                        {highlight.title || hostnameOf(highlight.url)}
-                      </span>
-                      <span className="shrink-0">·</span>
-                      <span className="shrink-0">
-                        {hostnameOf(highlight.url)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </button>
-            </div>
-          ))
-        )}
-      </div>
+      <HighlightList
+        highlights={visible}
+        scope={scope}
+        loading={loading}
+        onOpen={(h) => void focusHighlight(h)}
+        onCopy={(text) => void copyHighlightText(text)}
+        onDelete={(h) => void deleteHighlight(h)}
+      />
 
       {confirmDisconnect && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink/30 px-6">
-          <div className="w-full rounded border border-rule bg-paper p-4 shadow-paper-3">
-            <div className="font-display text-[17px] font-medium text-ink">
-              Disconnect extension?
-            </div>
-            <p className="mt-2 text-xs leading-5 text-ink-3">
-              You can reconnect later with a new pairing code from the
-              dashboard.
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                className="h-8 px-3 text-xs"
-                onClick={() => setConfirmDisconnect(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="h-8 bg-red-600 px-3 text-xs text-white hover:bg-red-700"
-                onClick={() => {
-                  setConfirmDisconnect(false);
-                  void onUnpair();
-                }}
-              >
-                Disconnect
-              </Button>
-            </div>
-          </div>
-        </div>
+        <DisconnectDialog
+          onCancel={() => setConfirmDisconnect(false)}
+          onConfirm={() => {
+            setConfirmDisconnect(false);
+            void onUnpair();
+          }}
+        />
       )}
 
-      {(footerError || footerMessage) && (
-        <div
-          className={`border-t border-rule bg-paper px-3 py-1.5 text-[11px] leading-4 ${footerError ? "text-red-600" : "text-ink-3"}`}
-        >
-          {footerError || footerMessage}
-        </div>
-      )}
+      <FooterStatus error={footerError} message={footerMessage} />
 
-      <div className="flex gap-1.5 border-t border-rule bg-paper-2 p-2.5">
-        <Button onClick={openDashboard} className="h-[34px] flex-1 text-xs">
-          <BookOpen size={12} data-icon="inline-start" />
-          Open Dashboard
-        </Button>
-        <Button
-          onClick={() => void exportMarkdown()}
-          title="Export as Markdown"
-          variant="outline"
-          size="icon"
-        >
-          <Download size={12} />
-        </Button>
-        <Button
-          onClick={() => void openSidePanel()}
-          title="Open side panel"
-          variant="outline"
-          size="icon"
-        >
-          <Terminal size={12} />
-        </Button>
-        <Button
-          onClick={() => void load()}
-          title="Refresh"
-          variant="outline"
-          size="icon"
-        >
-          <RefreshCw size={12} />
-        </Button>
-      </div>
+      <PopupFooter
+        onOpenDashboard={() => chrome.tabs.create({ url: DASHBOARD_URL })}
+        onExport={exportMarkdown}
+        onOpenSidePanel={() => void openSidePanel()}
+        onRefresh={() => void load()}
+      />
     </div>
   );
 }
