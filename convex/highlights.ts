@@ -50,7 +50,7 @@ const HIGHLIGHT_NOT_FOUND = () =>
 export const list = query({
   args: {
     collectionId: v.optional(v.id("collections")),
-    filter: v.optional(v.union(v.literal("notes"), v.literal("review"))),
+    filter: v.optional(v.literal("notes")),
     search: v.optional(v.string()),
   },
   handler: async (ctx, { collectionId, filter, search }) => {

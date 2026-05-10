@@ -6,7 +6,6 @@ import {
   StickyNote,
   Folder,
   Plus,
-  RefreshCw,
   Globe,
   ChevronDown,
   ChevronRight,
@@ -194,14 +193,6 @@ export function Sidebar() {
             onClick={() => setActiveCollection("notes")}
             testId="library-notes"
           />
-          <NavItem
-            icon={<RefreshCw size={13} />}
-            label="Review"
-            active={activeCollectionId === "review" && !activeDomain}
-            onClick={() => setActiveCollection("review")}
-            testId="library-review"
-          />
-
           {collections.length > 0 && (
             <>
               <SectionLabel label="Collections" />

@@ -33,7 +33,7 @@ export function HighlightDetail() {
     searchQuery,
     setCommandPaletteOpen,
   } = useAppStore();
-  const isSpecial = ["inbox", "all", "notes", "review"].includes(
+  const isSpecial = ["inbox", "all", "notes"].includes(
     activeCollectionId as string,
   );
   const rawNavigationHighlights = useQuery(api.highlights.list, {

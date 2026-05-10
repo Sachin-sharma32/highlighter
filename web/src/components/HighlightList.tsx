@@ -51,13 +51,10 @@ function timeAgo(ts: number) {
   return `${Math.floor(d / 7)}w`;
 }
 
-function collectionLabel(
-  id: Id<"collections"> | "inbox" | "all" | "notes" | "review",
-) {
+function collectionLabel(id: Id<"collections"> | "inbox" | "all" | "notes") {
   if (id === "inbox") return "Inbox";
   if (id === "all") return "All highlights";
   if (id === "notes") return "With notes";
-  if (id === "review") return "Review";
   return null;
 }
 
@@ -81,7 +78,7 @@ export function HighlightList() {
     searchQuery,
   } = useAppStore();
 
-  const isSpecial = ["inbox", "all", "notes", "review"].includes(
+  const isSpecial = ["inbox", "all", "notes"].includes(
     activeCollectionId as string,
   );
 

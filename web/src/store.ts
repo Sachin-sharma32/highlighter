@@ -1,12 +1,7 @@
 import { create } from "zustand";
 import type { Id } from "../../convex/_generated/dataModel";
 
-type ActiveCollection =
-  | Id<"collections">
-  | "inbox"
-  | "all"
-  | "notes"
-  | "review";
+type ActiveCollection = Id<"collections"> | "inbox" | "all" | "notes";
 
 interface AppStore {
   activeCollectionId: ActiveCollection;
