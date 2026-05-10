@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { appError } from "./errors";
 
 export const getColors = query({
   args: {},
@@ -21,7 +22,11 @@ export const saveColors = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthorized");
+    if (!userId)
+      throw appError(
+        "UNAUTHENTICATED",
+        "Your session has expired. Please sign in again to save your settings.",
+      );
     const settings = await ctx.db
       .query("settings")
       .withIndex("by_user", (q) => q.eq("userId", userId))

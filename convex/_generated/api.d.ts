@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as billing from "../billing.js";
 import type * as collections from "../collections.js";
+import type * as errors from "../errors.js";
 import type * as ext from "../ext.js";
 import type * as extensionAuth from "../extensionAuth.js";
 import type * as highlights from "../highlights.js";
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   billing: typeof billing;
   collections: typeof collections;
+  errors: typeof errors;
   ext: typeof ext;
   extensionAuth: typeof extensionAuth;
   highlights: typeof highlights;

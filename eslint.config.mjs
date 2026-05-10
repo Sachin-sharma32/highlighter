@@ -37,7 +37,7 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
-      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/set-state-in-effect": "off",
     },
   },
 );

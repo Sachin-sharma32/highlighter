@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { DASHBOARD_URL } from "@/lib/dashboard";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { stripMarginaliaTarget, withMarginaliaTarget } from "@/lib/urls";
 import { getYouTubeVideoId, youtubeWatchUrl } from "@/lib/youtube";
 import PairingScreen from "./components/PairingScreen";
@@ -127,7 +128,10 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
       window.close();
     } catch (error) {
       setFooterError(
-        error instanceof Error ? error.message : "Could not open clip trimmer.",
+        friendlyErrorMessage(
+          error,
+          "We couldn’t open the clip trimmer on this page. Try refreshing YouTube and again.",
+        ),
       );
     }
   }
@@ -164,12 +168,11 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
         }
         window.close();
       } catch (messageError) {
-        const error =
-          messageError instanceof Error ? messageError : directError;
         setFooterError(
-          error instanceof Error
-            ? error.message
-            : "Side panel could not be opened.",
+          friendlyErrorMessage(
+            messageError ?? directError,
+            "We couldn’t open the side panel from here. Try opening it from the toolbar menu.",
+          ),
         );
       }
     }
@@ -205,7 +208,7 @@ function MainPopup({ onUnpair }: { onUnpair: () => void }) {
   return (
     <div
       data-testid="popup-main"
-      className="relative flex h-full w-full flex-col overflow-hidden rounded-[16px] border border-rule bg-paper font-ui shadow-paper-2"
+      className="relative flex h-full w-full flex-col overflow-hidden border border-rule bg-paper font-ui shadow-paper-2"
     >
       <PopupHeader
         hostname={hostnameOf(tabUrl)}
@@ -286,12 +289,10 @@ export default function Popup() {
     return <PairingScreen onPaired={() => setPaired(true)} />;
   }
 
-  return (
-    <MainPopup
-      onUnpair={async () => {
-        await chrome.runtime.sendMessage({ type: "SIGN_OUT" });
-        setPaired(false);
-      }}
-    />
-  );
+  async function unPair() {
+    await chrome.runtime.sendMessage({ type: "SIGN_OUT" });
+    setPaired(false);
+  }
+
+  return <MainPopup onUnpair={() => unPair()} />;
 }

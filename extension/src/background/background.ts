@@ -2,6 +2,7 @@ import { ConvexClient } from "convex/browser";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { ExtMessage, ExtResponse } from "../lib/messages";
+import { friendlyErrorMessage, appErrorCode } from "../lib/errors";
 import {
   getToken,
   setToken,
@@ -105,12 +106,13 @@ chrome.runtime.onMessage.addListener(
   (message: ExtMessage, sender, sendResponse: (r: ExtResponse) => void) => {
     handleMessage(message, sender)
       .then(sendResponse)
-      .catch((err: unknown) =>
+      .catch((err: unknown) => {
         sendResponse({
           ok: false,
-          error: (err as Error).message ?? "Unknown error",
-        }),
-      );
+          error: friendlyErrorMessage(err),
+          errorCode: appErrorCode(err) ?? undefined,
+        });
+      });
     return true;
   },
 );
@@ -196,12 +198,14 @@ async function handleMessage(
         await setUserId(result.userId);
         return { ok: true, data: result };
       } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.message
-            : "Failed to exchange pairing code";
-        console.error("[Marginalia] Pairing failed:", message);
-        return { ok: false, error: message };
+        return {
+          ok: false,
+          error: friendlyErrorMessage(
+            err,
+            "We couldn’t connect right now. Please generate a fresh code and try again.",
+          ),
+          errorCode: appErrorCode(err) ?? undefined,
+        };
       }
     }
 

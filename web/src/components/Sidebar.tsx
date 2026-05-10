@@ -22,6 +22,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -139,8 +140,13 @@ export function Sidebar() {
       toast.success("Collection created");
       setDialogOpen(false);
       setNewName("");
-    } catch {
-      toast.error("Failed to create collection");
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t create that collection. Please try again.",
+        ),
+      );
     }
   }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { SaveHighlightPayload } from "../../lib/messages";
+import { friendlyErrorMessage } from "../../lib/errors";
 import { youtubeWatchUrl, formatClipTime } from "../../lib/youtube";
 import { notifyYouTubeClipSaved } from "../api";
 
@@ -93,7 +94,10 @@ export function YouTubeClipTrimmer({
     } catch (error) {
       setSaving(false);
       setStatus({
-        text: error instanceof Error ? error.message : "Could not save clip.",
+        text: friendlyErrorMessage(
+          error,
+          "We couldn’t save this clip. Please try again.",
+        ),
         tone: "error",
       });
     }

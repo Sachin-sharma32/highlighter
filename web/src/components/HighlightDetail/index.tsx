@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useAppStore } from "@/store";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { TagEditor } from "@/components/TagEditor";
 import { DetailToolbar } from "./DetailToolbar";
 import { SourceMetadata } from "./SourceMetadata";
@@ -151,37 +152,84 @@ export function HighlightDetail() {
 
   async function handleColorChange(color: HighlightColor) {
     if (!highlight) return;
-    await setColor({ id: highlight._id, color });
+    try {
+      await setColor({ id: highlight._id, color });
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t update the highlight color. Please try again.",
+        ),
+      );
+    }
   }
 
   async function handleAddTag(tag: string) {
     if (!highlight || highlight.tags.includes(tag)) return;
-    await update({ id: highlight._id, tags: [...highlight.tags, tag] });
+    try {
+      await update({ id: highlight._id, tags: [...highlight.tags, tag] });
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t add that tag. Please try again.",
+        ),
+      );
+    }
   }
 
   async function handleRemoveTag(tag: string) {
     if (!highlight) return;
-    await update({
-      id: highlight._id,
-      tags: highlight.tags.filter((t: string) => t !== tag),
-    });
+    try {
+      await update({
+        id: highlight._id,
+        tags: highlight.tags.filter((t: string) => t !== tag),
+      });
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t remove that tag. Please try again.",
+        ),
+      );
+    }
   }
 
   async function handleCollectionChange(value: string) {
     if (!highlight) return;
-    await update({
-      id: highlight._id,
-      collectionId:
-        value === "inbox" ? undefined : (value as Id<"collections">),
-    });
-    toast.success(value === "inbox" ? "Moved to inbox" : "Added to collection");
+    try {
+      await update({
+        id: highlight._id,
+        collectionId:
+          value === "inbox" ? undefined : (value as Id<"collections">),
+      });
+      toast.success(
+        value === "inbox" ? "Moved to inbox" : "Added to collection",
+      );
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t move that highlight. Please try again.",
+        ),
+      );
+    }
   }
 
   async function handleDelete() {
     if (!highlight) return;
-    await remove({ id: highlight._id });
-    setSelectedHighlight(null);
-    toast.success("Highlight deleted");
+    try {
+      await remove({ id: highlight._id });
+      setSelectedHighlight(null);
+      toast.success("Highlight deleted");
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t delete that highlight. Please try again.",
+        ),
+      );
+    }
   }
 
   function handleCopy() {

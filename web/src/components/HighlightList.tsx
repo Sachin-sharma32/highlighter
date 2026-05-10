@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "convex/react";
 import { Scissors, StickyNote, Trash2 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { formatClipTime } from "@/lib/youtube";
@@ -118,8 +119,13 @@ export function HighlightList() {
         setSelectedHighlight(null);
       }
       toast.success("Highlight deleted");
-    } catch {
-      toast.error("Failed to delete highlight");
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t delete that highlight. Please try again.",
+        ),
+      );
     }
   }
 

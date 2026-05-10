@@ -3,6 +3,7 @@ import { useMutation } from "convex/react";
 import { Link2, RefreshCw, CheckCircle } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
 
 export default function ConnectExtension() {
@@ -15,8 +16,13 @@ export default function ConnectExtension() {
     try {
       const c = await createCode();
       setCode(c);
-    } catch {
-      toast.error("Failed to generate code");
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t generate a pairing code. Please try again.",
+        ),
+      );
     } finally {
       setLoading(false);
     }

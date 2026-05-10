@@ -54,6 +54,8 @@ export interface UpdateHighlightPayload {
   collectionIds?: string[];
 }
 
+import type { AppErrorCode } from "./errors";
+
 export type ExtResponse<T = unknown> =
   | { ok: true; data: T }
-  | { ok: false; error: string };
+  | { ok: false; error: string; errorCode?: AppErrorCode };

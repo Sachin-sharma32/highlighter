@@ -9,6 +9,19 @@ import {
   PREMIUM_PRICE_PAISE,
   PREMIUM_PERIOD_MS,
 } from "./plan";
+import { appError } from "./errors";
+
+const NOT_AUTHENTICATED = () =>
+  appError(
+    "UNAUTHENTICATED",
+    "Your session has expired. Please sign in again to continue.",
+  );
+
+const PAYMENTS_NOT_CONFIGURED = () =>
+  appError(
+    "PAYMENTS_NOT_CONFIGURED",
+    "Payments aren’t available right now. Please try again in a few minutes.",
+  );
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -60,11 +73,10 @@ export const createOrder = action({
     currency: string;
   }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw NOT_AUTHENTICATED();
 
     const creds = getRazorpayCreds();
-    if (!creds)
-      throw new Error("Payments not configured. Please try again later.");
+    if (!creds) throw PAYMENTS_NOT_CONFIGURED();
 
     const auth = btoa(`${creds.keyId}:${creds.keySecret}`);
     const receipt = `marg_${userId.slice(0, 10)}_${Date.now().toString(36)}`;
@@ -83,8 +95,10 @@ export const createOrder = action({
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Razorpay order creation failed: ${body}`);
+      throw appError(
+        "PAYMENT_PROVIDER_FAILED",
+        "We couldn’t start checkout right now. Please try again in a moment.",
+      );
     }
 
     const order = (await res.json()) as {
@@ -152,10 +166,10 @@ export const verifyPayment = action({
     { orderId, paymentId, signature },
   ): Promise<{ ok: true }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw NOT_AUTHENTICATED();
 
     const creds = getRazorpayCreds();
-    if (!creds) throw new Error("Payments not configured");
+    if (!creds) throw PAYMENTS_NOT_CONFIGURED();
 
     const payload = `${orderId}|${paymentId}`;
     const encoder = new TextEncoder();
@@ -174,7 +188,11 @@ export const verifyPayment = action({
     const expected = Array.from(new Uint8Array(sigBuf))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
-    if (expected !== signature) throw new Error("Invalid payment signature");
+    if (expected !== signature)
+      throw appError(
+        "PAYMENT_VERIFICATION_FAILED",
+        "We couldn’t verify your payment. If you were charged, contact support and we’ll sort it out.",
+      );
 
     await ctx.runMutation(internal.billing.activatePremium, {
       userId,
@@ -221,7 +239,7 @@ export const cancelPremium = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw NOT_AUTHENTICATED();
     const sub = await ctx.db
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", userId))

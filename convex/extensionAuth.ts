@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { appError } from "./errors";
 
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -27,7 +28,11 @@ export const createPairingCode = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId)
+      throw appError(
+        "UNAUTHENTICATED",
+        "Please sign in before generating a pairing code.",
+      );
 
     const existing = await ctx.db
       .query("pairingCodes")
@@ -52,10 +57,17 @@ export const exchangePairingCode = mutation({
       .query("pairingCodes")
       .withIndex("by_code", (q) => q.eq("code", code))
       .unique();
-    if (!entry) throw new Error("Invalid code");
+    if (!entry)
+      throw appError(
+        "PAIRING_CODE_INVALID",
+        "That pairing code didn’t match. Generate a fresh one from your dashboard and try again.",
+      );
     if (Date.now() > entry.expiresAt) {
       await ctx.db.delete(entry._id);
-      throw new Error("Code expired");
+      throw appError(
+        "PAIRING_CODE_EXPIRED",
+        "This pairing code has expired. Open the dashboard and generate a new one.",
+      );
     }
 
     const userId = entry.userId;

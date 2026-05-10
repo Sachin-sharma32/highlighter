@@ -1,8 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CONNECT_EXTENSION_URL } from "@/lib/dashboard";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { Link2, Loader2 } from "lucide-react";
 import { useState } from "react";
+
+const TIMEOUT_MESSAGE =
+  "We couldn’t reach Marginalia. Check your internet connection and try again.";
+const PAIRING_FALLBACK =
+  "We couldn’t connect right now. Make sure the dashboard is open, then try again.";
 
 export default function PairingScreen({ onPaired }: { onPaired: () => void }) {
   const [code, setCode] = useState("");
@@ -20,28 +26,16 @@ export default function PairingScreen({ onPaired }: { onPaired: () => void }) {
           payload: { code: code.trim() },
         }),
         new Promise<never>((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  "Request timed out. Check your network and extension configuration.",
-                ),
-              ),
-            8000,
-          ),
+          setTimeout(() => reject(new Error(TIMEOUT_MESSAGE)), 8000),
         ),
       ]);
       if (res?.ok) {
         onPaired();
       } else {
-        setError(res?.error ?? "Invalid code. Please try again.");
+        setError(friendlyErrorMessage(res?.error, PAIRING_FALLBACK));
       }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Connection failed. Make sure the dashboard is open.",
-      );
+      setError(friendlyErrorMessage(err, PAIRING_FALLBACK));
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { assertCanCreateHighlight } from "./plan";
+import { appError } from "./errors";
 
 const colorValidator = v.string();
 const sourceTypeValidator = v.optional(
@@ -16,14 +17,35 @@ function assertValidClip(args: {
 }) {
   if (args.sourceType !== "youtube") return;
   if (!args.youtubeVideoId?.trim())
-    throw new Error("YouTube video ID is required");
+    throw appError(
+      "INVALID_INPUT",
+      "We couldn’t identify the YouTube video for this clip. Please reload the page and try again.",
+    );
   if (args.clipStart === undefined || args.clipEnd === undefined) {
-    throw new Error("Clip start and end are required");
+    throw appError(
+      "INVALID_INPUT",
+      "Mark both the start and end of the clip before saving.",
+    );
   }
   if (args.clipStart < 0 || args.clipEnd <= args.clipStart) {
-    throw new Error("Clip end must be after clip start");
+    throw appError(
+      "INVALID_INPUT",
+      "The clip’s end time needs to be after its start time.",
+    );
   }
 }
+
+const NOT_AUTHENTICATED = () =>
+  appError(
+    "UNAUTHENTICATED",
+    "Your session has expired. Please sign in again to continue.",
+  );
+
+const HIGHLIGHT_NOT_FOUND = () =>
+  appError(
+    "NOT_FOUND",
+    "We couldn’t find that highlight — it may have already been deleted.",
+  );
 
 export const list = query({
   args: {
@@ -140,7 +162,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw NOT_AUTHENTICATED();
     await assertCanCreateHighlight(ctx, userId);
     assertValidClip(args);
     return await ctx.db.insert("highlights", {
@@ -162,9 +184,9 @@ export const update = mutation({
   },
   handler: async (ctx, { id, ...patch }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw NOT_AUTHENTICATED();
     const h = await ctx.db.get(id);
-    if (!h || h.userId !== userId) throw new Error("Not found");
+    if (!h || h.userId !== userId) throw HIGHLIGHT_NOT_FOUND();
     await ctx.db.patch(id, patch);
   },
 });
@@ -173,9 +195,9 @@ export const setColor = mutation({
   args: { id: v.id("highlights"), color: colorValidator },
   handler: async (ctx, { id, color }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw NOT_AUTHENTICATED();
     const h = await ctx.db.get(id);
-    if (!h || h.userId !== userId) throw new Error("Not found");
+    if (!h || h.userId !== userId) throw HIGHLIGHT_NOT_FOUND();
     await ctx.db.patch(id, { color });
   },
 });
@@ -184,9 +206,9 @@ export const setNote = mutation({
   args: { id: v.id("highlights"), note: v.string() },
   handler: async (ctx, { id, note }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw NOT_AUTHENTICATED();
     const h = await ctx.db.get(id);
-    if (!h || h.userId !== userId) throw new Error("Not found");
+    if (!h || h.userId !== userId) throw HIGHLIGHT_NOT_FOUND();
     await ctx.db.patch(id, { note });
   },
 });
@@ -195,9 +217,9 @@ export const remove = mutation({
   args: { id: v.id("highlights") },
   handler: async (ctx, { id }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw NOT_AUTHENTICATED();
     const h = await ctx.db.get(id);
-    if (!h || h.userId !== userId) throw new Error("Not found");
+    if (!h || h.userId !== userId) throw HIGHLIGHT_NOT_FOUND();
     await ctx.db.delete(id);
   },
 });

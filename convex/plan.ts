@@ -1,5 +1,6 @@
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { appError } from "./errors";
 
 export const FREE_HIGHLIGHT_LIMIT = 500;
 export const PREMIUM_PRICE_PAISE = 19900; // ₹199
@@ -40,8 +41,10 @@ export async function assertCanCreateHighlight(
   if (plan === "premium") return;
   const count = await getHighlightCount(ctx, userId);
   if (count >= FREE_HIGHLIGHT_LIMIT) {
-    throw new Error(
-      `Free plan limit reached (${FREE_HIGHLIGHT_LIMIT} highlights). Upgrade to premium to save more.`,
+    throw appError(
+      "FREE_LIMIT_REACHED",
+      `You’ve reached the free plan limit of ${FREE_HIGHLIGHT_LIMIT} highlights. Upgrade to Premium to save more.`,
+      { limit: FREE_HIGHLIGHT_LIMIT },
     );
   }
 }

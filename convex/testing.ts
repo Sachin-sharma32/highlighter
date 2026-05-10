@@ -2,6 +2,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { createAccount, retrieveAccount } from "@convex-dev/auth/server";
+import { appError } from "./errors";
 
 const isProduction =
   (globalThis as { process?: { env?: Record<string, string | undefined> } })
@@ -9,7 +10,10 @@ const isProduction =
 
 function assertTestMode() {
   if (isProduction) {
-    throw new Error("Testing helpers are disabled in production");
+    throw appError(
+      "TESTING_DISABLED",
+      "Testing helpers are disabled in production.",
+    );
   }
 }
 

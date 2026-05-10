@@ -8,6 +8,7 @@ import {
   getHighlightCount,
   FREE_HIGHLIGHT_LIMIT,
 } from "./plan";
+import { appError } from "./errors";
 
 const colorValidator = v.string();
 const sourceTypeValidator = v.optional(
@@ -22,14 +23,41 @@ function assertValidClip(args: {
 }) {
   if (args.sourceType !== "youtube") return;
   if (!args.youtubeVideoId?.trim())
-    throw new Error("YouTube video ID is required");
+    throw appError(
+      "INVALID_INPUT",
+      "We couldn’t identify the YouTube video for this clip. Please reload the page and try again.",
+    );
   if (args.clipStart === undefined || args.clipEnd === undefined) {
-    throw new Error("Clip start and end are required");
+    throw appError(
+      "INVALID_INPUT",
+      "Mark both the start and end of the clip before saving.",
+    );
   }
   if (args.clipStart < 0 || args.clipEnd <= args.clipStart) {
-    throw new Error("Clip end must be after clip start");
+    throw appError(
+      "INVALID_INPUT",
+      "The clip’s end time needs to be after its start time.",
+    );
   }
 }
+
+const INVALID_SESSION = () =>
+  appError(
+    "INVALID_EXTENSION_SESSION",
+    "Your extension session is no longer valid. Please reconnect from the extension popup.",
+  );
+
+const HIGHLIGHT_NOT_FOUND = () =>
+  appError(
+    "NOT_FOUND",
+    "We couldn’t find that highlight — it may have already been deleted.",
+  );
+
+const COLLECTION_NOT_FOUND = () =>
+  appError(
+    "NOT_FOUND",
+    "That collection no longer exists. Refresh the dashboard and try again.",
+  );
 
 async function userIdFromToken(
   ctx: QueryCtx | MutationCtx,
@@ -98,7 +126,7 @@ export const createCollection = mutation({
   args: { token: v.string(), name: v.string() },
   handler: async (ctx, { token, name }) => {
     const userId = await userIdFromToken(ctx, token);
-    if (!userId) throw new Error("Invalid extension session");
+    if (!userId) throw INVALID_SESSION();
     return await ctx.db.insert("collections", {
       userId,
       name: name.trim(),
@@ -144,13 +172,13 @@ export const create = mutation({
   },
   handler: async (ctx, { token, tags, collectionId, ...data }) => {
     const userId = await userIdFromToken(ctx, token);
-    if (!userId) throw new Error("Invalid extension session");
+    if (!userId) throw INVALID_SESSION();
     await assertCanCreateHighlight(ctx, userId);
     assertValidClip(data);
     if (collectionId) {
       const col = await ctx.db.get(collectionId);
       if (!col || col.userId !== userId) {
-        throw new Error("Invalid collection");
+        throw COLLECTION_NOT_FOUND();
       }
     }
     return await ctx.db.insert("highlights", {
@@ -179,12 +207,12 @@ export const update = mutation({
     { token, id, collectionId, collectionIds, ...patch },
   ) => {
     const userId = await userIdFromToken(ctx, token);
-    if (!userId) throw new Error("Invalid extension session");
+    if (!userId) throw INVALID_SESSION();
     const h = await ctx.db.get(id);
-    if (!h || h.userId !== userId) throw new Error("Not found");
+    if (!h || h.userId !== userId) throw HIGHLIGHT_NOT_FOUND();
     if (collectionId) {
       const col = await ctx.db.get(collectionId);
-      if (!col || col.userId !== userId) throw new Error("Invalid collection");
+      if (!col || col.userId !== userId) throw COLLECTION_NOT_FOUND();
     }
     const finalPatch: Record<string, unknown> = { ...patch };
     if (collectionId === null) {
@@ -203,9 +231,9 @@ export const remove = mutation({
   args: { token: v.string(), id: v.id("highlights") },
   handler: async (ctx, { token, id }) => {
     const userId = await userIdFromToken(ctx, token);
-    if (!userId) throw new Error("Invalid extension session");
+    if (!userId) throw INVALID_SESSION();
     const h = await ctx.db.get(id);
-    if (!h || h.userId !== userId) throw new Error("Not found");
+    if (!h || h.userId !== userId) throw HIGHLIGHT_NOT_FOUND();
     await ctx.db.delete(id);
   },
 });

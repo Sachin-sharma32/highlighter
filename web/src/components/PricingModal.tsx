@@ -4,6 +4,7 @@ import { Check, Zap, Loader2, Crown } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
 
 declare global {
@@ -98,8 +99,13 @@ export function PricingModal() {
             });
             toast.success("Welcome to Premium! 🎉");
             setPricingModalOpen(false);
-          } catch {
-            toast.error("Payment verification failed. Please contact support.");
+          } catch (err) {
+            toast.error(
+              friendlyErrorMessage(
+                err,
+                "We couldn’t verify your payment. If you were charged, contact support and we’ll sort it out.",
+              ),
+            );
           }
         },
         theme: { color: "#7c3aed" },
@@ -116,7 +122,10 @@ export function PricingModal() {
       rzp.open();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to start payment",
+        friendlyErrorMessage(
+          err,
+          "We couldn’t start checkout right now. Please try again in a moment.",
+        ),
       );
       setLoading(false);
     }

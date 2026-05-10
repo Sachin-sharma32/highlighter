@@ -1,4 +1,5 @@
 import type { TabMessage } from "../lib/messages";
+import { friendlyErrorMessage } from "../lib/errors";
 import { focusHighlight, unwrapMarksById } from "./marks";
 import { setHighlightingEnabled } from "./settings";
 import { dismissToolbar } from "./toolbar";
@@ -40,10 +41,10 @@ export function attachMessageListener() {
         } catch (error) {
           sendResponse({
             ok: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Could not open clip trimmer.",
+            error: friendlyErrorMessage(
+              error,
+              "We couldn’t open the clip trimmer on this page. Try refreshing YouTube and again.",
+            ),
           });
         }
         return true;

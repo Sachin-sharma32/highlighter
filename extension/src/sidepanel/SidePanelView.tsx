@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_URL } from "@/lib/dashboard";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { stripMarginaliaTarget } from "@/lib/urls";
 import { getYouTubeVideoId, youtubeWatchUrl } from "@/lib/youtube";
 import { hostnameOf, navigateToHighlight } from "./helpers";
@@ -191,7 +192,10 @@ export default function SidePanel() {
         throw new Error(response?.error ?? "Could not open clip trimmer.");
     } catch (error) {
       setClipError(
-        error instanceof Error ? error.message : "Could not open clip trimmer.",
+        friendlyErrorMessage(
+          error,
+          "We couldn’t open the clip trimmer on this page. Try refreshing YouTube and again.",
+        ),
       );
     }
   }

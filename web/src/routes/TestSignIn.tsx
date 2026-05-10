@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { friendlyErrorMessage } from "@/lib/errors";
 
 export default function TestSignIn() {
   const { signIn } = useAuthActions();
@@ -25,7 +26,12 @@ export default function TestSignIn() {
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to sign in");
+          setError(
+            friendlyErrorMessage(
+              err,
+              "We couldn’t sign in the test user. Make sure `convex dev` is running.",
+            ),
+          );
         }
       });
 
