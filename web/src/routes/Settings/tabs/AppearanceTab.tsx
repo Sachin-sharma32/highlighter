@@ -12,8 +12,8 @@ import {
   type AppTheme,
   type TypographyChoice,
 } from "@/lib/appearance";
+import { Switch } from "@/components/ui/switch";
 import { SettingRow } from "../components/SettingRow";
-import { Toggle } from "../components/Toggle";
 
 export function AppearanceTab({
   theme,
@@ -28,17 +28,8 @@ export function AppearanceTab({
 }) {
   return (
     <>
-      <h1
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 30,
-          fontWeight: 600,
-          marginBottom: 8,
-        }}
-      >
-        Appearance
-      </h1>
-      <p className="mb-8 text-sm leading-6" style={{ color: "var(--ink-3)" }}>
+      <h1 className="mb-2 font-display text-3xl font-semibold">Appearance</h1>
+      <p className="mb-8 text-sm leading-6 text-ink-3">
         Theme and typography apply across the full dashboard.
       </p>
       <div className="flex flex-col gap-3">
@@ -47,9 +38,9 @@ export function AppearanceTab({
           title="Dark theme"
           description="Switch the dashboard to a low-glare reading surface."
         >
-          <Toggle
+          <Switch
             checked={theme === "dark"}
-            onChange={(checked) => setTheme(checked ? "dark" : "light")}
+            onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
           />
         </SettingRow>
         <SettingRow

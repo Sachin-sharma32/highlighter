@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { COLORS, HL_COLORS, type HighlightColor } from "./lib";
 
 export function ColorSwatches({
@@ -8,22 +9,18 @@ export function ColorSwatches({
   onChange: (color: HighlightColor) => void;
 }) {
   return (
-    <div className="flex gap-2 mt-5 items-center">
+    <div className="mt-5 flex items-center gap-2">
       {COLORS.map((c) => (
         <button
           key={c}
           onClick={() => onChange(c)}
           data-testid={`highlight-color-${c}`}
-          className="rounded transition-transform hover:scale-110"
+          className={cn(
+            "h-5 w-5 rounded-[4px] border-2 transition-transform hover:scale-110",
+            current === c ? "border-ink" : "border-transparent",
+          )}
           title={c}
-          style={{
-            width: 20,
-            height: 20,
-            background: HL_COLORS[c],
-            border:
-              current === c ? "2px solid var(--ink)" : "2px solid transparent",
-            borderRadius: 4,
-          }}
+          style={{ background: HL_COLORS[c] }}
         />
       ))}
     </div>

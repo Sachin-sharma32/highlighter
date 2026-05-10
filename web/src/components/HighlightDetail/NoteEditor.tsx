@@ -27,18 +27,7 @@ export function NoteEditor({
       onBlur={() => void handleBlur()}
       placeholder="Add a note…"
       rows={4}
-      style={{
-        padding: "14px 16px",
-        border: "1px solid var(--rule)",
-        borderLeft: "2px solid var(--accent-color)",
-        borderRadius: 8,
-        background: "var(--paper-2)",
-        fontSize: 14,
-        lineHeight: 1.55,
-        color: "var(--ink-2)",
-        fontFamily: "var(--font-mono)",
-        resize: "vertical",
-      }}
+      className="resize-y rounded-lg border border-rule border-l-2 border-l-accent bg-paper-2 px-4 py-3.5 font-mono text-sm leading-[1.55] text-ink-2"
     />
   );
 }

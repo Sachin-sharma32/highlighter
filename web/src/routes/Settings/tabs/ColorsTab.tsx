@@ -20,38 +20,21 @@ export function ColorsTab({
 
   return (
     <>
-      <h1
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 30,
-          fontWeight: 600,
-          marginBottom: 8,
-        }}
-      >
+      <h1 className="mb-2 font-display text-3xl font-semibold">
         Highlight colors
       </h1>
-      <p
-        className="text-sm leading-6"
-        style={{ color: "var(--ink-3)", maxWidth: 620 }}
-      >
+      <p className="max-w-[620px] text-sm leading-6 text-ink-3">
         Rename colors to match how you actually read. The first five colors are
         available from the extension toolbar with number keys.
       </p>
 
-      <div
-        className="mt-8 overflow-hidden rounded-lg border"
-        style={{ borderColor: "var(--rule)" }}
-      >
+      <div className="mt-8 overflow-hidden rounded-lg border border-rule">
         {colors.map((color, index) => (
           <div
             key={color.id}
-            className="grid items-center border-b px-4"
-            style={{
-              gridTemplateColumns: "42px 1fr 120px 28px",
-              height: 45,
-              borderColor: "var(--rule)",
-              borderBottomWidth: index === colors.length - 1 ? 0 : 1,
-            }}
+            className={`grid h-[45px] grid-cols-[42px_1fr_120px_28px] items-center border-rule px-4 ${
+              index === colors.length - 1 ? "" : "border-b"
+            }`}
           >
             <span
               className="h-5 w-8 rounded"
@@ -68,23 +51,13 @@ export function ColorsTab({
                   ),
                 )
               }
-              className="bg-transparent text-sm font-medium outline-none"
-              style={{ color: "var(--ink)" }}
+              className="bg-transparent text-sm font-medium text-ink outline-none"
             />
-            <span
-              className="font-mono text-[11px]"
-              style={{ color: "var(--ink-4)" }}
-            >
+            <span className="font-mono text-[11px] text-ink-4">
               {color.shortcut ? (
                 <>
                   Press{" "}
-                  <kbd
-                    className="rounded border px-1"
-                    style={{
-                      borderColor: "var(--rule-2)",
-                      background: "var(--paper-2)",
-                    }}
-                  >
+                  <kbd className="rounded border border-rule-2 bg-paper-2 px-1">
                     {color.shortcut}
                   </kbd>
                 </>
@@ -94,10 +67,7 @@ export function ColorsTab({
             </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className="flex size-7 items-center justify-center rounded"
-                  style={{ color: "var(--ink-4)" }}
-                >
+                <button className="flex size-7 items-center justify-center rounded text-ink-4">
                   <MoreHorizontal size={14} />
                 </button>
               </DropdownMenuTrigger>
@@ -129,8 +99,7 @@ export function ColorsTab({
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="mt-4 flex items-center gap-2 text-sm"
-          style={{ color: "var(--ink-3)" }}
+          className="mt-4 flex items-center gap-2 text-sm text-ink-3"
         >
           <Plus size={13} /> Add a color
         </button>

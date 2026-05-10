@@ -120,13 +120,10 @@ export function HighlightDetail() {
 
   if (!selectedHighlightId) {
     return (
-      <div
-        className="flex-1 flex items-center justify-center"
-        style={{ background: "var(--paper)" }}
-      >
+      <div className="flex flex-1 items-center justify-center bg-paper">
         <p
           data-testid="highlight-detail-empty"
-          style={{ fontSize: 13, color: "var(--ink-4)" }}
+          className="text-[13px] text-ink-4"
         >
           Select a highlight to read it here
         </p>
@@ -136,13 +133,10 @@ export function HighlightDetail() {
 
   if (!highlight) {
     return (
-      <div
-        className="flex-1 flex items-center justify-center"
-        style={{ background: "var(--paper)" }}
-      >
+      <div className="flex flex-1 items-center justify-center bg-paper">
         <p
           data-testid="highlight-detail-loading"
-          style={{ fontSize: 13, color: "var(--ink-4)" }}
+          className="text-[13px] text-ink-4"
         >
           Loading…
         </p>
@@ -268,9 +262,8 @@ export function HighlightDetail() {
 
   return (
     <div
-      className="flex-1 flex flex-col overflow-hidden"
+      className="flex flex-1 flex-col overflow-hidden bg-paper"
       data-testid="highlight-detail"
-      style={{ background: "var(--paper)" }}
     >
       <DetailToolbar
         hasPrevious={Boolean(previousHighlightId)}
@@ -285,25 +278,15 @@ export function HighlightDetail() {
         onDelete={() => void handleDelete()}
       />
 
-      <div className="flex-1 overflow-y-auto noscroll px-14 py-10">
-        <div style={{ maxWidth: 560, margin: "0 auto" }}>
+      <div className="noscroll flex-1 overflow-y-auto px-14 py-10">
+        <div className="mx-auto max-w-[560px]">
           <SourceMetadata highlight={highlight} />
 
           <YouTubeClipPlayer highlight={highlight} />
 
           <blockquote
             data-testid="highlight-detail-quote"
-            style={{
-              margin: 0,
-              padding: "28px 0",
-              fontFamily: "var(--font-quote)",
-              fontSize: 24,
-              lineHeight: 1.38,
-              letterSpacing: "-0.015em",
-              color: "var(--ink)",
-              borderTop: "1px solid var(--rule)",
-              borderBottom: "1px solid var(--rule)",
-            }}
+            className="m-0 border-y border-rule py-7 font-display text-[24px] leading-[1.38] tracking-[-0.015em] text-ink"
           >
             <span className={hlClass}>{highlightDisplayText(highlight)}</span>
           </blockquote>
@@ -330,16 +313,7 @@ export function HighlightDetail() {
           />
 
           <div className="mt-7">
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "var(--ink-4)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                marginBottom: 8,
-              }}
-            >
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
               Your note
             </div>
             <NoteEditor

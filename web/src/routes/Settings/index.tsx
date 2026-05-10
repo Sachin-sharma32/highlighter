@@ -81,29 +81,15 @@ export default function Settings() {
   }
 
   return (
-    <div
-      className="flex h-screen overflow-hidden"
-      style={{ background: "var(--paper)", color: "var(--ink)" }}
-    >
-      <aside
-        className="shrink-0 border-r px-3 py-5"
-        style={{
-          width: 218,
-          borderColor: "var(--rule)",
-          background: "var(--paper-2)",
-        }}
-      >
+    <div className="flex h-screen overflow-hidden bg-paper text-ink">
+      <aside className="w-[218px] shrink-0 border-r border-rule bg-paper-2 px-3 py-5">
         <button
           onClick={() => navigate("/")}
-          className="mb-5 flex items-center gap-2 rounded px-2 py-1 text-xs"
-          style={{ color: "var(--ink-4)" }}
+          className="mb-5 flex items-center gap-2 rounded px-2 py-1 text-xs text-ink-4"
         >
           <ChevronLeft size={13} /> Dashboard
         </button>
-        <div
-          className="px-2 pb-3 font-mono text-[10px] uppercase tracking-[0.18em]"
-          style={{ color: "var(--ink-4)" }}
-        >
+        <div className="px-2 pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-4">
           Settings
         </div>
         <nav className="flex flex-col gap-1">
@@ -141,7 +127,7 @@ export default function Settings() {
       </aside>
 
       <main className="flex-1 overflow-y-auto px-10 py-9">
-        <div style={{ maxWidth: 658 }}>
+        <div className="max-w-[658px]">
           {activeTab === "colors" && (
             <ColorsTab colors={colors} updateColors={updateColors} />
           )}

@@ -8,10 +8,7 @@ import { UsageBanner } from "@/components/UsageBanner";
 
 export default function Dashboard() {
   return (
-    <div
-      className="flex flex-col h-screen overflow-hidden"
-      style={{ background: "var(--paper)" }}
-    >
+    <div className="flex h-screen flex-col overflow-hidden bg-paper">
       <TopNav />
       <UsageBanner />
       <div className="flex flex-1 overflow-hidden">

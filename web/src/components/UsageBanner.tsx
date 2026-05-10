@@ -28,11 +28,10 @@ export function UsageBanner() {
         </span>
         <div className="h-1.5 max-w-[200px] flex-1 overflow-hidden rounded-full bg-rule">
           <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${pct}%`,
-              background: isHigh ? "oklch(65% 0.2 25)" : "oklch(70% 0.14 145)",
-            }}
+            className={`h-full rounded-full transition-all ${
+              isHigh ? "bg-[oklch(65%_0.2_25)]" : "bg-[oklch(70%_0.14_145)]"
+            }`}
+            style={{ width: `${pct}%` }}
           />
         </div>
         <span

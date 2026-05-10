@@ -20,14 +20,8 @@ export function CollectionPicker({
   onChange: (value: string) => void;
 }) {
   return (
-    <div
-      className="mt-5 rounded-lg border p-3"
-      style={{ borderColor: "var(--rule)", background: "var(--paper-2)" }}
-    >
-      <div
-        className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em]"
-        style={{ color: "var(--ink-4)" }}
-      >
+    <div className="mt-5 rounded-lg border border-rule bg-paper-2 p-3">
+      <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
         <Folder size={12} /> Collection
       </div>
       <Select value={value ?? "inbox"} onValueChange={onChange}>

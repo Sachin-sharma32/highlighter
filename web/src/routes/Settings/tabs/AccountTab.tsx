@@ -13,17 +13,8 @@ export function AccountTab({
 }) {
   return (
     <>
-      <h1
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 30,
-          fontWeight: 600,
-          marginBottom: 8,
-        }}
-      >
-        Account
-      </h1>
-      <p className="mb-8 text-sm leading-6" style={{ color: "var(--ink-3)" }}>
+      <h1 className="mb-2 font-display text-3xl font-semibold">Account</h1>
+      <p className="mb-8 text-sm leading-6 text-ink-3">
         Manage your Marginalia identity and connected extension.
       </p>
       <div className="flex flex-col gap-3">
@@ -32,7 +23,7 @@ export function AccountTab({
           title={user?.name ?? "User"}
           description={user?.email ?? "Signed in"}
         >
-          <Check size={16} style={{ color: "var(--accent-2)" }} />
+          <Check size={16} className="text-accent-2" />
         </SettingRow>
         <SettingRow
           icon={<Link2 size={16} />}

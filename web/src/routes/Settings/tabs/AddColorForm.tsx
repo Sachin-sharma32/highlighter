@@ -59,16 +59,12 @@ export function AddColorForm({
   ];
 
   return (
-    <div
-      className="mt-4 rounded-lg border p-4"
-      style={{ borderColor: "var(--rule)", background: "var(--paper-2)" }}
-    >
+    <div className="mt-4 rounded-lg border border-rule bg-paper-2 p-4">
       <div className="mb-4 flex items-center gap-3">
         <input
           value={name}
           onChange={(event) => setName(event.target.value)}
-          className="h-8 flex-1 rounded border bg-transparent px-2 text-sm outline-none"
-          style={{ borderColor: "var(--rule)" }}
+          className="h-8 flex-1 rounded border border-rule bg-transparent px-2 text-sm outline-none"
         />
         <span
           className="flex h-9 w-28 items-center justify-center rounded font-mono text-[10px]"
@@ -81,11 +77,7 @@ export function AddColorForm({
         {sliders.map(([label, current, min, max, setter, background]) => (
           <label
             key={label}
-            className="grid items-center gap-3 text-xs"
-            style={{
-              gridTemplateColumns: "76px 1fr 36px",
-              color: "var(--ink-3)",
-            }}
+            className="grid grid-cols-[76px_1fr_36px] items-center gap-3 text-xs text-ink-3"
           >
             <span className="font-mono">{label}</span>
             <input

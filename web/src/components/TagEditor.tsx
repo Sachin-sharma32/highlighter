@@ -1,5 +1,6 @@
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function TagEditor({
   tags,
@@ -29,36 +30,27 @@ export function TagEditor({
       {tags.map((tag) => (
         <span
           key={tag}
-          className="flex items-center gap-1"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            height: 22,
-            padding: "0 8px",
-            borderRadius: 999,
-            fontSize: 11,
-            background:
-              activeTag === tag ? "var(--accent-tint)" : "var(--paper-2)",
-            border: `1px solid ${activeTag === tag ? "var(--accent-color)" : "var(--rule)"}`,
-            color: "var(--ink-2)",
-          }}
+          className={cn(
+            "inline-flex h-[22px] items-center gap-1 rounded-full border px-2 text-[11px] text-ink-2",
+            activeTag === tag
+              ? "border-accent bg-accent-tint"
+              : "border-rule bg-paper-2",
+          )}
         >
           <button
             type="button"
             onClick={() => onSelectTag?.(tag)}
-            style={{
-              color: "inherit",
-              cursor: onSelectTag ? "pointer" : "default",
-            }}
+            className={cn(
+              "text-inherit",
+              onSelectTag ? "cursor-pointer" : "cursor-default",
+            )}
           >
             #{tag}
           </button>
           <button
             type="button"
             onClick={() => void onRemoveTag(tag)}
-            className="hover:text-red-500 ml-0.5"
-            style={{ color: "var(--ink-4)", lineHeight: 1, cursor: "pointer" }}
+            className="ml-0.5 cursor-pointer leading-none text-ink-4 hover:text-red-500"
           >
             <X size={10} />
           </button>
@@ -81,33 +73,13 @@ export function TagEditor({
             else setAddingTag(false);
           }}
           placeholder="tag name"
-          style={{
-            height: 22,
-            padding: "0 8px",
-            borderRadius: 999,
-            fontSize: 11,
-            border: "1px solid var(--accent-color)",
-            outline: "none",
-            background: "var(--accent-tint)",
-            width: 90,
-          }}
+          className="h-[22px] w-[90px] rounded-full border border-accent bg-accent-tint px-2 text-[11px] outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={() => setAddingTag(true)}
-          className="flex items-center gap-1"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            height: 22,
-            padding: "0 8px",
-            borderRadius: 999,
-            fontSize: 11,
-            border: "1px dashed var(--rule-2)",
-            color: "var(--ink-4)",
-          }}
+          className="inline-flex h-[22px] items-center gap-1 rounded-full border border-dashed border-rule-2 px-2 text-[11px] text-ink-4"
         >
           <Plus size={10} /> tag
         </button>

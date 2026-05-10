@@ -2,24 +2,14 @@ import { sourceUrl, type DetailHighlight } from "./lib";
 
 export function SourceMetadata({ highlight }: { highlight: DetailHighlight }) {
   return (
-    <div
-      style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        color: "var(--ink-4)",
-        textTransform: "uppercase",
-        letterSpacing: "0.08em",
-        marginBottom: 12,
-      }}
-    >
+    <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
       {highlight.title}
       {highlight.author ? `  ·  ${highlight.author}` : ""}
       <a
         href={sourceUrl(highlight)}
         target="_blank"
         rel="noreferrer"
-        className="ml-2 hover:underline"
-        style={{ color: "var(--accent-color)" }}
+        className="ml-2 text-accent hover:underline"
       >
         ↗
       </a>

@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 export function IconBtn({
   onClick,
   disabled,
@@ -11,14 +13,12 @@ export function IconBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center justify-center rounded-md transition-colors"
-      style={{
-        width: 28,
-        height: 28,
-        color: disabled ? "var(--ink-4)" : "var(--ink-3)",
-        opacity: disabled ? 0.4 : 1,
-        cursor: disabled ? "default" : "pointer",
-      }}
+      className={cn(
+        "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+        disabled
+          ? "cursor-default text-ink-4 opacity-40"
+          : "cursor-pointer text-ink-3",
+      )}
     >
       {children}
     </button>

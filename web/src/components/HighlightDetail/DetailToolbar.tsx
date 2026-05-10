@@ -3,16 +3,9 @@ import {
   ChevronRight,
   Copy,
   Link,
-  MoreHorizontal,
   Share2,
   Trash2,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { IconBtn } from "./IconBtn";
 
 export function DetailToolbar({
@@ -35,10 +28,7 @@ export function DetailToolbar({
   onDelete: () => void;
 }) {
   return (
-    <div
-      className="flex items-center gap-1.5 px-5 shrink-0"
-      style={{ height: 44, borderBottom: "1px solid var(--rule)" }}
-    >
+    <div className="flex h-11 shrink-0 items-center gap-1.5 border-b border-rule px-5">
       <IconBtn onClick={onPrevious} disabled={!hasPrevious}>
         <ChevronLeft size={13} />
       </IconBtn>
@@ -58,35 +48,10 @@ export function DetailToolbar({
       <button
         onClick={onDelete}
         title="Delete highlight"
-        className="flex items-center justify-center rounded-md transition-colors"
-        style={{ width: 28, height: 28, color: "var(--ink-4)" }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.color = "oklch(60% 0.2 25)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.color = "var(--ink-4)";
-        }}
+        className="flex h-7 w-7 items-center justify-center rounded-md text-ink-4 transition-colors hover:text-red"
       >
         <Trash2 size={13} />
       </button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            className="flex items-center justify-center rounded-md"
-            style={{ width: 28, height: 28, color: "var(--ink-3)" }}
-          >
-            <MoreHorizontal size={13} />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={onDelete}
-            className="gap-2 text-xs cursor-pointer text-red-600"
-          >
-            <Trash2 size={12} /> Delete highlight
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   );
 }
