@@ -1,3 +1,4 @@
+import { isDashboardUrl } from "../lib/dashboard";
 import { readMarginaliaTarget } from "../lib/urls";
 import {
   focusHighlight,
@@ -16,52 +17,57 @@ import {
   scheduleYouTubePlayerButtonMount,
 } from "./youtube";
 
-bootstrapSettings();
-setMarkClickHandler((mark) => void openEditCardFromMark(mark));
-attachSelectionListeners();
-attachMessageListener();
+if (!isDashboardUrl(location.href)) {
+  bootstrapSettings();
+  setMarkClickHandler((mark) => void openEditCardFromMark(mark));
+  attachSelectionListeners();
+  attachMessageListener();
 
-window.addEventListener(
-  "scroll",
-  () => {
+  window.addEventListener(
+    "scroll",
+    () => {
+      scheduleToolbarPosition();
+      positionYouTubePlayerButton();
+    },
+    true,
+  );
+
+  window.addEventListener("resize", () => {
     scheduleToolbarPosition();
     positionYouTubePlayerButton();
-  },
-  true,
-);
+    scheduleYouTubePlayerButtonMount();
+  });
 
-window.addEventListener("resize", () => {
-  scheduleToolbarPosition();
-  positionYouTubePlayerButton();
-  scheduleYouTubePlayerButtonMount();
-});
+  window.addEventListener(
+    "yt-navigate-finish",
+    scheduleYouTubePlayerButtonMount,
+  );
+  window.addEventListener(
+    "yt-page-data-updated",
+    scheduleYouTubePlayerButtonMount,
+  );
 
-window.addEventListener("yt-navigate-finish", scheduleYouTubePlayerButtonMount);
-window.addEventListener(
-  "yt-page-data-updated",
-  scheduleYouTubePlayerButtonMount,
-);
+  const observer = new MutationObserver((mutations) => {
+    if (mutations.some((m) => isInsideShadowHost(m.target))) return;
+    scheduleRepaintRetry();
+    positionYouTubePlayerButton();
+    scheduleYouTubePlayerButtonMount();
+  });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
 
-const observer = new MutationObserver((mutations) => {
-  if (mutations.some((m) => isInsideShadowHost(m.target))) return;
-  scheduleRepaintRetry();
-  positionYouTubePlayerButton();
-  scheduleYouTubePlayerButtonMount();
-});
-observer.observe(document.body, {
-  childList: true,
-  subtree: true,
-  characterData: true,
-});
-
-repaintHighlights()
-  .then(() => {
-    mountYouTubePlayerButton();
-    const hashId = readMarginaliaTarget(location.href);
-    if (hashId) {
-      requestAnimationFrame(() => {
-        void focusHighlight(hashId);
-      });
-    }
-  })
-  .catch(() => {});
+  repaintHighlights()
+    .then(() => {
+      mountYouTubePlayerButton();
+      const hashId = readMarginaliaTarget(location.href);
+      if (hashId) {
+        requestAnimationFrame(() => {
+          void focusHighlight(hashId);
+        });
+      }
+    })
+    .catch(() => {});
+}

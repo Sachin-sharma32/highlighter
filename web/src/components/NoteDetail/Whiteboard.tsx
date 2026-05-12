@@ -8,6 +8,9 @@ import {
 import "tldraw/tldraw.css";
 
 const SAVE_DEBOUNCE_MS = 800;
+const TLDRAW_LICENSE_KEY = import.meta.env.VITE_TLDRAW_LICENSE_KEY as
+  | string
+  | undefined;
 
 function parseSnapshot(raw: string): TLEditorSnapshot | undefined {
   if (!raw) return undefined;
@@ -82,7 +85,11 @@ export default function Whiteboard({
   // internal high z-indexes can't escape and cover app dialogs/popovers.
   return (
     <div className="whiteboard-host relative isolate h-full w-full">
-      <Tldraw snapshot={initialSnapshot} onMount={handleMount} />
+      <Tldraw
+        snapshot={initialSnapshot}
+        onMount={handleMount}
+        licenseKey={TLDRAW_LICENSE_KEY}
+      />
     </div>
   );
 }
