@@ -5,12 +5,10 @@ import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useAppStore } from "@/store";
 import { friendlyErrorMessage } from "@/lib/errors";
-import { TagEditor } from "@/components/TagEditor";
 import { DetailToolbar } from "./DetailToolbar";
 import { SourceMetadata } from "./SourceMetadata";
 import { YouTubeClipPlayer } from "./YouTubeClipPlayer";
-import { ColorSwatches } from "./ColorSwatches";
-import { CollectionPicker } from "./CollectionPicker";
+import { MetadataStrip } from "./MetadataStrip";
 import { NoteEditor } from "./NoteEditor";
 import { RelatedSection } from "./RelatedSection";
 import {
@@ -291,25 +289,17 @@ export function HighlightDetail() {
             <span className={hlClass}>{highlightDisplayText(highlight)}</span>
           </blockquote>
 
-          <ColorSwatches
-            current={highlight.color}
-            onChange={(color) => void handleColorChange(color)}
-          />
-
-          <div className="mt-5">
-            <TagEditor
-              tags={highlight.tags}
-              activeTag={activeTag}
-              onSelectTag={setActiveTag}
-              onAddTag={(tag) => void handleAddTag(tag)}
-              onRemoveTag={(tag) => void handleRemoveTag(tag)}
-            />
-          </div>
-
-          <CollectionPicker
-            value={highlight.collectionId}
+          <MetadataStrip
+            color={highlight.color}
+            collectionId={highlight.collectionId}
             collections={collections}
-            onChange={(value) => void handleCollectionChange(value)}
+            tags={highlight.tags}
+            activeTag={activeTag}
+            onColorChange={(color) => void handleColorChange(color)}
+            onCollectionChange={(value) => void handleCollectionChange(value)}
+            onSelectTag={setActiveTag}
+            onAddTag={(tag) => void handleAddTag(tag)}
+            onRemoveTag={(tag) => void handleRemoveTag(tag)}
           />
 
           <div className="mt-7">

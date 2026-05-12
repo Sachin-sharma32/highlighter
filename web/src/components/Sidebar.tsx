@@ -4,6 +4,7 @@ import {
   Highlighter,
   BookOpen,
   StickyNote,
+  NotebookPen,
   Folder,
   Plus,
   Globe,
@@ -104,6 +105,7 @@ export function Sidebar() {
   const collections = (useQuery(api.collections.list) ??
     []) as SidebarCollection[];
   const allTags = (useQuery(api.highlights.allTags) ?? []) as SidebarTag[];
+  const notesCountTotal = (useQuery(api.notes.list, {}) ?? []).length;
   const rawHighlights = useQuery(api.highlights.list, {});
   const allHighlights = useMemo(
     () => (rawHighlights ?? []) as SidebarHighlight[],
@@ -192,6 +194,14 @@ export function Sidebar() {
             active={activeCollectionId === "notes" && !activeDomain}
             onClick={() => setActiveCollection("notes")}
             testId="library-notes"
+          />
+          <NavItem
+            icon={<NotebookPen size={13} />}
+            label="Notes"
+            count={notesCountTotal || undefined}
+            active={activeCollectionId === "custom-notes" && !activeDomain}
+            onClick={() => setActiveCollection("custom-notes")}
+            testId="library-custom-notes"
           />
           {collections.length > 0 && (
             <>

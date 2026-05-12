@@ -51,10 +51,13 @@ function timeAgo(ts: number) {
   return `${Math.floor(d / 7)}w`;
 }
 
-function collectionLabel(id: Id<"collections"> | "inbox" | "all" | "notes") {
+function collectionLabel(
+  id: Id<"collections"> | "inbox" | "all" | "notes" | "custom-notes",
+) {
   if (id === "inbox") return "Inbox";
   if (id === "all") return "All highlights";
   if (id === "notes") return "With notes";
+  if (id === "custom-notes") return "Notes";
   return null;
 }
 

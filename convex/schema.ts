@@ -44,6 +44,16 @@ export default defineSchema({
     .index("by_user_collection", ["userId", "collectionId"])
     .index("by_user_createdAt", ["userId", "createdAt"]),
 
+  notes: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    content: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_updatedAt", ["userId", "updatedAt"]),
+
   pairingCodes: defineTable({
     userId: v.id("users"),
     code: v.string(),

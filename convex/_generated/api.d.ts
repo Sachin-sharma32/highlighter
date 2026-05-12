@@ -16,6 +16,7 @@ import type * as ext from "../ext.js";
 import type * as extensionAuth from "../extensionAuth.js";
 import type * as highlights from "../highlights.js";
 import type * as http from "../http.js";
+import type * as notes from "../notes.js";
 import type * as plan from "../plan.js";
 import type * as settings from "../settings.js";
 import type * as testing from "../testing.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   extensionAuth: typeof extensionAuth;
   highlights: typeof highlights;
   http: typeof http;
+  notes: typeof notes;
   plan: typeof plan;
   settings: typeof settings;
   testing: typeof testing;
