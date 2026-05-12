@@ -5,8 +5,8 @@ import type { Id } from "./_generated/dataModel";
 import {
   assertCanCreateHighlight,
   getUserPlan,
-  getHighlightCount,
-  FREE_HIGHLIGHT_LIMIT,
+  getUsageBreakdown,
+  FREE_USAGE_LIMIT,
 } from "./plan";
 import { appError } from "./errors";
 
@@ -140,10 +140,10 @@ export const usage = query({
   handler: async (ctx, { token }) => {
     const userId = await userIdFromToken(ctx, token);
     if (!userId)
-      return { plan: "free" as const, count: 0, limit: FREE_HIGHLIGHT_LIMIT };
+      return { plan: "free" as const, count: 0, limit: FREE_USAGE_LIMIT };
     const plan = await getUserPlan(ctx, userId);
-    const count = await getHighlightCount(ctx, userId);
-    return { plan, count, limit: FREE_HIGHLIGHT_LIMIT };
+    const breakdown = await getUsageBreakdown(ctx, userId);
+    return { plan, count: breakdown.units, limit: FREE_USAGE_LIMIT };
   },
 });
 

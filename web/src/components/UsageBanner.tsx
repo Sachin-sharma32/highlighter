@@ -9,7 +9,8 @@ export function UsageBanner() {
 
   if (!usage || usage.plan === "premium") return null;
 
-  const pct = Math.min(100, Math.round((usage.count / usage.limit) * 100));
+  const used = usage.units ?? usage.count;
+  const pct = Math.min(100, Math.round((used / usage.limit) * 100));
   const isHigh = pct >= 80;
 
   return (
@@ -24,7 +25,7 @@ export function UsageBanner() {
             isHigh ? "text-red-600" : "text-ink-4"
           }`}
         >
-          {usage.count} / {usage.limit} highlights
+          {used} / {usage.limit} units used
         </span>
         <div className="h-1.5 max-w-[200px] flex-1 overflow-hidden rounded-full bg-rule">
           <div

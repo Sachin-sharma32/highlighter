@@ -11,8 +11,11 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   getUserPlan,
-  getHighlightCount,
-  FREE_HIGHLIGHT_LIMIT,
+  getUsageBreakdown,
+  FREE_USAGE_LIMIT,
+  HIGHLIGHT_UNIT_COST,
+  NOTE_UNIT_COST,
+  WHITEBOARD_UNIT_COST,
   PREMIUM_PRICE_PAISE,
   PREMIUM_PERIOD_MS,
 } from "./plan";
@@ -47,17 +50,37 @@ export const getUsage = query({
       return {
         plan: "free" as const,
         count: 0,
-        limit: FREE_HIGHLIGHT_LIMIT,
+        units: 0,
+        highlights: 0,
+        notes: 0,
+        whiteboards: 0,
+        limit: FREE_USAGE_LIMIT,
         pricePaise: PREMIUM_PRICE_PAISE,
+        costs: {
+          highlight: HIGHLIGHT_UNIT_COST,
+          note: NOTE_UNIT_COST,
+          whiteboard: WHITEBOARD_UNIT_COST,
+        },
       };
     }
     const plan = await getUserPlan(ctx, userId);
-    const count = await getHighlightCount(ctx, userId);
+    const breakdown = await getUsageBreakdown(ctx, userId);
     return {
       plan,
-      count,
-      limit: FREE_HIGHLIGHT_LIMIT,
+      // `count` retained so older clients keep working — now represents
+      // total usage units, not raw highlight count.
+      count: breakdown.units,
+      units: breakdown.units,
+      highlights: breakdown.highlights,
+      notes: breakdown.notes,
+      whiteboards: breakdown.whiteboards,
+      limit: FREE_USAGE_LIMIT,
       pricePaise: PREMIUM_PRICE_PAISE,
+      costs: {
+        highlight: HIGHLIGHT_UNIT_COST,
+        note: NOTE_UNIT_COST,
+        whiteboard: WHITEBOARD_UNIT_COST,
+      },
     };
   },
 });

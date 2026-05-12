@@ -38,21 +38,19 @@ interface RazorpayInstance {
 }
 
 const FREE_FEATURES = [
-  "Up to 500 highlights",
-  "5 highlight colors",
+  "500 usage units across highlights, notes & whiteboards",
+  "1 unit per highlight · 5 per note · 10 per whiteboard",
   "Chrome extension",
-  "Basic search",
   "Tags & collections",
+  "Search across highlights and notes",
 ];
 
 const PREMIUM_FEATURES = [
-  "Unlimited highlights",
+  "Unlimited highlights, notes & whiteboards",
   "Custom highlight colors",
   "Chrome extension",
-  "Advanced search",
   "Tags & collections",
   "Priority support",
-  "Export to Markdown",
   "AI summaries (coming soon)",
 ];
 
@@ -147,10 +145,33 @@ export function PricingModal() {
           <h2 className="m-0 font-display text-[28px] font-semibold tracking-tight text-ink">
             Unlock your full reading potential
           </h2>
-          <p className="mx-auto mt-2 max-w-[420px] text-sm text-ink-3">
-            Save unlimited highlights, customize your colors, and get access to
-            upcoming AI features.
+          <p className="mx-auto mt-2 max-w-[440px] text-sm text-ink-3">
+            Capture unlimited highlights, notes, and whiteboards — without
+            counting usage units.
           </p>
+          {usage && usage.plan === "free" ? (
+            <div className="mx-auto mt-4 max-w-[440px] rounded-lg border border-rule bg-paper px-4 py-3 text-left">
+              <div className="mb-1 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
+                <span>Your usage</span>
+                <span>
+                  {usage.units ?? usage.count} / {usage.limit} units
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-ink-3">
+                <span>
+                  {usage.highlights ?? 0} highlights ·{" "}
+                  {usage.costs?.highlight ?? 1}/ea
+                </span>
+                <span>
+                  {usage.notes ?? 0} notes · {usage.costs?.note ?? 5}/ea
+                </span>
+                <span>
+                  {usage.whiteboards ?? 0} whiteboards ·{" "}
+                  {usage.costs?.whiteboard ?? 10}/ea
+                </span>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Plans */}

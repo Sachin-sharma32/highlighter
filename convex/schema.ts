@@ -48,6 +48,7 @@ export default defineSchema({
     userId: v.id("users"),
     title: v.string(),
     content: v.string(),
+    type: v.optional(v.union(v.literal("note"), v.literal("whiteboard"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

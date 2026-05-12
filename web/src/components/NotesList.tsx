@@ -1,16 +1,25 @@
 import { useQuery, useMutation } from "convex/react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, FileText, PenLine } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { friendlyErrorMessage } from "@/lib/errors";
 import { firstLineFromContent, previewFromContent } from "@/lib/noteContent";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
+
+type NoteType = "note" | "whiteboard";
 
 type ListNote = {
   _id: Id<"notes">;
   title: string;
   content: string;
+  type?: NoteType;
   updatedAt: number;
 };
 
@@ -27,14 +36,17 @@ function timeAgo(ts: number) {
 }
 
 function noteTitle(n: ListNote) {
+  if (n.type === "whiteboard") {
+    return n.title || "Untitled whiteboard";
+  }
   return firstLineFromContent(n.content) || "Untitled note";
 }
 
 function notePreview(n: ListNote) {
+  if (n.type === "whiteboard") return "Whiteboard";
   const first = firstLineFromContent(n.content);
   const full = previewFromContent(n.content);
   if (!first) return "";
-  // skip the title line in the preview body
   const rest = full.startsWith(first) ? full.slice(first.length).trim() : full;
   return rest.replace(/^·\s*/, "");
 }
@@ -48,15 +60,17 @@ export function NotesList() {
   const create = useMutation(api.notes.create);
   const remove = useMutation(api.notes.remove);
 
-  async function handleCreate() {
+  async function handleCreate(type: NoteType) {
     try {
-      const id = await create({});
+      const id = await create({ type });
       setSelectedNote(id);
     } catch (err) {
       toast.error(
         friendlyErrorMessage(
           err,
-          "We couldn’t create that note. Please try again.",
+          type === "whiteboard"
+            ? "We couldn’t create that whiteboard. Please try again."
+            : "We couldn’t create that note. Please try again.",
         ),
       );
     }
@@ -87,14 +101,31 @@ export function NotesList() {
           <h2 className="m-0 font-display text-[22px] font-medium tracking-tight text-ink">
             Notes
           </h2>
-          <button
-            onClick={() => void handleCreate()}
-            data-testid="new-note-button"
-            title="New note"
-            className="flex items-center gap-1 rounded-md border border-rule bg-paper-2 px-2 py-1 font-mono text-[10px] text-ink-3 hover:text-ink"
-          >
-            <Plus size={11} /> New
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              data-testid="new-note-button"
+              title="New"
+              className="flex items-center gap-1 rounded-md border border-rule bg-paper-2 px-2 py-1 font-mono text-[10px] text-ink-3 hover:text-ink"
+            >
+              <Plus size={11} /> New
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[160px]">
+              <DropdownMenuItem
+                data-testid="new-note-option"
+                onSelect={() => void handleCreate("note")}
+              >
+                <FileText size={14} className="mr-2" />
+                Note
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                data-testid="new-whiteboard-option"
+                onSelect={() => void handleCreate("whiteboard")}
+              >
+                <PenLine size={14} className="mr-2" />
+                Whiteboard
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -103,7 +134,7 @@ export function NotesList() {
           <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
             <p className="text-[13px] text-ink-4">No notes yet.</p>
             <button
-              onClick={() => void handleCreate()}
+              onClick={() => void handleCreate("note")}
               className="text-xs text-accent hover:underline"
             >
               Create your first note
@@ -115,6 +146,7 @@ export function NotesList() {
               key={n._id}
               data-testid="note-row"
               data-note-id={n._id}
+              data-note-type={n.type ?? "note"}
               className={`group flex w-full gap-2.5 border-b border-rule text-left transition-colors ${
                 n._id === selectedNoteId
                   ? "border-l-2 border-l-accent bg-paper-2"
@@ -126,8 +158,17 @@ export function NotesList() {
                 className="flex min-w-0 flex-1 flex-col gap-1 px-4 py-3 text-left"
               >
                 <div className="flex justify-between gap-2">
-                  <span className="truncate font-display text-sm font-medium text-ink">
-                    {noteTitle(n)}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    {n.type === "whiteboard" && (
+                      <PenLine
+                        size={12}
+                        className="shrink-0 text-ink-4"
+                        aria-hidden
+                      />
+                    )}
+                    <span className="truncate font-display text-sm font-medium text-ink">
+                      {noteTitle(n)}
+                    </span>
                   </span>
                   <span className="shrink-0 font-mono text-[10px] text-ink-4">
                     {timeAgo(n.updatedAt)}

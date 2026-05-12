@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { appError } from "./errors";
+import { assertCanCreateNote } from "./plan";
 
 const NOT_AUTHENTICATED = () =>
   appError(
@@ -50,15 +51,21 @@ export const create = mutation({
   args: {
     title: v.optional(v.string()),
     content: v.optional(v.string()),
+    type: v.optional(v.union(v.literal("note"), v.literal("whiteboard"))),
   },
-  handler: async (ctx, { title, content }) => {
+  handler: async (ctx, { title, content, type }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw NOT_AUTHENTICATED();
+    const noteType = type ?? "note";
+    await assertCanCreateNote(ctx, userId, noteType);
     const now = Date.now();
+    const fallbackTitle =
+      noteType === "whiteboard" ? "Untitled whiteboard" : "Untitled note";
     return await ctx.db.insert("notes", {
       userId,
-      title: title?.trim() || "Untitled note",
+      title: title?.trim() || fallbackTitle,
       content: content ?? "",
+      type: noteType,
       createdAt: now,
       updatedAt: now,
     });

@@ -11,8 +11,9 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
-import { Sparkles, FileText, Folder } from "lucide-react";
+import { Sparkles, FileText, Folder, PenLine, NotebookPen } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { firstLineFromContent, previewFromContent } from "@/lib/noteContent";
 
 type CommandHighlight = {
   _id: Id<"highlights">;
@@ -24,6 +25,13 @@ type CommandHighlight = {
 type CommandCollection = {
   _id: Id<"collections">;
   name: string;
+};
+
+type CommandNote = {
+  _id: Id<"notes">;
+  title: string;
+  content: string;
+  type?: "note" | "whiteboard";
 };
 
 const COLOR_DOT: Record<string, string> = {
@@ -39,6 +47,7 @@ export function CommandPalette() {
     commandPaletteOpen,
     setCommandPaletteOpen,
     setSelectedHighlight,
+    setSelectedNote,
     setActiveCollection,
     searchQuery,
   } = useAppStore();
@@ -47,6 +56,9 @@ export function CommandPalette() {
   const highlights = (useQuery(api.highlights.list, {
     search: query || undefined,
   }) ?? []) as CommandHighlight[];
+  const notes = (useQuery(api.notes.list, {
+    search: query || undefined,
+  }) ?? []) as CommandNote[];
   const collections = (useQuery(api.collections.list) ??
     []) as CommandCollection[];
 
@@ -69,6 +81,28 @@ export function CommandPalette() {
   function handleSelectCollection(id: Id<"collections">) {
     setActiveCollection(id);
     setCommandPaletteOpen(false);
+  }
+
+  function handleSelectNote(id: Id<"notes">) {
+    setActiveCollection("custom-notes");
+    setSelectedNote(id);
+    setCommandPaletteOpen(false);
+  }
+
+  function noteLabel(n: CommandNote) {
+    if (n.type === "whiteboard") return n.title || "Untitled whiteboard";
+    return firstLineFromContent(n.content) || n.title || "Untitled note";
+  }
+
+  function notePreview(n: CommandNote) {
+    if (n.type === "whiteboard") return "Whiteboard";
+    const preview = previewFromContent(n.content);
+    const first = firstLineFromContent(n.content);
+    if (!preview) return "";
+    if (first && preview.startsWith(first)) {
+      return preview.slice(first.length).replace(/^[\s·]+/, "");
+    }
+    return preview;
   }
 
   return (
@@ -125,6 +159,46 @@ export function CommandPalette() {
                     />
                   </CommandItem>
                 ))}
+              </CommandGroup>
+            )}
+
+            {notes.length > 0 && (
+              <CommandGroup heading="Notes" className="p-1.5">
+                {notes.slice(0, 6).map((n) => {
+                  const isWhiteboard = n.type === "whiteboard";
+                  const preview = notePreview(n);
+                  return (
+                    <CommandItem
+                      key={n._id}
+                      value={`note-${n._id}`}
+                      onSelect={() => handleSelectNote(n._id)}
+                      data-testid="command-note-result"
+                      className="flex cursor-pointer gap-2.5 rounded-lg px-3 py-2.5"
+                    >
+                      {isWhiteboard ? (
+                        <PenLine
+                          size={13}
+                          className="mt-0.5 shrink-0 text-ink-4"
+                        />
+                      ) : (
+                        <NotebookPen
+                          size={13}
+                          className="mt-0.5 shrink-0 text-ink-4"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-display text-[13px] leading-tight text-ink-2">
+                          {noteLabel(n)}
+                        </div>
+                        {preview ? (
+                          <div className="mt-0.5 truncate font-mono text-[10px] text-ink-4">
+                            {preview}
+                          </div>
+                        ) : null}
+                      </div>
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             )}
 
