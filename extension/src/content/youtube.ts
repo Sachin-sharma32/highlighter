@@ -1,16 +1,15 @@
 import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
-import { getShadow } from "./shadow";
+import { createInlineShadow, getShadow } from "./shadow";
 import { dismissToolbar } from "./toolbar";
 import { YouTubeClipTrimmer } from "./components/YouTubeClipTrimmer";
 import { getYouTubeVideoId, youtubeWatchUrl } from "../lib/youtube";
 
-const PLAYER_SELECTOR = ".html5-video-player";
-const PLAYER_BUTTON_INSET = 14;
-const PLAYER_BUTTON_MIN_INSET = 12;
-const CLIPPER_TOP = 16;
-const CLIPPER_PADDING = 24;
-const CLIPPER_SIDE_MIN_SPACE = 480;
+const SECONDARY_SELECTORS = [
+  "ytd-watch-flexy #secondary",
+  "#secondary.ytd-watch-flexy",
+  "#secondary",
+];
 const MOUNT_DEBOUNCE_MS = 250;
 
 let clipHost: HTMLElement | null = null;
@@ -70,6 +69,14 @@ function isYouTubeVideoPage() {
   );
 }
 
+function findSecondaryColumn(): HTMLElement | null {
+  for (const sel of SECONDARY_SELECTORS) {
+    const el = document.querySelector<HTMLElement>(sel);
+    if (el) return el;
+  }
+  return null;
+}
+
 export function dismissYouTubeClipTrimmer() {
   clipRoot?.unmount();
   clipRoot = null;
@@ -77,43 +84,13 @@ export function dismissYouTubeClipTrimmer() {
   clipHost = null;
 }
 
-export function positionYouTubeClipper() {
-  if (!clipHost) return;
-  const player = document.querySelector<HTMLElement>(PLAYER_SELECTOR);
-  const rect = player?.getBoundingClientRect();
-  if (!rect || rect.width <= 0 || rect.height <= 0) {
-    clipHost.style.top = "86px";
-    clipHost.style.right = "24px";
-    clipHost.style.left = "";
-    return;
-  }
-
-  const top = Math.max(CLIPPER_TOP, rect.top + CLIPPER_TOP);
-  const sideLeft = rect.right + CLIPPER_PADDING;
-  const hasSuggestionsSpace =
-    window.innerWidth - sideLeft >= CLIPPER_SIDE_MIN_SPACE;
-
-  if (hasSuggestionsSpace) {
-    clipHost.style.left = `${sideLeft}px`;
-    clipHost.style.right = "";
-  } else {
-    clipHost.style.left = "";
-    clipHost.style.right = "24px";
-  }
-  clipHost.style.top = `${top}px`;
-}
+// Kept for backwards compatibility — the clipper is now embedded in the
+// suggested videos column and scrolls with it, so no positioning is needed.
+export function positionYouTubeClipper() {}
 
 export function positionYouTubePlayerButton() {
   if (!playerButton) return;
-  const player = document.querySelector<HTMLElement>(PLAYER_SELECTOR);
-  const rect = player?.getBoundingClientRect();
-  if (!rect || rect.width <= 0 || rect.height <= 0) return;
-
-  const isVisible = rect.bottom > 0 && rect.top < window.innerHeight;
-  playerButton.style.display = isVisible ? "inline-flex" : "none";
-  if (!isVisible) return;
-  playerButton.style.left = `${Math.max(PLAYER_BUTTON_MIN_INSET, rect.left + PLAYER_BUTTON_INSET)}px`;
-  playerButton.style.top = `${Math.max(PLAYER_BUTTON_MIN_INSET, rect.top + PLAYER_BUTTON_INSET)}px`;
+  playerButton.style.display = isYouTubeVideoPage() ? "inline-flex" : "none";
 }
 
 export function showYouTubeClipTrimmer() {
@@ -122,15 +99,23 @@ export function showYouTubeClipTrimmer() {
     throw new Error("No playable YouTube video found.");
   }
 
+  const secondary = findSecondaryColumn();
+  if (!secondary) {
+    throw new Error(
+      "Open the standard YouTube layout to start a Marginalia clip.",
+    );
+  }
+
   dismissYouTubeClipTrimmer();
   dismissToolbar();
 
-  const sr = getShadow();
-  clipHost = document.createElement("div");
-  clipHost.id = "marginalia-youtube-clipper";
-  clipHost.className = "marginalia-card marginalia-youtube-clipper";
-  sr.appendChild(clipHost);
-  clipRoot = createRoot(clipHost);
+  const { host, shadowRoot } = createInlineShadow(secondary);
+  host.id = "marginalia-youtube-clipper-host";
+  host.style.marginBottom = "16px";
+  secondary.insertBefore(host, secondary.firstChild);
+
+  clipHost = host;
+  clipRoot = createRoot(shadowRoot);
 
   clipRoot.render(
     createElement(YouTubeClipTrimmer, {
@@ -143,8 +128,6 @@ export function showYouTubeClipTrimmer() {
       onClose: dismissYouTubeClipTrimmer,
     }),
   );
-
-  positionYouTubeClipper();
 }
 
 export function mountYouTubePlayerButton() {
@@ -171,7 +154,11 @@ export function mountYouTubePlayerButton() {
   button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    showYouTubeClipTrimmer();
+    try {
+      showYouTubeClipTrimmer();
+    } catch {
+      /* surfaced via popup flow; no-op here */
+    }
   });
 
   sr.appendChild(button);

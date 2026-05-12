@@ -82,6 +82,23 @@ export function setToolbarPositionRule(left: number, top: number) {
   positionStyleEl.textContent = `#marginalia-toolbar{left:${left}px;top:${top}px;}`;
 }
 
+export function createInlineShadow(parent: Element): {
+  host: HTMLElement;
+  shadowRoot: ShadowRoot;
+} {
+  const host = document.createElement("div");
+  host.className = "marginalia-inline-host";
+  host.style.all = "initial";
+  host.style.display = "block";
+  host.style.width = "100%";
+  parent.appendChild(host);
+  const shadowRoot = host.attachShadow({ mode: "open" });
+  const style = document.createElement("style");
+  style.textContent = shadowCss;
+  shadowRoot.appendChild(style);
+  return { host, shadowRoot };
+}
+
 export function clearToolbarPositionRule() {
   if (!positionStyleEl) return;
   positionStyleEl.textContent = "";

@@ -71,119 +71,24 @@
   }
 
   .marginalia-youtube-player-button {
-    @apply fixed items-center justify-center rounded-full border px-3.5 py-2 font-mono text-xs font-semibold uppercase tracking-widest text-paper shadow-paper-2 transition-transform;
-    background: oklch(18% 0.01 60 / 0.9);
-    border-color: rgb(255 255 255 / 0.25);
+    @apply fixed inline-flex items-center justify-center gap-2 rounded-md border border-accent bg-ink px-4 py-2.5 font-ui text-sm font-medium text-paper transition-colors;
+    bottom: 24px;
+    right: 24px;
     pointer-events: all;
-    backdrop-filter: blur(8px);
+    z-index: 2147483646;
   }
 
   .marginalia-youtube-player-button:hover {
-    transform: translateY(-1px);
-  }
-
-  .marginalia-youtube-clipper {
-    @apply font-ui;
-    width: min(460px, calc(100vw - 32px));
-    right: 24px;
-    top: 86px;
-    padding: 18px;
-    border-radius: 16px;
-  }
-
-  .marginalia-youtube-clipper-header {
-    @apply flex items-start gap-3;
-  }
-
-  .marginalia-youtube-clipper-title-wrap {
-    @apply min-w-0 flex-1;
-  }
-
-  .marginalia-youtube-clipper-eyebrow {
-    @apply font-mono uppercase tracking-widest text-accent;
-    font-size: 11px;
-  }
-
-  .marginalia-youtube-clipper-title {
-    @apply mt-1 line-clamp-2 font-display text-lg font-medium text-ink;
-    line-height: 1.2;
-  }
-
-  .marginalia-youtube-clipper-icon {
-    @apply flex size-8 cursor-pointer items-center justify-center rounded-full border border-rule bg-paper text-ink-4 transition-colors;
-    font-size: 20px;
-    line-height: 1;
-  }
-
-  .marginalia-youtube-clipper-icon:hover {
-    @apply bg-paper-3 text-ink;
-  }
-
-  .marginalia-youtube-clipper-helper {
-    @apply mt-3 text-sm leading-6 text-ink-3;
-  }
-
-  .marginalia-youtube-clipper-range {
-    @apply mt-4 rounded-lg border border-rule bg-paper px-4 py-3 font-mono text-sm text-ink-2;
-  }
-
-  .marginalia-youtube-clipper-marks {
-    @apply mt-4 grid grid-cols-2 gap-3;
-  }
-
-  .marginalia-youtube-clipper-mark-btn {
-    @apply flex min-h-20 cursor-pointer flex-col items-start justify-between rounded-xl border border-rule bg-paper px-4 py-3 text-left transition-colors;
-  }
-
-  .marginalia-youtube-clipper-mark-btn:hover,
-  .marginalia-youtube-clipper-mark-btn:focus,
-  .marginalia-youtube-clipper-note:focus {
-    border-color: theme("colors.accent.DEFAULT");
-  }
-
-  .marginalia-youtube-clipper-mark-btn span {
-    @apply font-mono uppercase tracking-widest text-ink-4;
-    font-size: 11px;
-  }
-
-  .marginalia-youtube-clipper-mark-btn strong {
-    @apply font-display text-2xl font-medium text-ink;
-  }
-
-  .marginalia-youtube-clipper-note {
-    @apply mt-4 h-24 w-full resize-none rounded-xl border border-rule bg-paper px-4 py-3 text-sm leading-6 text-ink-2 outline-none;
-  }
-
-  .marginalia-youtube-clipper-status {
-    @apply min-h-6 pt-2 text-sm text-ink-4;
-  }
-
-  .marginalia-youtube-clipper-status[data-tone="error"] {
-    color: oklch(55% 0.2 25);
-  }
-
-  .marginalia-youtube-clipper-status[data-tone="success"] {
-    color: oklch(55% 0.16 145);
-  }
-
-  .marginalia-youtube-clipper-actions {
-    @apply mt-3 flex items-center justify-between gap-3;
-  }
-
-  .marginalia-youtube-clipper-actions .marginalia-pop-btn {
-    @apply h-9 rounded-lg px-4 text-sm;
-  }
-
-  .marginalia-youtube-clipper-save {
-    @apply border-accent bg-ink text-paper;
-  }
-
-  .marginalia-youtube-clipper-save:hover {
     @apply bg-ink-2;
   }
 
-  .marginalia-youtube-clipper-save:disabled {
-    @apply cursor-not-allowed border-rule bg-paper-3 text-ink-4;
+  .marginalia-youtube-player-button::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--accent-color);
   }
 
   /* Swatch row (shared between create & edit) */

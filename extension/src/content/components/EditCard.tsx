@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import type { Collection } from "../settings";
 import { CollectionSelect } from "./CollectionSelect";
 
@@ -17,6 +22,14 @@ interface Props {
   onCollectionsChange: (ids: string[]) => void;
   onDelete: () => void;
   onClose: () => void;
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="font-mono text-[10px] uppercase tracking-widest text-ink-4">
+      {children}
+    </div>
+  );
 }
 
 export function EditCard({
@@ -79,11 +92,12 @@ export function EditCard({
   };
 
   return (
-    <>
-      <div className="marginalia-swatch-row">
+    <div className="font-ui flex flex-col gap-3">
+      <div className="flex items-center gap-1.5 px-1">
         {colors.map((c) => (
           <button
             key={c.id}
+            type="button"
             className={`marginalia-swatch-big${c.id === color ? " active" : ""}`}
             data-color={c.id}
             title={c.id}
@@ -95,8 +109,10 @@ export function EditCard({
         ))}
       </div>
 
-      <div className="marginalia-section">
-        <div className="marginalia-section-label">Collections</div>
+      <Separator />
+
+      <div className="flex flex-col gap-1.5">
+        <SectionLabel>Collections</SectionLabel>
         <CollectionSelect
           collections={collections}
           selectedIds={collectionIds}
@@ -105,25 +121,30 @@ export function EditCard({
         />
       </div>
 
-      <div className="marginalia-section">
-        <div className="marginalia-section-label">Tags</div>
-        <div className="marginalia-tag-editor">
+      <div className="flex flex-col gap-1.5">
+        <SectionLabel>Tags</SectionLabel>
+        <div className="flex flex-wrap items-center gap-1.5">
           {tags.map((t) => (
-            <span key={t} className="marginalia-tag-chip">
-              {`#${t} `}
+            <span
+              key={t}
+              className="inline-flex h-6 items-center gap-1 rounded-full border border-rule bg-paper px-2 font-mono text-[10px] text-ink-2"
+            >
+              {`#${t}`}
               <button
+                type="button"
+                className="text-ink-4 hover:text-rose-600"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   removeTag(t);
                 }}
               >
-                ×
+                <X size={10} />
               </button>
             </span>
           ))}
-          <input
+          <Input
             ref={tagInputRef}
-            className="marginalia-tag-input"
+            className="h-7 w-24 rounded-full border-accent bg-paper px-2.5 font-mono text-[11px]"
             placeholder="+tag"
             value={tagDraft}
             onChange={(e) => setTagDraft(e.target.value)}
@@ -137,11 +158,11 @@ export function EditCard({
         </div>
       </div>
 
-      <div className="marginalia-section">
-        <div className="marginalia-section-label">Note</div>
-        <textarea
+      <div className="flex flex-col gap-1.5">
+        <SectionLabel>Note</SectionLabel>
+        <Textarea
           ref={noteRef}
-          className="marginalia-edit-note"
+          className="min-h-[72px] resize-y border-l-2 border-l-accent bg-paper-3 font-mono text-xs leading-6"
           placeholder="Add a note…"
           rows={3}
           value={note}
@@ -150,18 +171,25 @@ export function EditCard({
         />
       </div>
 
-      <div className="marginalia-edit-actions">
-        <button
-          className="marginalia-pop-btn marginalia-pop-btn-danger"
+      <Separator />
+
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
           onMouseDown={(e) => {
             e.preventDefault();
             onDelete();
           }}
         >
           Delete
-        </button>
-        <button
-          className="marginalia-pop-btn"
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="h-8"
           onMouseDown={(e) => {
             e.preventDefault();
             commitNote();
@@ -169,8 +197,8 @@ export function EditCard({
           }}
         >
           Done
-        </button>
+        </Button>
       </div>
-    </>
+    </div>
   );
 }

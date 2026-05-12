@@ -1,5 +1,6 @@
 import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 interface Props {
   text: string;
@@ -61,14 +62,12 @@ export function SelectionToolbar({
   const charCount = text.length;
 
   return (
-    <>
-      <div className="marginalia-swatch-row">
+    <div className="font-ui flex flex-col gap-2">
+      <div className="flex items-center gap-1.5 px-1">
         {colors.map((c) => (
-          <Button
+          <button
             key={c.id}
             type="button"
-            variant="ghost"
-            size="icon"
             className="marginalia-swatch-big"
             data-color={c.id}
             title={`Highlight ${c.id}`}
@@ -81,25 +80,34 @@ export function SelectionToolbar({
         ))}
       </div>
 
-      {ROWS.map((row) => (
-        <Button
-          key={row.key}
-          type="button"
-          variant="ghost"
-          className="marginalia-action-row"
-          onMouseDown={(e) => {
-            preventDefault(e);
-            handleAction(row.key);
-          }}
-        >
-          <span className="marginalia-action-label">{row.label}</span>
-          <span className="marginalia-kbd">{row.kbd}</span>
-        </Button>
-      ))}
+      <Separator />
 
-      <div className="marginalia-toolbar-footer">
+      <div className="flex flex-col gap-0.5">
+        {ROWS.map((row) => (
+          <Button
+            key={row.key}
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-full justify-between rounded px-2 text-ink-2 hover:text-ink"
+            onMouseDown={(e) => {
+              preventDefault(e);
+              handleAction(row.key);
+            }}
+          >
+            <span className="text-xs">{row.label}</span>
+            <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-rule bg-paper px-1 font-mono text-[10px] text-ink-4">
+              {row.kbd}
+            </kbd>
+          </Button>
+        ))}
+      </div>
+
+      <Separator />
+
+      <div className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-4">
         {charCount} char{charCount === 1 ? "" : "s"} selected
       </div>
-    </>
+    </div>
   );
 }

@@ -12,7 +12,6 @@ import { bootstrapSettings } from "./settings";
 import { openEditCardFromMark, scheduleToolbarPosition } from "./toolbar";
 import {
   mountYouTubePlayerButton,
-  positionYouTubeClipper,
   positionYouTubePlayerButton,
   scheduleYouTubePlayerButtonMount,
 } from "./youtube";
@@ -33,7 +32,6 @@ window.addEventListener(
 
 window.addEventListener("resize", () => {
   scheduleToolbarPosition();
-  positionYouTubeClipper();
   positionYouTubePlayerButton();
   scheduleYouTubePlayerButtonMount();
 });
@@ -47,7 +45,6 @@ window.addEventListener(
 const observer = new MutationObserver((mutations) => {
   if (mutations.some((m) => isInsideShadowHost(m.target))) return;
   scheduleRepaintRetry();
-  positionYouTubeClipper();
   positionYouTubePlayerButton();
   scheduleYouTubePlayerButtonMount();
 });

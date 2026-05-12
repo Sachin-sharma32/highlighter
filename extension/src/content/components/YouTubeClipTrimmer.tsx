@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import type { SaveHighlightPayload } from "../../lib/messages";
 import { friendlyErrorMessage } from "../../lib/errors";
 import { youtubeWatchUrl, formatClipTime } from "../../lib/youtube";
@@ -20,6 +24,12 @@ interface Props {
 const CLOSE_DELAY_MS = 900;
 
 type Tone = "muted" | "error" | "success";
+
+const TONE_CLASS: Record<Tone, string> = {
+  muted: "text-ink-4",
+  error: "text-rose-600",
+  success: "text-emerald-600",
+};
 
 export function YouTubeClipTrimmer({
   context,
@@ -60,7 +70,7 @@ export function YouTubeClipTrimmer({
 
   const rangeText =
     start !== null && end !== null
-      ? `${formatClipTime(start)}-${formatClipTime(end)}`
+      ? `${formatClipTime(start)} – ${formatClipTime(end)}`
       : "Mark start and end while the video plays";
 
   const handleSave = async () => {
@@ -104,80 +114,98 @@ export function YouTubeClipTrimmer({
   };
 
   return (
-    <>
-      <div className="marginalia-youtube-clipper-header">
-        <div className="marginalia-youtube-clipper-title-wrap">
-          <div className="marginalia-youtube-clipper-eyebrow">
+    <div className="font-ui flex flex-col gap-3 rounded-lg border border-rule bg-paper-2 p-4">
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-accent">
             Marginalia clip
           </div>
-          <div className="marginalia-youtube-clipper-title">
+          <div className="mt-1 line-clamp-2 font-display text-[15px] font-medium leading-snug text-ink">
             {context.title}
           </div>
         </div>
-        <button
+        <Button
           type="button"
-          className="marginalia-youtube-clipper-icon"
+          variant="ghost"
+          size="icon"
+          className="size-7 shrink-0 rounded-full"
           title="Close"
           onClick={onClose}
         >
-          ×
-        </button>
+          <X size={14} />
+        </Button>
       </div>
 
-      <div className="marginalia-youtube-clipper-helper">
+      <p className="text-xs leading-5 text-ink-3">
         Play the video, then mark the beginning and end of the moment you want
         to save.
+      </p>
+
+      <div className="rounded border border-rule bg-paper px-3 py-2 font-mono text-xs text-ink-2">
+        {rangeText}
       </div>
 
-      <div className="marginalia-youtube-clipper-range">{rangeText}</div>
-
-      <div className="marginalia-youtube-clipper-marks">
+      <div className="grid grid-cols-2 gap-2">
         <button
           ref={startBtnRef}
           type="button"
-          className="marginalia-youtube-clipper-mark-btn"
+          className="group flex min-h-[64px] cursor-pointer flex-col items-start justify-between rounded border border-rule bg-paper px-3 py-2 text-left transition-colors hover:border-accent focus:border-accent focus:outline-none"
           onClick={() => setStart(readCurrentTime())}
         >
-          <span>Set start</span>
-          <strong>{start === null ? "Not set" : formatClipTime(start)}</strong>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-ink-4">
+            Set start
+          </span>
+          <strong className="font-display text-lg font-medium text-ink">
+            {start === null ? "Not set" : formatClipTime(start)}
+          </strong>
         </button>
         <button
           type="button"
-          className="marginalia-youtube-clipper-mark-btn"
+          className="group flex min-h-[64px] cursor-pointer flex-col items-start justify-between rounded border border-rule bg-paper px-3 py-2 text-left transition-colors hover:border-accent focus:border-accent focus:outline-none"
           onClick={() => setEnd(readCurrentTime())}
         >
-          <span>Set end</span>
-          <strong>{end === null ? "Not set" : formatClipTime(end)}</strong>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-ink-4">
+            Set end
+          </span>
+          <strong className="font-display text-lg font-medium text-ink">
+            {end === null ? "Not set" : formatClipTime(end)}
+          </strong>
         </button>
       </div>
 
-      <textarea
-        className="marginalia-youtube-clipper-note"
+      <Textarea
+        className="min-h-[64px] resize-none text-xs leading-5"
         placeholder="Add a note if this idea needs context…"
         value={note}
         onChange={(e) => setNote(e.target.value)}
       />
 
-      <div
-        className="marginalia-youtube-clipper-status"
-        data-tone={status.tone}
-      >
+      <div className={`min-h-[18px] text-xs ${TONE_CLASS[status.tone]}`}>
         {status.text}
       </div>
 
-      <div className="marginalia-youtube-clipper-actions">
-        <button type="button" className="marginalia-pop-btn" onClick={onClose}>
-          Cancel
-        </button>
-        <button
+      <Separator />
+
+      <div className="flex items-center justify-between gap-2">
+        <Button
           type="button"
-          className="marginalia-pop-btn marginalia-youtube-clipper-save"
+          variant="ghost"
+          size="sm"
+          className="h-8"
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="h-8"
           disabled={missing || invalid || saving}
           onClick={() => void handleSave()}
         >
           Save clip
-        </button>
+        </Button>
       </div>
-    </>
+    </div>
   );
 }
