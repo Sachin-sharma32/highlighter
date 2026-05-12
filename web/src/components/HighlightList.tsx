@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { Scissors, StickyNote, Trash2 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
@@ -6,6 +7,7 @@ import { friendlyErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { formatClipTime } from "@/lib/youtube";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 
 type ListHighlight = {
   _id: Id<"highlights">;
@@ -94,6 +96,8 @@ export function HighlightList() {
   }) ?? []) as ListHighlight[];
 
   const remove = useMutation(api.highlights.remove);
+  const [pendingDeleteId, setPendingDeleteId] =
+    useState<Id<"highlights"> | null>(null);
 
   let filtered = activeTag
     ? highlights.filter((h) => h.tags.includes(activeTag))
@@ -203,7 +207,7 @@ export function HighlightList() {
               </button>
               {/* Quick delete button */}
               <button
-                onClick={() => void handleDelete(h._id)}
+                onClick={() => setPendingDeleteId(h._id)}
                 title="Delete highlight"
                 className="flex shrink-0 items-center justify-center rounded p-1 pr-3 text-ink-4 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
               >
@@ -213,6 +217,17 @@ export function HighlightList() {
           ))
         )}
       </div>
+      <ConfirmDeleteDialog
+        open={Boolean(pendingDeleteId)}
+        title="Delete highlight?"
+        description="This highlight and its note will be permanently deleted."
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteId) return;
+          await handleDelete(pendingDeleteId);
+          setPendingDeleteId(null);
+        }}
+      />
     </div>
   );
 }

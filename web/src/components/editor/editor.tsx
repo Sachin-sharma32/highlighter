@@ -5,8 +5,10 @@ import { AutoFocusExtension, ClearEditorExtension } from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
 import { CheckListExtension, ListExtension } from "@lexical/list";
 import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionComposer";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextExtension } from "@lexical/rich-text";
+import { CHECK_LIST, ORDERED_LIST, UNORDERED_LIST } from "@lexical/markdown";
 import { $setBlocksType } from "@lexical/selection";
 import { $createCodeNode } from "@lexical/code";
 import {
@@ -307,6 +309,9 @@ export function Editor({
               className="min-h-full px-6 py-4 outline-none"
             />
             <CodeHighlightPlugin />
+            <MarkdownShortcutPlugin
+              transformers={[UNORDERED_LIST, ORDERED_LIST, CHECK_LIST]}
+            />
             <ComponentPickerMenuPlugin
               baseOptions={[
                 ParagraphPickerPlugin(),

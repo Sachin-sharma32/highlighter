@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { Plus, Trash2, FileText, PenLine } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 
 type NoteType = "note" | "whiteboard";
 
@@ -59,6 +61,9 @@ export function NotesList() {
 
   const create = useMutation(api.notes.create);
   const remove = useMutation(api.notes.remove);
+  const [pendingDeleteNote, setPendingDeleteNote] = useState<ListNote | null>(
+    null,
+  );
 
   async function handleCreate(type: NoteType) {
     try {
@@ -179,7 +184,7 @@ export function NotesList() {
                 </p>
               </button>
               <button
-                onClick={() => void handleDelete(n._id)}
+                onClick={() => setPendingDeleteNote(n)}
                 title="Delete note"
                 className="flex shrink-0 items-center justify-center rounded p-1 pr-3 text-ink-4 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
               >
@@ -189,6 +194,21 @@ export function NotesList() {
           ))
         )}
       </div>
+      <ConfirmDeleteDialog
+        open={Boolean(pendingDeleteNote)}
+        title={
+          pendingDeleteNote?.type === "whiteboard"
+            ? "Delete whiteboard?"
+            : "Delete note?"
+        }
+        description={`This ${pendingDeleteNote?.type === "whiteboard" ? "whiteboard" : "note"} will be permanently deleted.`}
+        onOpenChange={(open) => !open && setPendingDeleteNote(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteNote) return;
+          await handleDelete(pendingDeleteNote._id);
+          setPendingDeleteNote(null);
+        }}
+      />
     </div>
   );
 }

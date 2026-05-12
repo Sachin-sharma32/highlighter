@@ -16,6 +16,7 @@ import { useAppStore } from "@/store";
 import { friendlyErrorMessage } from "@/lib/errors";
 import { Editor } from "@/components/editor/editor";
 import { firstLineFromContent } from "@/lib/noteContent";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 
 const Whiteboard = lazy(() => import("./Whiteboard"));
 
@@ -52,6 +53,7 @@ export function NoteDetail() {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,6 +62,8 @@ export function NoteDetail() {
   useEffect(() => {
     if (!note) return;
     setTitleDraft(note.title);
+    // Only reset the draft when switching notes; title edits are debounced locally.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note?._id]);
 
   useEffect(() => {
@@ -234,7 +238,7 @@ export function NoteDetail() {
             </button>
           )}
           <button
-            onClick={() => void handleDelete()}
+            onClick={() => setDeleteDialogOpen(true)}
             title={isWhiteboard ? "Delete whiteboard" : "Delete note"}
             className="flex h-7 w-7 items-center justify-center rounded text-ink-4 hover:bg-paper-2 hover:text-red-500"
           >
@@ -242,6 +246,13 @@ export function NoteDetail() {
           </button>
         </div>
       </div>
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        title={isWhiteboard ? "Delete whiteboard?" : "Delete note?"}
+        description={`This ${isWhiteboard ? "whiteboard" : "note"} will be permanently deleted.`}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={() => void handleDelete()}
+      />
       <div className="flex-1 overflow-hidden">
         {isWhiteboard ? (
           <Suspense

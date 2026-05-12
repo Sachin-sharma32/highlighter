@@ -6,10 +6,12 @@ import {
   StickyNote,
   NotebookPen,
   Folder,
+  MoreHorizontal,
   Plus,
   Globe,
   ChevronDown,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
@@ -21,7 +23,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { friendlyErrorMessage } from "@/lib/errors";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -93,6 +102,65 @@ function NavItem({
   );
 }
 
+function CollectionNavItem({
+  collection,
+  count,
+  active,
+  onSelect,
+  onDelete,
+}: {
+  collection: SidebarCollection;
+  count?: string | number;
+  active: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div
+      className={`group flex w-full items-center border-l-2 transition-colors ${
+        active
+          ? "border-accent bg-paper font-medium text-ink"
+          : "border-transparent text-ink-3"
+      }`}
+      data-testid={`collection-item-${collection._id}`}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-1.5 text-left text-[13px]"
+      >
+        <span className={active ? "text-accent-2" : "text-ink-4"}>
+          <Folder size={13} />
+        </span>
+        <span className="flex-1 truncate">{collection.name}</span>
+        {count !== undefined && (
+          <span className="font-mono text-[10px] text-ink-4">{count}</span>
+        )}
+      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            title="Collection actions"
+            className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded text-ink-4 opacity-0 transition-opacity hover:bg-paper-2 hover:text-ink group-hover:opacity-100 data-[state=open]:opacity-100"
+          >
+            <MoreHorizontal size={13} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[160px]">
+          <DropdownMenuItem
+            onSelect={onDelete}
+            className="text-red-600 focus:bg-white focus:text-red-600"
+          >
+            <Trash2 size={13} />
+            Delete collection
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 export function Sidebar() {
   const {
     activeCollectionId,
@@ -113,9 +181,12 @@ export function Sidebar() {
   );
 
   const createCollection = useMutation(api.collections.create);
+  const removeCollection = useMutation(api.collections.remove);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [domainsExpanded, setDomainsExpanded] = useState(false);
+  const [pendingDeleteCollection, setPendingDeleteCollection] =
+    useState<SidebarCollection | null>(null);
 
   const inboxCount = allHighlights.filter((h) => !h.collectionId).length;
   const notesCount = allHighlights.filter(
@@ -146,6 +217,21 @@ export function Sidebar() {
         friendlyErrorMessage(
           err,
           "We couldn’t create that collection. Please try again.",
+        ),
+      );
+    }
+  }
+
+  async function handleDeleteCollection(collection: SidebarCollection) {
+    try {
+      await removeCollection({ id: collection._id });
+      if (activeCollectionId === collection._id) setActiveCollection("inbox");
+      toast.success("Collection deleted");
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          "We couldn’t delete that collection. Please try again.",
         ),
       );
     }
@@ -207,17 +293,16 @@ export function Sidebar() {
             <>
               <SectionLabel label="Collections" />
               {collections.map((col) => (
-                <NavItem
+                <CollectionNavItem
                   key={col._id}
-                  icon={<Folder size={13} />}
-                  label={col.name}
+                  collection={col}
                   count={
                     allHighlights.filter((h) => h.collectionId === col._id)
                       .length || undefined
                   }
                   active={activeCollectionId === col._id && !activeDomain}
-                  onClick={() => setActiveCollection(col._id)}
-                  testId={`collection-item-${col._id}`}
+                  onSelect={() => setActiveCollection(col._id)}
+                  onDelete={() => setPendingDeleteCollection(col)}
                 />
               ))}
             </>
@@ -322,6 +407,18 @@ export function Sidebar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDeleteDialog
+        open={Boolean(pendingDeleteCollection)}
+        title="Delete collection?"
+        description={`Highlights in ${pendingDeleteCollection?.name ?? "this collection"} will move back to Inbox. The highlights themselves will not be deleted.`}
+        confirmLabel="Delete collection"
+        onOpenChange={(open) => !open && setPendingDeleteCollection(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteCollection) return;
+          await handleDeleteCollection(pendingDeleteCollection);
+          setPendingDeleteCollection(null);
+        }}
+      />
     </>
   );
 }

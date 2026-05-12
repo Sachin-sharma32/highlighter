@@ -69,6 +69,19 @@ export const remove = mutation({
     for (const h of highlights) {
       await ctx.db.patch(h._id, { collectionId: undefined });
     }
+    const multiCollectionHighlights = await ctx.db
+      .query("highlights")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.neq(q.field("collectionIds"), undefined))
+      .collect();
+    for (const h of multiCollectionHighlights) {
+      const collectionIds = h.collectionIds?.filter(
+        (collectionId) => collectionId !== id,
+      );
+      if (collectionIds && collectionIds.length !== h.collectionIds?.length) {
+        await ctx.db.patch(h._id, { collectionIds });
+      }
+    }
     await ctx.db.delete(id);
   },
 });

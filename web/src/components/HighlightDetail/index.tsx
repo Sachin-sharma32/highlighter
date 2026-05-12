@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { api } from "../../../../convex/_generated/api";
@@ -11,6 +11,7 @@ import { YouTubeClipPlayer } from "./YouTubeClipPlayer";
 import { MetadataStrip } from "./MetadataStrip";
 import { NoteEditor } from "./NoteEditor";
 import { RelatedSection } from "./RelatedSection";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import {
   COLORS,
   highlightDisplayText,
@@ -54,6 +55,7 @@ export function HighlightDetail() {
   const setColor = useMutation(api.highlights.setColor);
   const update = useMutation(api.highlights.update);
   const remove = useMutation(api.highlights.remove);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const visibleHighlightIds = useMemo(() => {
     const visible = activeTag
@@ -273,7 +275,14 @@ export function HighlightDetail() {
         onCopy={handleCopy}
         onShare={() => void handleShare()}
         onCopyLink={() => void handleCopyLink()}
-        onDelete={() => void handleDelete()}
+        onDelete={() => setDeleteDialogOpen(true)}
+      />
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        title="Delete highlight?"
+        description="This highlight and its note will be permanently deleted."
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={() => void handleDelete()}
       />
 
       <div className="noscroll flex-1 overflow-y-auto px-14 py-10">
