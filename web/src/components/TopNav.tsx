@@ -24,7 +24,7 @@ export function TopNav() {
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
   const user = useQuery(api.users.currentUser);
-  const { setCommandPaletteOpen } = useAppStore();
+  const { setCommandPaletteOpen, setConnectExtensionModalOpen } = useAppStore();
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
 
   const initials = user?.name
@@ -45,7 +45,7 @@ export function TopNav() {
         {/* Logo */}
         <div className="mr-2 flex items-center gap-2.5">
           <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-ink font-display text-base font-medium text-white shadow-[0_0_0_1.5px_var(--accent-color)]"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-ink font-display text-base font-medium text-paper shadow-[0_0_0_1.5px_var(--accent-color)]"
             data-testid="topnav-logo"
           >
             M
@@ -102,7 +102,7 @@ export function TopNav() {
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => navigate("/connect-extension")}
+              onClick={() => setConnectExtensionModalOpen(true)}
               className="cursor-pointer gap-2 text-xs"
             >
               <Link2 size={12} /> Connect extension

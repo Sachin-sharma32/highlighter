@@ -9,4 +9,4 @@ export const DASHBOARD_URL = trimTrailingSlash(
     DEFAULT_DASHBOARD_URL,
 );
 
-export const CONNECT_EXTENSION_URL = `${DASHBOARD_URL}/connect-extension`;
+export const CONNECT_EXTENSION_URL = `${DASHBOARD_URL}/?connect=1`;

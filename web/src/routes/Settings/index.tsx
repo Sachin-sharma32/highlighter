@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
+import { useAppStore } from "@/store";
 import {
   applyAppearanceSettings,
   type AppTheme,
@@ -33,6 +34,9 @@ export default function Settings() {
   const navigate = useNavigate();
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.currentUser);
+  const setConnectExtensionModalOpen = useAppStore(
+    (s) => s.setConnectExtensionModalOpen,
+  );
   const [activeTab, setActiveTab] = useState<TabId>("colors");
   const [theme, setTheme] = useState<AppTheme>(
     () =>
@@ -144,7 +148,10 @@ export default function Settings() {
           {activeTab === "account" && (
             <AccountTab
               user={user}
-              onConnect={() => navigate("/connect-extension")}
+              onConnect={() => {
+                setConnectExtensionModalOpen(true);
+                navigate("/");
+              }}
               onSignOut={() => void signOut()}
             />
           )}

@@ -11,6 +11,7 @@ interface AppStore {
   commandPaletteOpen: boolean;
   searchQuery: string;
   pricingModalOpen: boolean;
+  connectExtensionModalOpen: boolean;
   setActiveCollection: (id: ActiveCollection) => void;
   setActiveTag: (tag: string | null) => void;
   setActiveDomain: (domain: string | null) => void;
@@ -18,6 +19,7 @@ interface AppStore {
   setCommandPaletteOpen: (open: boolean) => void;
   setSearchQuery: (q: string) => void;
   setPricingModalOpen: (open: boolean) => void;
+  setConnectExtensionModalOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -28,6 +30,7 @@ export const useAppStore = create<AppStore>((set) => ({
   commandPaletteOpen: false,
   searchQuery: "",
   pricingModalOpen: false,
+  connectExtensionModalOpen: false,
   setActiveCollection: (id) =>
     set({
       activeCollectionId: id,
@@ -48,4 +51,6 @@ export const useAppStore = create<AppStore>((set) => ({
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setSearchQuery: (q) => set({ searchQuery: q }),
   setPricingModalOpen: (open) => set({ pricingModalOpen: open }),
+  setConnectExtensionModalOpen: (open) =>
+    set({ connectExtensionModalOpen: open }),
 }));

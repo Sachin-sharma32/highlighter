@@ -8,7 +8,20 @@
     box-sizing: border-box;
   }
 
+  :host,
   :root {
+    --paper: oklch(98.5% 0.006 85);
+    --paper-2: oklch(96.5% 0.008 85);
+    --paper-3: oklch(93.5% 0.01 85);
+    --rule: oklch(88% 0.012 85);
+    --rule-2: oklch(82% 0.014 85);
+    --ink: oklch(18% 0.01 60);
+    --ink-2: oklch(32% 0.012 60);
+    --ink-3: oklch(48% 0.014 60);
+    --ink-4: oklch(62% 0.014 60);
+    --accent-color: oklch(62% 0.16 40);
+    --accent-2: oklch(52% 0.17 40);
+    --accent-tint: oklch(94% 0.05 70);
     --hl-amber: oklch(90% 0.1 85);
     --hl-rose: oklch(88% 0.08 20);
     --hl-sage: oklch(90% 0.07 145);

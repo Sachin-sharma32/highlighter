@@ -96,6 +96,25 @@
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.2);
   --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.22), 0 12px 32px rgba(0, 0, 0, 0.24);
   --shadow-3: 0 6px 18px rgba(0, 0, 0, 0.28), 0 30px 70px rgba(0, 0, 0, 0.3);
+
+  /* shadcn CSS variable overrides for dark theme */
+  --background: 30 8% 12%;
+  --foreground: 40 15% 92%;
+  --card: 30 8% 14%;
+  --card-foreground: 40 15% 92%;
+  --popover: 30 8% 14%;
+  --popover-foreground: 40 15% 92%;
+  --primary: 40 15% 92%;
+  --primary-foreground: 30 10% 12%;
+  --secondary: 30 8% 20%;
+  --secondary-foreground: 40 15% 92%;
+  --muted: 30 8% 20%;
+  --muted-foreground: 30 6% 65%;
+  --accent: 30 8% 20%;
+  --accent-foreground: 40 15% 92%;
+  --border: 30 8% 24%;
+  --input: 30 8% 24%;
+  --ring: 30 70% 55%;
 }
 
 .h {
@@ -111,6 +130,9 @@
   border-radius: 1px;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+  /* Highlight backgrounds stay light in both themes, so the text on top
+     must stay dark for legibility. */
+  color: oklch(18% 0.01 60);
 }
 .h.rose {
   background-image: linear-gradient(

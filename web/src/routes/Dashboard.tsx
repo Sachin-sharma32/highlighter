@@ -5,6 +5,7 @@ import { HighlightDetail } from "@/components/HighlightDetail";
 import { CommandPalette } from "@/components/CommandPalette";
 import { PricingModal } from "@/components/PricingModal";
 import { UsageBanner } from "@/components/UsageBanner";
+import { ConnectExtensionDialog } from "@/components/ConnectExtensionDialog";
 
 export default function Dashboard() {
   return (
@@ -18,6 +19,7 @@ export default function Dashboard() {
       </div>
       <CommandPalette />
       <PricingModal />
+      <ConnectExtensionDialog />
     </div>
   );
 }

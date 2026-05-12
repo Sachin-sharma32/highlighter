@@ -87,7 +87,7 @@ test("pairs the extension, saves a highlight, and syncs it back to the dashboard
     const dashboardPage = await context.newPage();
     await signInThroughDashboard(dashboardPage, TEST_EMAIL);
 
-    await dashboardPage.goto(`${DASHBOARD_URL}/connect-extension`);
+    await dashboardPage.goto(`${DASHBOARD_URL}/?connect=1`);
     await dashboardPage.getByTestId("generate-pairing-code-button").click();
     const code = await dashboardPage
       .getByTestId("pairing-code-value")

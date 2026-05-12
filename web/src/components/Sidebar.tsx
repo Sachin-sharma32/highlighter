@@ -160,7 +160,7 @@ export function Sidebar() {
           <Button
             onClick={() => setDialogOpen(true)}
             data-testid="new-collection-button"
-            className="w-full gap-1.5 rounded-lg bg-ink text-xs font-medium text-paper"
+            className="w-full gap-1.5 rounded-lg bg-ink text-xs font-medium text-paper hover:bg-ink-2"
             size="sm"
           >
             <Plus size={12} /> New collection
