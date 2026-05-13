@@ -1,21 +1,43 @@
 import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
-import { createInlineShadow, getShadow } from "./shadow";
+import { createInlineShadow } from "./shadow";
 import { dismissToolbar } from "./toolbar";
 import { YouTubeClipTrimmer } from "./components/YouTubeClipTrimmer";
-import { getYouTubeVideoId, youtubeWatchUrl } from "../lib/youtube";
+import {
+  formatClipTime,
+  getYouTubeVideoId,
+  youtubeWatchUrl,
+} from "../lib/youtube";
+import type { SaveHighlightPayload } from "../lib/messages";
+import {
+  clipMarkEnd,
+  clipMarkStart,
+  getClipState,
+  resetClipState,
+} from "./clipStore";
+import {
+  dismissProgressMarkers,
+  ensureProgressMarkers,
+} from "./youtubeProgressMarkers";
+import { notifyYouTubeClipSaved } from "./api";
 
 const SECONDARY_SELECTORS = [
   "ytd-watch-flexy #secondary",
   "#secondary.ytd-watch-flexy",
   "#secondary",
 ];
+const PLAYER_SELECTORS = [
+  "#movie_player",
+  ".html5-video-player",
+  "ytd-watch-flexy #player",
+];
 const MOUNT_DEBOUNCE_MS = 250;
 
 let clipHost: HTMLElement | null = null;
 let clipRoot: Root | null = null;
-let playerButton: HTMLButtonElement | null = null;
+let playerButtonHost: HTMLElement | null = null;
 let playerButtonMountTimer: number | null = null;
+let keyboardAttached = false;
 
 interface ClipContext {
   videoId: string;
@@ -77,36 +99,111 @@ function findSecondaryColumn(): HTMLElement | null {
   return null;
 }
 
+function findPlayerContainer(): HTMLElement | null {
+  for (const sel of PLAYER_SELECTORS) {
+    const el = document.querySelector<HTMLElement>(sel);
+    if (el) return el;
+  }
+  return null;
+}
+
+function readVideoTime(): number {
+  const video = document.querySelector<HTMLVideoElement>("video");
+  if (!video || !Number.isFinite(video.currentTime)) return 0;
+  return Math.max(0, video.currentTime);
+}
+
+function readVideoDuration(): number {
+  const video = document.querySelector<HTMLVideoElement>("video");
+  if (!video || !Number.isFinite(video.duration) || video.duration <= 0)
+    return 0;
+  return video.duration;
+}
+
+function clipBounds(): { start: number; end: number } | null {
+  const { offset, lockedStart, lockedEnd } = getClipState();
+  const duration = readVideoDuration();
+  if (offset !== null) {
+    const p = readVideoTime();
+    const cap = duration > 0 ? duration : p + offset;
+    const s = Math.floor(Math.max(0, p - offset));
+    const e = Math.floor(Math.min(cap, p + offset));
+    return { start: s, end: Math.max(s + 1, e) };
+  }
+  if (lockedStart !== null && lockedEnd !== null && lockedEnd > lockedStart) {
+    const s = Math.floor(lockedStart);
+    const e = Math.floor(lockedEnd);
+    return { start: s, end: Math.max(s + 1, e) };
+  }
+  return null;
+}
+
+let saveInFlight = false;
+
+async function executeClipSave(): Promise<boolean> {
+  if (saveInFlight) return false;
+  const context = getYouTubeClipContext();
+  if (!context) return false;
+  const bounds = clipBounds();
+  if (!bounds) return false;
+
+  const payload: SaveHighlightPayload = {
+    url: context.url,
+    title: context.title,
+    text: `YouTube clip ${formatClipTime(bounds.start)}-${formatClipTime(bounds.end)}`,
+    color: "sky",
+    sourceType: "youtube",
+    youtubeVideoId: context.videoId,
+    clipStart: bounds.start,
+    clipEnd: bounds.end,
+    youtubeChannelTitle: context.channelTitle,
+  };
+
+  saveInFlight = true;
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "SAVE_HIGHLIGHT",
+      payload,
+    });
+    if (!response?.ok) return false;
+    notifyYouTubeClipSaved();
+    resetClipState();
+    return true;
+  } catch {
+    return false;
+  } finally {
+    saveInFlight = false;
+  }
+}
+
 export function dismissYouTubeClipTrimmer() {
   clipRoot?.unmount();
   clipRoot = null;
   clipHost?.remove();
   clipHost = null;
+  resetClipState();
 }
 
-// Kept for backwards compatibility — the clipper is now embedded in the
-// suggested videos column and scrolls with it, so no positioning is needed.
 export function positionYouTubeClipper() {}
 
 export function positionYouTubePlayerButton() {
-  if (!playerButton) return;
-  playerButton.style.display = isYouTubeVideoPage() ? "inline-flex" : "none";
+  if (!playerButtonHost) return;
+  playerButtonHost.style.display = isYouTubeVideoPage() ? "block" : "none";
 }
 
-export function showYouTubeClipTrimmer() {
+function mountTrimmer(): boolean {
+  if (clipRoot && clipHost?.isConnected) return true;
+
   const context = getYouTubeClipContext();
-  if (!context) {
-    throw new Error("No playable YouTube video found.");
-  }
+  if (!context) return false;
 
   const secondary = findSecondaryColumn();
-  if (!secondary) {
-    throw new Error(
-      "Open the standard YouTube layout to start a Marginalia clip.",
-    );
-  }
+  if (!secondary) return false;
 
-  dismissYouTubeClipTrimmer();
+  // Tear down any stale shell before re-creating.
+  clipRoot?.unmount();
+  clipHost?.remove();
+
   dismissToolbar();
 
   const { host, shadowRoot } = createInlineShadow(secondary);
@@ -120,31 +217,74 @@ export function showYouTubeClipTrimmer() {
   clipRoot.render(
     createElement(YouTubeClipTrimmer, {
       context,
-      readCurrentTime: () => {
+      readCurrentTime: readVideoTime,
+      readDuration: () => readVideoDuration() || context.duration || 0,
+      seekTo: (t: number) => {
         const video = document.querySelector<HTMLVideoElement>("video");
-        if (!video || !Number.isFinite(video.currentTime)) return 0;
-        return Math.max(0, Math.floor(video.currentTime));
+        if (!video || !Number.isFinite(video.duration) || video.duration <= 0)
+          return;
+        video.currentTime = Math.max(0, Math.min(video.duration, t));
       },
       onClose: dismissYouTubeClipTrimmer,
     }),
   );
+  return true;
+}
+
+export function showYouTubeClipTrimmer() {
+  if (!mountTrimmer()) {
+    throw new Error(
+      "Open the standard YouTube layout to start a Marginalia clip.",
+    );
+  }
+}
+
+function openTrimmerInteractive() {
+  try {
+    showYouTubeClipTrimmer();
+  } catch {
+    /* In fullscreen / no secondary column: keep keyboard-only flow alive. */
+  }
 }
 
 export function mountYouTubePlayerButton() {
   if (!isYouTubeVideoPage()) {
-    playerButton?.remove();
-    playerButton = null;
+    playerButtonHost?.remove();
+    playerButtonHost = null;
     dismissYouTubeClipTrimmer();
+    dismissProgressMarkers();
     return;
   }
 
-  const sr = getShadow();
-  if (playerButton && playerButton.isConnected) {
+  // Always try to (re-)attach markers — YouTube may re-build the progress bar
+  // on navigation.
+  ensureProgressMarkers();
+
+  attachYouTubeKeyboardShortcuts();
+
+  const player = findPlayerContainer();
+  if (!player) return;
+
+  if (playerButtonHost && playerButtonHost.isConnected) {
+    if (playerButtonHost.parentElement !== player) {
+      player.appendChild(playerButtonHost);
+    }
     positionYouTubePlayerButton();
     return;
   }
 
-  playerButton?.remove();
+  playerButtonHost?.remove();
+
+  const { host, shadowRoot } = createInlineShadow(player);
+  host.id = "marginalia-youtube-player-button-host";
+  host.style.position = "absolute";
+  host.style.top = "12px";
+  host.style.right = "12px";
+  host.style.zIndex = "60";
+  host.style.width = "auto";
+  host.style.display = "block";
+  host.style.pointerEvents = "auto";
+
   const button = document.createElement("button");
   button.type = "button";
   button.className = "marginalia-youtube-player-button";
@@ -154,15 +294,11 @@ export function mountYouTubePlayerButton() {
   button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    try {
-      showYouTubeClipTrimmer();
-    } catch {
-      /* surfaced via popup flow; no-op here */
-    }
+    openTrimmerInteractive();
   });
+  shadowRoot.appendChild(button);
 
-  sr.appendChild(button);
-  playerButton = button;
+  playerButtonHost = host;
   positionYouTubePlayerButton();
 }
 
@@ -172,4 +308,54 @@ export function scheduleYouTubePlayerButtonMount() {
     playerButtonMountTimer = null;
     mountYouTubePlayerButton();
   }, MOUNT_DEBOUNCE_MS);
+}
+
+function isEditableEventTarget(e: KeyboardEvent): boolean {
+  for (const el of e.composedPath()) {
+    if (el instanceof HTMLInputElement) return true;
+    if (el instanceof HTMLTextAreaElement) return true;
+    if (el instanceof HTMLSelectElement) return true;
+    if (el instanceof HTMLElement && el.isContentEditable) return true;
+  }
+  return false;
+}
+
+function handleKeyboardShortcut(e: KeyboardEvent) {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (!isYouTubeVideoPage()) return;
+  if (isEditableEventTarget(e)) return;
+
+  const key = e.key.toLowerCase();
+  if (key !== "q" && key !== "e" && key !== "s" && key !== "r") return;
+
+  if (key === "q") {
+    e.preventDefault();
+    e.stopPropagation();
+    clipMarkStart(readVideoTime());
+    openTrimmerInteractive();
+  } else if (key === "e") {
+    e.preventDefault();
+    e.stopPropagation();
+    clipMarkEnd(readVideoTime());
+    openTrimmerInteractive();
+  } else if (key === "s") {
+    if (clipBounds() !== null) {
+      e.preventDefault();
+      e.stopPropagation();
+      void executeClipSave();
+    }
+  } else if (key === "r") {
+    const { offset, lockedStart, lockedEnd } = getClipState();
+    if (offset !== null || lockedStart !== null || lockedEnd !== null) {
+      e.preventDefault();
+      e.stopPropagation();
+      resetClipState();
+    }
+  }
+}
+
+function attachYouTubeKeyboardShortcuts() {
+  if (keyboardAttached) return;
+  keyboardAttached = true;
+  document.addEventListener("keydown", handleKeyboardShortcut, true);
 }

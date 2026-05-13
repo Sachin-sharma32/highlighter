@@ -1,22 +1,19 @@
 import type { MouseEvent } from "react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
+export type SelectionActionKey = "copy" | "note" | "tag" | "copySource";
+
 interface Props {
   text: string;
-  pageUrl: string;
-  pageTitle: string;
   colors: { id: string; color: string }[];
-  onSave: (color: string) => void;
-  onSaveAndEdit: (focus: "note" | "tag") => void;
-  onClose: () => void;
+  copied: boolean;
+  onSaveColor: (color: string) => void;
+  onAction: (key: SelectionActionKey) => void;
 }
 
-const ROWS: {
-  label: string;
-  kbd: string;
-  key: "copy" | "note" | "tag" | "copySource";
-}[] = [
+const ROWS: { label: string; kbd: string; key: SelectionActionKey }[] = [
   { label: "Copy text", kbd: "Y", key: "copy" },
   { label: "Add note", kbd: "N", key: "note" },
   { label: "Tag…", kbd: "T", key: "tag" },
@@ -29,36 +26,11 @@ function preventDefault(e: MouseEvent) {
 
 export function SelectionToolbar({
   text,
-  pageUrl,
-  pageTitle,
   colors,
-  onSave,
-  onSaveAndEdit,
-  onClose,
+  copied,
+  onSaveColor,
+  onAction,
 }: Props) {
-  const handleAction = (key: "copy" | "note" | "tag" | "copySource") => {
-    switch (key) {
-      case "copy":
-        onClose();
-        void navigator.clipboard.writeText(text).catch(() => {});
-        break;
-      case "note":
-        onClose();
-        onSaveAndEdit("note");
-        break;
-      case "tag":
-        onClose();
-        onSaveAndEdit("tag");
-        break;
-      case "copySource": {
-        const md = `> ${text}\n\n— ${pageTitle} (${pageUrl})`;
-        onClose();
-        void navigator.clipboard.writeText(md).catch(() => {});
-        break;
-      }
-    }
-  };
-
   const charCount = text.length;
 
   return (
@@ -73,8 +45,7 @@ export function SelectionToolbar({
             title={`Highlight ${c.id}`}
             onMouseDown={(e) => {
               e.preventDefault();
-              onSave(c.id);
-              onClose();
+              onSaveColor(c.id);
             }}
           />
         ))}
@@ -82,26 +53,33 @@ export function SelectionToolbar({
 
       <Separator />
 
-      <div className="flex flex-col gap-0.5">
-        {ROWS.map((row) => (
-          <Button
-            key={row.key}
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-full justify-between rounded px-2 text-ink-2 hover:text-ink"
-            onMouseDown={(e) => {
-              preventDefault(e);
-              handleAction(row.key);
-            }}
-          >
-            <span className="text-xs">{row.label}</span>
-            <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-rule bg-paper px-1 font-mono text-[10px] text-ink-4">
-              {row.kbd}
-            </kbd>
-          </Button>
-        ))}
-      </div>
+      {copied ? (
+        <div className="flex items-center justify-center gap-1.5 py-3 font-mono text-[11px] uppercase tracking-widest text-ink-2">
+          <Check size={12} />
+          Copied to clipboard
+        </div>
+      ) : (
+        <div className="flex flex-col gap-0.5">
+          {ROWS.map((row) => (
+            <Button
+              key={row.key}
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-full justify-between rounded px-2 text-ink-2 hover:text-ink"
+              onMouseDown={(e) => {
+                preventDefault(e);
+                onAction(row.key);
+              }}
+            >
+              <span className="text-xs">{row.label}</span>
+              <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-rule bg-paper px-1 font-mono text-[10px] text-ink-4">
+                {row.kbd}
+              </kbd>
+            </Button>
+          ))}
+        </div>
+      )}
 
       <Separator />
 

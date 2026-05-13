@@ -8,6 +8,11 @@
     box-sizing: border-box;
   }
 
+  :host {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
   :host,
   :root {
     --paper: oklch(98.5% 0.006 85);
@@ -71,11 +76,8 @@
   }
 
   .marginalia-youtube-player-button {
-    @apply fixed inline-flex items-center justify-center gap-2 rounded-md border border-accent bg-ink px-4 py-2.5 font-ui text-sm font-medium text-paper transition-colors;
-    bottom: 24px;
-    right: 24px;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-accent bg-ink px-3 py-1.5 font-ui text-sm font-medium leading-none text-paper transition-colors;
     pointer-events: all;
-    z-index: 2147483646;
   }
 
   .marginalia-youtube-player-button:hover {
@@ -85,8 +87,8 @@
   .marginalia-youtube-player-button::before {
     content: "";
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 9999px;
     background: var(--accent-color);
   }

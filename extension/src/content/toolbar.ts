@@ -22,7 +22,10 @@ import {
   writeTags,
 } from "./marks";
 import { deleteHighlightMessage, updateHighlightMessage } from "./api";
-import { SelectionToolbar } from "./components/SelectionToolbar";
+import {
+  SelectionToolbar,
+  type SelectionActionKey,
+} from "./components/SelectionToolbar";
 import { EditCard } from "./components/EditCard";
 
 const TOOLBAR_ID = "marginalia-toolbar";
@@ -30,6 +33,7 @@ const CARD_WIDTH = 260;
 const VIEWPORT_BOTTOM_INSET = 320;
 const VIEWPORT_EDGE_INSET = 8;
 const TOOLBAR_OFFSET = 8;
+const COPIED_FEEDBACK_MS = 700;
 
 type Anchor =
   | { kind: "range"; range: Range }
@@ -40,6 +44,8 @@ let root: Root | null = null;
 let anchor: Anchor | null = null;
 let positionFrame: number | null = null;
 let onAfterDismiss: (() => void) | null = null;
+let copiedState = false;
+let copiedTimer: number | null = null;
 
 function positionToolbarForRect(rect: DOMRect) {
   const left = Math.max(
@@ -98,6 +104,12 @@ export function dismissToolbar() {
   onAfterDismiss?.();
   onAfterDismiss = null;
 
+  if (copiedTimer != null) {
+    window.clearTimeout(copiedTimer);
+    copiedTimer = null;
+  }
+  copiedState = false;
+
   root?.unmount();
   root = null;
   host?.remove();
@@ -111,29 +123,64 @@ export function dismissToolbar() {
   clearToolbarPositionRule();
 }
 
+function renderSelectionToolbar() {
+  if (!root || anchor?.kind !== "range") return;
+  const range = anchor.range;
+  root.render(
+    createElement(SelectionToolbar, {
+      text: range.toString(),
+      colors: getAllColors(),
+      copied: copiedState,
+      onSaveColor: (color) => {
+        void createHighlightFromRange(range, color);
+        dismissToolbar();
+      },
+      onAction: (key) => {
+        void handleSelectionAction(key);
+      },
+    }),
+  );
+}
+
 export function showSelectionToolbar(rect: DOMRect, range: Range) {
   mountHost("marginalia-toolbar-card");
   if (!root) return;
   anchor = { kind: "range", range };
   positionToolbarForRect(rect);
+  renderSelectionToolbar();
+}
 
+function showCopiedFeedback() {
+  copiedState = true;
+  renderSelectionToolbar();
+  if (copiedTimer != null) window.clearTimeout(copiedTimer);
+  copiedTimer = window.setTimeout(() => {
+    copiedTimer = null;
+    dismissToolbar();
+  }, COPIED_FEEDBACK_MS);
+}
+
+export async function handleSelectionAction(key: SelectionActionKey) {
+  if (!anchor || anchor.kind !== "range") return;
+  const range = anchor.range;
   const text = range.toString();
 
-  root.render(
-    createElement(SelectionToolbar, {
-      text,
-      pageUrl: location.href,
-      pageTitle: document.title,
-      colors: getAllColors(),
-      onSave: (color) => {
-        void createHighlightFromRange(range, color);
-      },
-      onSaveAndEdit: (focus) => {
-        void saveAndShowEdit(range, focus);
-      },
-      onClose: dismissToolbar,
-    }),
-  );
+  switch (key) {
+    case "copy":
+      void navigator.clipboard.writeText(text).catch(() => {});
+      showCopiedFeedback();
+      break;
+    case "copySource": {
+      const md = `> ${text}\n\n— ${document.title} (${location.href})`;
+      void navigator.clipboard.writeText(md).catch(() => {});
+      showCopiedFeedback();
+      break;
+    }
+    case "note":
+    case "tag":
+      await saveAndShowEdit(range, key);
+      break;
+  }
 }
 
 async function saveAndShowEdit(range: Range, focus: "note" | "tag") {
@@ -209,6 +256,10 @@ function showEditCardForMark(
 
 export function isToolbarOpen() {
   return host != null;
+}
+
+export function isSelectionToolbarOpen() {
+  return host != null && anchor?.kind === "range";
 }
 
 export function activeSelectionRange(): Range | null {
