@@ -50,7 +50,6 @@ export function SelectionToolbar({
           />
         ))}
       </div>
-
       <Separator />
 
       {copied ? (

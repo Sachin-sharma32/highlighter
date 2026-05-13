@@ -240,14 +240,7 @@ export function YouTubeClipTrimmer({
   </div>;
 
   return (
-    <div className="font-ui relative mt-3 rounded-md border border-accent bg-paper-2 px-4 pb-4 pt-4 text-ink">
-      <div
-        className="absolute -top-2.5 left-4 inline-flex items-center rounded px-2 py-[3px] font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-paper"
-        style={{ background: "var(--accent-color)" }}
-      >
-        Clipping
-      </div>
-
+    <div className="font-ui relative mb-4 rounded-md border border-accent bg-paper-2 px-4 pb-4  pt-4 text-ink">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1 pt-1">
           <div className="font-display line-clamp-2 text-[16px] font-medium leading-tight tracking-tight text-ink">
@@ -364,9 +357,9 @@ export function YouTubeClipTrimmer({
             className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] leading-tight text-ink-3 underline-offset-2 hover:underline disabled:opacity-50"
           >
             Reset
-            <div className="flex justify-center w-6 h-6 pt-2 items-center rounded bg-gray-200 border-white/30 bg-white/10 font-mono text-[9px] font-medium">
+            <span className="inline-flex items-center rounded border border-rule bg-paper-2 px-1 py-px font-mono text-[9px] text-ink-3">
               R
-            </div>
+            </span>
           </button>
         ) : (
           <span className="text-[11px] leading-tight text-ink-4">
@@ -391,9 +384,9 @@ export function YouTubeClipTrimmer({
             onClick={() => void handleSave()}
           >
             Save clip
-            <div className="flex justify-center w-6 h-6 pt-2 items-center rounded border border-white/30 bg-white/10 font-mono text-[9px] font-medium">
+            <span className="inline-flex items-center rounded border border-rule bg-paper-2 font-mono text-[9px] h-4 w-4 text-ink-3">
               S
-            </div>
+            </span>
           </Button>
         </div>
       </div>

@@ -127,7 +127,7 @@ export function EditCard({
           {tags.map((t) => (
             <span
               key={t}
-              className="inline-flex h-6 items-center gap-1 rounded-full border border-rule bg-paper px-2 font-mono text-[10px] text-ink-2"
+              className="inline-flex h-6 items-center gap-1  border border-rule bg-paper px-2 font-mono text-[10px] text-ink-2"
             >
               {`#${t}`}
               <button
@@ -144,7 +144,7 @@ export function EditCard({
           ))}
           <Input
             ref={tagInputRef}
-            className="h-7 w-24 rounded-full border-accent bg-paper px-2.5 font-mono text-[11px]"
+            className="h-7 w-24 rounded-sm border-accent bg-paper px-2.5 font-mono text-[11px]"
             placeholder="+tag"
             value={tagDraft}
             onChange={(e) => setTagDraft(e.target.value)}

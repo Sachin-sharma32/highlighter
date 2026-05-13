@@ -39,7 +39,7 @@ export function CollectionSelect({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-7 w-full items-center justify-between rounded border border-rule bg-paper px-2 text-xs font-mono text-ink shadow-sm outline-none hover:bg-paper-2 focus:ring-1 focus:ring-accent">
+      <DropdownMenuTrigger className="flex h-7 w-full items-center justify-between border border-rule bg-paper px-2 text-xs font-mono text-ink shadow-sm outline-none hover:bg-paper-2 focus:ring-1 focus:ring-accent">
         <div className="flex items-center gap-1.5 truncate">
           <Folder size={12} className="text-ink-4" />
           <span className="truncate">{label}</span>

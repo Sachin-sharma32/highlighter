@@ -1,5 +1,7 @@
 import { isDashboardUrl } from "../lib/dashboard";
 import { readMarginaliaTarget } from "../lib/urls";
+
+import "virtual:click-to-component/client";
 import {
   focusHighlight,
   repaintHighlights,

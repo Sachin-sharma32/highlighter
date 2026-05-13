@@ -10,7 +10,7 @@
     "dev:ext": "pnpm --filter extension dev",
     "build:web": "pnpm --filter web build",
     "build:ext": "pnpm --filter extension build",
-    "build:ext:prod": "VITE_CONVEX_URL=https://blessed-finch-705.convex.cloud VITE_DASHBOARD_URL=https://highlighter-web-gdqs.vercel.app pnpm --filter ./extension build",
+    "build:ext:prod": "pnpm --filter ./extension exec vite build --mode production --outDir prod",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "lint": "eslint .",
