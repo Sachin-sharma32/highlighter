@@ -172,7 +172,13 @@ export function TodoWidget() {
     void (async () => {
       for (const t of pending) {
         const title = await requestLinkTitle(t.link!);
-        if (!cancelled && title) updateTodo(t.id, { linkTitle: title });
+        if (!cancelled && title) {
+          const patch: Partial<Todo> = { linkTitle: title };
+          if (t.text === t.link) {
+            patch.text = title;
+          }
+          updateTodo(t.id, patch);
+        }
       }
     })();
 
@@ -374,7 +380,9 @@ export function TodoWidget() {
                           )}
                         >
                           <span className="min-w-0 truncate">
-                            {todo.linkTitle || prettyHost(todo.link)}
+                            {todo.text === todo.linkTitle
+                              ? prettyHost(todo.link)
+                              : todo.linkTitle || prettyHost(todo.link)}
                           </span>
                           <ArrowUpRight className="h-3 w-3 shrink-0" />
                         </a>
