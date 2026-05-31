@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ListTodo,
   Plus,
@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Link2,
   ArrowUpRight,
+  GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -92,6 +93,10 @@ export function TodoWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
   const attemptedTitles = useRef<Set<string>>(new Set());
+
+  // ── Drag-and-drop state ──────────────────────────────────────────────
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
   // Load persisted todos and keep in sync across tabs.
   useEffect(() => {
@@ -214,6 +219,60 @@ export function TodoWidget() {
     persist(todos.filter((t) => t.id !== id));
   };
 
+  // ── Drag-and-drop handlers ──────────────────────────────────────────
+  const handleDragStart = useCallback(
+    (e: React.DragEvent<HTMLLIElement>, id: string) => {
+      setDragId(id);
+      e.dataTransfer.effectAllowed = "move";
+      // A small transparent image removes the default browser ghost.
+      const ghost = document.createElement("canvas");
+      ghost.width = 0;
+      ghost.height = 0;
+      e.dataTransfer.setDragImage(ghost, 0, 0);
+    },
+    [],
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLLIElement>, index: number) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      // Determine whether the cursor is in the top or bottom half of the item.
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const insertIndex = e.clientY < midY ? index : index + 1;
+      setDropTargetIndex(insertIndex);
+    },
+    [],
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLLIElement>) => {
+      e.preventDefault();
+      if (dragId == null || dropTargetIndex == null) return;
+
+      const fromIndex = todos.findIndex((t) => t.id === dragId);
+      if (fromIndex === -1) return;
+
+      const reordered = [...todos];
+      const [moved] = reordered.splice(fromIndex, 1);
+      // Adjust target index after removal.
+      const toIndex =
+        dropTargetIndex > fromIndex ? dropTargetIndex - 1 : dropTargetIndex;
+      reordered.splice(toIndex, 0, moved);
+      persist(reordered);
+
+      setDragId(null);
+      setDropTargetIndex(null);
+    },
+    [dragId, dropTargetIndex, todos],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDragId(null);
+    setDropTargetIndex(null);
+  }, []);
+
   const remaining = useMemo(() => todos.filter((t) => !t.done).length, [todos]);
 
   return (
@@ -326,15 +385,37 @@ export function TodoWidget() {
                 <p className="text-xs text-ink-4">Add your first task above.</p>
               </div>
             ) : (
-              <ul className="flex flex-col gap-1">
-                {todos.map((todo) => (
+              <ul className="flex flex-col">
+                {todos.map((todo, index) => (
                   <li
                     key={todo.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, todo.id)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
                     className={cn(
-                      "group flex items-start gap-3 rounded-lg px-2 py-2",
+                      "group relative flex items-start gap-1 rounded-lg px-1 py-2",
                       "transition-colors hover:bg-paper-3",
+                      dragId === todo.id && "opacity-40",
                     )}
                   >
+                    {/* Drop indicator — a thin accent line above this item */}
+                    {dropTargetIndex === index && dragId !== todo.id && (
+                      <div className="pointer-events-none absolute -top-px left-2 right-2 h-0.5 rounded-full bg-accent" />
+                    )}
+
+                    {/* Drag handle */}
+                    <div
+                      className={cn(
+                        "mt-0.5 flex h-5 w-5 shrink-0 cursor-grab items-center justify-center text-ink-4",
+                        "opacity-0 transition-opacity group-hover:opacity-60",
+                      )}
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => toggleTodo(todo.id)}
@@ -402,6 +483,10 @@ export function TodoWidget() {
                     </button>
                   </li>
                 ))}
+                {/* Drop indicator for the very end of the list */}
+                {dropTargetIndex === todos.length && dragId != null && (
+                  <div className="pointer-events-none mx-2 h-0.5 rounded-full bg-accent" />
+                )}
               </ul>
             )}
           </div>
