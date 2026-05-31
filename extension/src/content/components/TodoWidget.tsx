@@ -11,7 +11,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { RemoteTodo } from "@/lib/messages";
+import type { RemoteTodo, UpdateTodoPayload } from "@/lib/messages";
 import {
   isPaired,
   listTodosRemote,
@@ -101,9 +101,15 @@ export function TodoWidget() {
   const [draft, setDraft] = useState("");
   const [linkDraft, setLinkDraft] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
+  // Inline edit state — the id of the todo being edited and its working text/link.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [editLinkDraft, setEditLinkDraft] = useState("");
   const closeTimer = useRef<number | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
   const attemptedTitles = useRef<Set<string>>(new Set());
   // Whether Convex is the backing store. Held in a ref so the mutation
   // callbacks always read the latest value without re-binding.
@@ -210,10 +216,29 @@ export function TodoWidget() {
     if (visible) inputRef.current?.focus();
   }, [visible]);
 
+  // Close the popup when a pointer-down lands outside the widget.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.composedPath?.()[0] ?? e.target;
+      if (rootRef.current && !rootRef.current.contains(target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [open]);
+
   // Focus the link field as it expands.
   useEffect(() => {
     if (linkOpen) urlInputRef.current?.focus();
   }, [linkOpen]);
+
+  // Focus and select the edit field when an edit begins.
+  useEffect(() => {
+    if (editingId) editInputRef.current?.select();
+  }, [editingId]);
 
   const persist = (next: Todo[]) => {
     setTodos(next);
@@ -227,7 +252,12 @@ export function TodoWidget() {
       return next;
     });
     if (pairedRef.current) {
-      updateTodoRemote({ id, text: patch.text, linkTitle: patch.linkTitle });
+      const remote: UpdateTodoPayload = { id };
+      if ("text" in patch) remote.text = patch.text;
+      // `undefined` in the patch means "clear it"; Convex wants `null` for that.
+      if ("link" in patch) remote.link = patch.link ?? null;
+      if ("linkTitle" in patch) remote.linkTitle = patch.linkTitle ?? null;
+      updateTodoRemote(remote);
     }
   };
 
@@ -315,6 +345,42 @@ export function TodoWidget() {
     if (pairedRef.current) deleteTodoRemote(id);
   };
 
+  const startEditing = (todo: Todo) => {
+    setEditingId(todo.id);
+    setEditDraft(todo.text);
+    setEditLinkDraft(todo.link ?? "");
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditDraft("");
+    setEditLinkDraft("");
+  };
+
+  const commitEditing = () => {
+    if (editingId == null) return;
+    const current = todos.find((t) => t.id === editingId);
+    if (!current) return cancelEditing();
+
+    const text = editDraft.trim();
+    const link = normalizeUrl(editLinkDraft);
+    // Nothing left to anchor the todo to — keep the original instead of
+    // silently emptying it.
+    if (!text && !link) return cancelEditing();
+
+    const patch: Partial<Todo> = {};
+    const finalText = text || link;
+    if (finalText !== current.text) patch.text = finalText;
+    if (link !== (current.link ?? "")) {
+      patch.link = link || undefined;
+      // The link changed — drop the cached title so it re-resolves (or clears).
+      patch.linkTitle = undefined;
+      attemptedTitles.current.delete(current.id);
+    }
+    if (Object.keys(patch).length > 0) updateTodo(editingId, patch);
+    cancelEditing();
+  };
+
   // ── Drag-and-drop handlers ──────────────────────────────────────────
   const handleDragStart = useCallback(
     (e: React.DragEvent<HTMLLIElement>, id: string) => {
@@ -375,7 +441,10 @@ export function TodoWidget() {
   const remaining = useMemo(() => todos.filter((t) => !t.done).length, [todos]);
 
   return (
-    <div className="font-ui pointer-events-none fixed bottom-6 right-6 z-[2147483647]">
+    <div
+      ref={rootRef}
+      className="font-ui pointer-events-none fixed bottom-6 right-6 z-[2147483647]"
+    >
       {/* Popup */}
       {mounted && (
         <div
@@ -488,7 +557,7 @@ export function TodoWidget() {
                 {todos.map((todo, index) => (
                   <li
                     key={todo.id}
-                    draggable
+                    draggable={editingId !== todo.id}
                     onDragStart={(e) => handleDragStart(e, todo.id)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDrop={handleDrop}
@@ -540,14 +609,64 @@ export function TodoWidget() {
                       />
                     </button>
                     <div className="min-w-0 flex-1">
-                      <span
-                        className={cn(
-                          "block text-sm leading-snug transition-all duration-200",
-                          todo.done ? "text-ink-4 line-through" : "text-ink-2",
-                        )}
-                      >
-                        {todo.text}
-                      </span>
+                      {editingId === todo.id ? (
+                        <div
+                          className="flex flex-col gap-1"
+                          onBlur={(e) => {
+                            // Commit only when focus leaves the whole editor,
+                            // not when moving between the text and link fields.
+                            if (
+                              !e.currentTarget.contains(
+                                e.relatedTarget as Node | null,
+                              )
+                            ) {
+                              commitEditing();
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              commitEditing();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelEditing();
+                            }
+                          }}
+                        >
+                          <input
+                            ref={editInputRef}
+                            value={editDraft}
+                            onChange={(e) => setEditDraft(e.target.value)}
+                            placeholder="Task…"
+                            className={cn(
+                              "block w-full rounded-md border border-accent bg-paper px-1.5 py-0.5",
+                              "text-sm leading-snug text-ink outline-none",
+                            )}
+                          />
+                          <input
+                            value={editLinkDraft}
+                            onChange={(e) => setEditLinkDraft(e.target.value)}
+                            placeholder="Link (optional)…"
+                            className={cn(
+                              "block w-full rounded-md border border-rule bg-paper px-1.5 py-0.5",
+                              "text-xs leading-snug text-ink outline-none focus:border-accent",
+                            )}
+                          />
+                        </div>
+                      ) : (
+                        <span
+                          onDoubleClick={() => startEditing(todo)}
+                          title="Double-click to edit"
+                          className={cn(
+                            "block cursor-text text-sm leading-snug transition-all duration-200",
+                            todo.done
+                              ? "text-ink-4 line-through"
+                              : "text-ink-2",
+                          )}
+                        >
+                          {todo.text}
+                        </span>
+                      )}
                       {todo.link && (
                         <a
                           href={todo.link}
