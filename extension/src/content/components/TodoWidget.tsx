@@ -89,6 +89,14 @@ function fromLocalInputValue(value: string): number | undefined {
   return Number.isNaN(ts) ? undefined : ts;
 }
 
+/** End of the given day (defaults to today) — 23:59 local time. Used as the
+ *  implicit due date when a todo is added without one. */
+function endOfDay(ts: number = Date.now()): number {
+  const d = new Date(ts);
+  d.setHours(23, 59, 0, 0);
+  return d.getTime();
+}
+
 /** A compact relative label for a due date, plus whether it's overdue. */
 function formatDue(
   dueAt: number,
@@ -418,7 +426,9 @@ export function TodoWidget() {
     const link = normalizeUrl(linkDraft);
     if (!text && !link) return;
 
-    const dueAt = fromLocalInputValue(dueDraft);
+    // Default to the end of today (23:59) when no due date is chosen, so every
+    // todo has a due date to sort by.
+    const dueAt = fromLocalInputValue(dueDraft) ?? endOfDay();
     const recurrence = recurrenceDraft || undefined;
 
     const tempId = newId();
@@ -427,8 +437,8 @@ export function TodoWidget() {
       text: text || link,
       done: false,
       createdAt: Date.now(),
+      dueAt,
       ...(link ? { link } : {}),
-      ...(dueAt != null ? { dueAt } : {}),
       ...(recurrence ? { recurrence } : {}),
     };
     persist([todo, ...todos]);
@@ -516,9 +526,16 @@ export function TodoWidget() {
     if (pairedRef.current) deleteTodoRemote(id);
   };
 
-  // Active todos keep their manual order; completed ones are split off into a
-  // collapsible section, newest completion first.
-  const activeTodos = useMemo(() => todos.filter((t) => !t.done), [todos]);
+  // Active todos are sorted by due date (soonest first); todos without a due
+  // date fall to the end. Completed ones are split off into a collapsible
+  // section, newest completion first.
+  const activeTodos = useMemo(
+    () =>
+      todos
+        .filter((t) => !t.done)
+        .sort((a, b) => (a.dueAt ?? Infinity) - (b.dueAt ?? Infinity)),
+    [todos],
+  );
   const completedTodos = useMemo(
     () =>
       todos
