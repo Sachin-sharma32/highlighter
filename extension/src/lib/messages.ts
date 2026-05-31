@@ -16,6 +16,11 @@ export type ExtMessage =
   | { type: "GET_COLORS" }
   | { type: "SET_HIGHLIGHTING_ENABLED"; payload: { enabled: boolean } }
   | { type: "FETCH_LINK_META"; payload: { url: string } }
+  | { type: "LIST_TODOS" }
+  | { type: "CREATE_TODO"; payload: CreateTodoPayload }
+  | { type: "UPDATE_TODO"; payload: UpdateTodoPayload }
+  | { type: "DELETE_TODO"; payload: { id: string } }
+  | { type: "REORDER_TODOS"; payload: { ids: string[] } }
   | { type: "SIGN_OUT" };
 
 // Sent from popup/sidepanel to content script via chrome.tabs.sendMessage
@@ -53,6 +58,30 @@ export interface UpdateHighlightPayload {
   note?: string;
   tags?: string[];
   collectionIds?: string[];
+}
+
+export interface RemoteTodo {
+  _id: string;
+  text: string;
+  done: boolean;
+  link?: string;
+  linkTitle?: string;
+  order: number;
+  createdAt: number;
+}
+
+export interface CreateTodoPayload {
+  text: string;
+  link?: string;
+  linkTitle?: string;
+}
+
+export interface UpdateTodoPayload {
+  id: string;
+  text?: string;
+  done?: boolean;
+  link?: string | null;
+  linkTitle?: string | null;
 }
 
 import type { AppErrorCode } from "./errors";

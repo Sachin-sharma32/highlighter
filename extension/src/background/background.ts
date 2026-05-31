@@ -328,6 +328,60 @@ async function handleMessage(
       return { ok: true, data: { title } };
     }
 
+    case "LIST_TODOS": {
+      const token = await getToken();
+      if (!token) return { ok: true, data: [] };
+      const c = getClient();
+      const todos = await c.query(api.ext.listTodos, { token });
+      return { ok: true, data: todos };
+    }
+
+    case "CREATE_TODO": {
+      const token = await requireToken();
+      const c = getClient();
+      const id = await c.mutation(api.ext.createTodo, {
+        token,
+        text: msg.payload.text,
+        link: msg.payload.link,
+        linkTitle: msg.payload.linkTitle,
+      });
+      return { ok: true, data: { id } };
+    }
+
+    case "UPDATE_TODO": {
+      const token = await requireToken();
+      const c = getClient();
+      await c.mutation(api.ext.updateTodo, {
+        token,
+        id: msg.payload.id as Id<"todos">,
+        text: msg.payload.text,
+        done: msg.payload.done,
+        link: msg.payload.link,
+        linkTitle: msg.payload.linkTitle,
+      });
+      return { ok: true, data: null };
+    }
+
+    case "DELETE_TODO": {
+      const token = await requireToken();
+      const c = getClient();
+      await c.mutation(api.ext.removeTodo, {
+        token,
+        id: msg.payload.id as Id<"todos">,
+      });
+      return { ok: true, data: null };
+    }
+
+    case "REORDER_TODOS": {
+      const token = await requireToken();
+      const c = getClient();
+      await c.mutation(api.ext.reorderTodos, {
+        token,
+        ids: msg.payload.ids as Id<"todos">[],
+      });
+      return { ok: true, data: null };
+    }
+
     default:
       return { ok: false, error: "Unknown message type" };
   }

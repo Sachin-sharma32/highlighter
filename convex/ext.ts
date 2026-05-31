@@ -248,3 +248,101 @@ export const signOut = mutation({
     if (session) await ctx.db.delete(session._id);
   },
 });
+
+// --- Todos -----------------------------------------------------------------
+
+const TODO_NOT_FOUND = () =>
+  appError(
+    "NOT_FOUND",
+    "That task no longer exists. Refresh the page and try again.",
+  );
+
+export const listTodos = query({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    const userId = await userIdFromToken(ctx, token);
+    if (!userId) return [];
+    return await ctx.db
+      .query("todos")
+      .withIndex("by_user_order", (q) => q.eq("userId", userId))
+      .order("asc")
+      .collect();
+  },
+});
+
+export const createTodo = mutation({
+  args: {
+    token: v.string(),
+    text: v.string(),
+    link: v.optional(v.string()),
+    linkTitle: v.optional(v.string()),
+  },
+  handler: async (ctx, { token, text, link, linkTitle }) => {
+    const userId = await userIdFromToken(ctx, token);
+    if (!userId) throw INVALID_SESSION();
+    // New todos go to the top: one below the current minimum order.
+    const first = await ctx.db
+      .query("todos")
+      .withIndex("by_user_order", (q) => q.eq("userId", userId))
+      .order("asc")
+      .first();
+    const order = (first?.order ?? 0) - 1;
+    return await ctx.db.insert("todos", {
+      userId,
+      text,
+      done: false,
+      link,
+      linkTitle,
+      order,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const updateTodo = mutation({
+  args: {
+    token: v.string(),
+    id: v.id("todos"),
+    text: v.optional(v.string()),
+    done: v.optional(v.boolean()),
+    link: v.optional(v.union(v.string(), v.null())),
+    linkTitle: v.optional(v.union(v.string(), v.null())),
+  },
+  handler: async (ctx, { token, id, link, linkTitle, ...patch }) => {
+    const userId = await userIdFromToken(ctx, token);
+    if (!userId) throw INVALID_SESSION();
+    const todo = await ctx.db.get(id);
+    if (!todo || todo.userId !== userId) throw TODO_NOT_FOUND();
+    const finalPatch: Record<string, unknown> = { ...patch };
+    if (link !== undefined) finalPatch.link = link ?? undefined;
+    if (linkTitle !== undefined) finalPatch.linkTitle = linkTitle ?? undefined;
+    await ctx.db.patch(id, finalPatch);
+  },
+});
+
+export const removeTodo = mutation({
+  args: { token: v.string(), id: v.id("todos") },
+  handler: async (ctx, { token, id }) => {
+    const userId = await userIdFromToken(ctx, token);
+    if (!userId) throw INVALID_SESSION();
+    const todo = await ctx.db.get(id);
+    if (!todo || todo.userId !== userId) throw TODO_NOT_FOUND();
+    await ctx.db.delete(id);
+  },
+});
+
+export const reorderTodos = mutation({
+  args: { token: v.string(), ids: v.array(v.id("todos")) },
+  handler: async (ctx, { token, ids }) => {
+    const userId = await userIdFromToken(ctx, token);
+    if (!userId) throw INVALID_SESSION();
+    await Promise.all(
+      ids.map(async (id, index) => {
+        const todo = await ctx.db.get(id);
+        if (todo && todo.userId === userId) {
+          await ctx.db.patch(id, { order: index });
+        }
+      }),
+    );
+  },
+});

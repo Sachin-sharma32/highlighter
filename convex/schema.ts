@@ -55,6 +55,19 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_updatedAt", ["userId", "updatedAt"]),
 
+  todos: defineTable({
+    userId: v.id("users"),
+    text: v.string(),
+    done: v.boolean(),
+    link: v.optional(v.string()),
+    linkTitle: v.optional(v.string()),
+    // Lower `order` sorts first; new todos go to the top with a smaller value.
+    order: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_order", ["userId", "order"]),
+
   pairingCodes: defineTable({
     userId: v.id("users"),
     code: v.string(),

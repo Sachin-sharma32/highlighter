@@ -11,7 +11,19 @@ import {
   GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { RemoteTodo } from "@/lib/messages";
+import {
+  isPaired,
+  listTodosRemote,
+  createTodoRemote,
+  updateTodoRemote,
+  deleteTodoRemote,
+  reorderTodosRemote,
+} from "../todoApi";
 
+// Local mirror of the todo list. Doubles as an offline cache and the
+// cross-tab sync channel (via chrome.storage.onChanged). When the extension
+// is paired, Convex is the source of truth and this mirror is kept in step.
 const STORAGE_KEY = "marginalia_todos";
 
 interface Todo {
@@ -93,18 +105,69 @@ export function TodoWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
   const attemptedTitles = useRef<Set<string>>(new Set());
+  // Whether Convex is the backing store. Held in a ref so the mutation
+  // callbacks always read the latest value without re-binding.
+  const pairedRef = useRef(false);
 
   // ── Drag-and-drop state ──────────────────────────────────────────────
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
-  // Load persisted todos and keep in sync across tabs.
+  // Load persisted todos, sync with Convex when paired, and stay in sync
+  // across tabs.
   useEffect(() => {
     let active = true;
+
+    const applyRemote = (rows: RemoteTodo[]) => {
+      const mapped: Todo[] = rows.map((r) => ({
+        id: r._id,
+        text: r.text,
+        done: r.done,
+        createdAt: r.createdAt,
+        ...(r.link ? { link: r.link } : {}),
+        ...(r.linkTitle ? { linkTitle: r.linkTitle } : {}),
+      }));
+      setTodos(mapped);
+      void chrome.storage.local.set({ [STORAGE_KEY]: mapped });
+    };
+
+    // 1. Instant paint from the local cache.
     chrome.storage.local.get(STORAGE_KEY).then((result) => {
       const stored = result[STORAGE_KEY];
       if (active && isTodoArray(stored)) setTodos(stored);
     });
+
+    // 2. Reconcile with Convex when the extension is paired.
+    void (async () => {
+      const paired = await isPaired();
+      if (!active) return;
+      pairedRef.current = paired;
+      if (!paired) return;
+
+      const result = await chrome.storage.local.get(STORAGE_KEY);
+      const local = isTodoArray(result[STORAGE_KEY])
+        ? (result[STORAGE_KEY] as Todo[])
+        : [];
+      const remote = await listTodosRemote();
+      if (!active || remote === null) return;
+
+      // First sync after pairing: migrate any local-only todos up to the
+      // server (oldest first, since createTodo prepends) so nothing is lost.
+      if (remote.length === 0 && local.length > 0) {
+        for (const t of [...local].reverse()) {
+          const id = await createTodoRemote({
+            text: t.text,
+            link: t.link,
+            linkTitle: t.linkTitle,
+          });
+          if (id && t.done) updateTodoRemote({ id, done: true });
+        }
+        const after = await listTodosRemote();
+        if (active && after) applyRemote(after);
+      } else {
+        applyRemote(remote);
+      }
+    })();
 
     const onChanged = (
       changes: Record<string, chrome.storage.StorageChange>,
@@ -163,6 +226,9 @@ export function TodoWidget() {
       void chrome.storage.local.set({ [STORAGE_KEY]: next });
       return next;
     });
+    if (pairedRef.current) {
+      updateTodoRemote({ id, text: patch.text, linkTitle: patch.linkTitle });
+    }
   };
 
   // Resolve page titles for any links that don't have one yet.
@@ -192,13 +258,14 @@ export function TodoWidget() {
     };
   }, [todos]);
 
-  const addTodo = () => {
+  const addTodo = async () => {
     const text = draft.trim();
     const link = normalizeUrl(linkDraft);
     if (!text && !link) return;
 
+    const tempId = newId();
     const todo: Todo = {
-      id: newId(),
+      id: tempId,
       text: text || link,
       done: false,
       createdAt: Date.now(),
@@ -209,14 +276,43 @@ export function TodoWidget() {
     setLinkDraft("");
     setLinkOpen(false);
     inputRef.current?.focus();
+
+    // Persist to Convex and swap the temporary id for the real one.
+    if (pairedRef.current) {
+      const realId = await createTodoRemote({
+        text: todo.text,
+        link: todo.link,
+        linkTitle: todo.linkTitle,
+      });
+      if (realId) {
+        setTodos((prev) => {
+          const next = prev.map((t) =>
+            t.id === tempId ? { ...t, id: realId } : t,
+          );
+          void chrome.storage.local.set({ [STORAGE_KEY]: next });
+          return next;
+        });
+      }
+    }
   };
 
   const toggleTodo = (id: string) => {
-    persist(todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+    let nextDone: boolean | undefined;
+    persist(
+      todos.map((t) => {
+        if (t.id !== id) return t;
+        nextDone = !t.done;
+        return { ...t, done: nextDone };
+      }),
+    );
+    if (pairedRef.current && nextDone !== undefined) {
+      updateTodoRemote({ id, done: nextDone });
+    }
   };
 
   const deleteTodo = (id: string) => {
     persist(todos.filter((t) => t.id !== id));
+    if (pairedRef.current) deleteTodoRemote(id);
   };
 
   // ── Drag-and-drop handlers ──────────────────────────────────────────
@@ -261,6 +357,9 @@ export function TodoWidget() {
         dropTargetIndex > fromIndex ? dropTargetIndex - 1 : dropTargetIndex;
       reordered.splice(toIndex, 0, moved);
       persist(reordered);
+      if (pairedRef.current) {
+        reorderTodosRemote(reordered.map((t) => t.id));
+      }
 
       setDragId(null);
       setDropTargetIndex(null);
