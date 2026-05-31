@@ -183,11 +183,12 @@ export function TodoWidget() {
 
   const addTodo = () => {
     const text = draft.trim();
-    if (!text) return;
     const link = normalizeUrl(linkDraft);
+    if (!text && !link) return;
+
     const todo: Todo = {
       id: newId(),
-      text,
+      text: text || link,
       done: false,
       createdAt: Date.now(),
       ...(link ? { link } : {}),
