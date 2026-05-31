@@ -61,6 +61,14 @@ export default defineSchema({
     done: v.boolean(),
     link: v.optional(v.string()),
     linkTitle: v.optional(v.string()),
+    // Target completion time (ms epoch). Drives the overdue indicator.
+    dueAt: v.optional(v.number()),
+    // When set, completing the todo spawns the next occurrence.
+    recurrence: v.optional(
+      v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly")),
+    ),
+    // When the todo was marked done (ms epoch); orders the Completed section.
+    completedAt: v.optional(v.number()),
     // Lower `order` sorts first; new todos go to the top with a smaller value.
     order: v.number(),
     createdAt: v.number(),

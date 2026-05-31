@@ -344,6 +344,8 @@ async function handleMessage(
         text: msg.payload.text,
         link: msg.payload.link,
         linkTitle: msg.payload.linkTitle,
+        dueAt: msg.payload.dueAt,
+        recurrence: msg.payload.recurrence,
       });
       return { ok: true, data: { id } };
     }
@@ -358,6 +360,9 @@ async function handleMessage(
         done: msg.payload.done,
         link: msg.payload.link,
         linkTitle: msg.payload.linkTitle,
+        dueAt: msg.payload.dueAt,
+        recurrence: msg.payload.recurrence,
+        completedAt: msg.payload.completedAt,
       });
       return { ok: true, data: null };
     }

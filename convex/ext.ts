@@ -270,14 +270,22 @@ export const listTodos = query({
   },
 });
 
+const recurrenceValidator = v.union(
+  v.literal("daily"),
+  v.literal("weekly"),
+  v.literal("monthly"),
+);
+
 export const createTodo = mutation({
   args: {
     token: v.string(),
     text: v.string(),
     link: v.optional(v.string()),
     linkTitle: v.optional(v.string()),
+    dueAt: v.optional(v.number()),
+    recurrence: v.optional(recurrenceValidator),
   },
-  handler: async (ctx, { token, text, link, linkTitle }) => {
+  handler: async (ctx, { token, text, link, linkTitle, dueAt, recurrence }) => {
     const userId = await userIdFromToken(ctx, token);
     if (!userId) throw INVALID_SESSION();
     // New todos go to the top: one below the current minimum order.
@@ -293,6 +301,8 @@ export const createTodo = mutation({
       done: false,
       link,
       linkTitle,
+      dueAt,
+      recurrence,
       order,
       createdAt: Date.now(),
     });
@@ -307,8 +317,14 @@ export const updateTodo = mutation({
     done: v.optional(v.boolean()),
     link: v.optional(v.union(v.string(), v.null())),
     linkTitle: v.optional(v.union(v.string(), v.null())),
+    dueAt: v.optional(v.union(v.number(), v.null())),
+    recurrence: v.optional(v.union(recurrenceValidator, v.null())),
+    completedAt: v.optional(v.union(v.number(), v.null())),
   },
-  handler: async (ctx, { token, id, link, linkTitle, ...patch }) => {
+  handler: async (
+    ctx,
+    { token, id, link, linkTitle, dueAt, recurrence, completedAt, ...patch },
+  ) => {
     const userId = await userIdFromToken(ctx, token);
     if (!userId) throw INVALID_SESSION();
     const todo = await ctx.db.get(id);
@@ -316,6 +332,11 @@ export const updateTodo = mutation({
     const finalPatch: Record<string, unknown> = { ...patch };
     if (link !== undefined) finalPatch.link = link ?? undefined;
     if (linkTitle !== undefined) finalPatch.linkTitle = linkTitle ?? undefined;
+    if (dueAt !== undefined) finalPatch.dueAt = dueAt ?? undefined;
+    if (recurrence !== undefined)
+      finalPatch.recurrence = recurrence ?? undefined;
+    if (completedAt !== undefined)
+      finalPatch.completedAt = completedAt ?? undefined;
     await ctx.db.patch(id, finalPatch);
   },
 });

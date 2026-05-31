@@ -266,6 +266,47 @@
     background: oklch(95% 0.03 25);
   }
 
+  /* Overdue todo — animated gradient "danger" border. The first background
+     layer (padding-box) matches the popup surface so only the border shows
+     the gradient; the second layer is the shifting red→amber sweep. */
+  .marginalia-todo-danger {
+    border: 1.5px solid transparent;
+    border-radius: 0.625rem;
+    background:
+      linear-gradient(var(--paper-2), var(--paper-2)) padding-box,
+      linear-gradient(
+          110deg,
+          oklch(63% 0.21 25),
+          oklch(74% 0.17 60),
+          oklch(63% 0.21 25)
+        )
+        border-box;
+    background-size:
+      100% 100%,
+      200% 100%;
+    box-shadow: 0 2px 14px oklch(63% 0.21 25 / 0.16);
+    animation: marginalia-todo-danger-shift 3.5s linear infinite;
+  }
+
+  @keyframes marginalia-todo-danger-shift {
+    from {
+      background-position:
+        0 0,
+        0 0;
+    }
+    to {
+      background-position:
+        0 0,
+        -200% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marginalia-todo-danger {
+      animation: none;
+    }
+  }
+
   /* Mark styling */
   .marginalia-mark {
     @apply cursor-pointer rounded-[1px] bg-transparent;

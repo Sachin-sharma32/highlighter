@@ -60,12 +60,17 @@ export interface UpdateHighlightPayload {
   collectionIds?: string[];
 }
 
+export type TodoRecurrence = "daily" | "weekly" | "monthly";
+
 export interface RemoteTodo {
   _id: string;
   text: string;
   done: boolean;
   link?: string;
   linkTitle?: string;
+  dueAt?: number;
+  recurrence?: TodoRecurrence;
+  completedAt?: number;
   order: number;
   createdAt: number;
 }
@@ -74,6 +79,8 @@ export interface CreateTodoPayload {
   text: string;
   link?: string;
   linkTitle?: string;
+  dueAt?: number;
+  recurrence?: TodoRecurrence;
 }
 
 export interface UpdateTodoPayload {
@@ -82,6 +89,9 @@ export interface UpdateTodoPayload {
   done?: boolean;
   link?: string | null;
   linkTitle?: string | null;
+  dueAt?: number | null;
+  recurrence?: TodoRecurrence | null;
+  completedAt?: number | null;
 }
 
 import type { AppErrorCode } from "./errors";
