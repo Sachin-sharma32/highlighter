@@ -323,7 +323,131 @@ async function handleMessage(
       return { ok: true, data: null };
     }
 
+    case "FETCH_LINK_META": {
+      const title = await fetchLinkTitle(msg.payload.url);
+      return { ok: true, data: { title } };
+    }
+
     default:
       return { ok: false, error: "Unknown message type" };
   }
+}
+
+// --- Link title resolution -------------------------------------------------
+// Runs in the service worker so it can fetch cross-origin (host_permissions:
+// <all_urls>) without the CORS limits a content script would hit.
+
+async function fetchLinkTitle(rawUrl: string): Promise<string | null> {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+
+  // YouTube: oEmbed returns a clean video title without scraping the page.
+  const host = url.hostname.replace(/^www\./, "");
+  if (
+    host === "youtube.com" ||
+    host === "youtu.be" ||
+    host.endsWith(".youtube.com")
+  ) {
+    const yt = await fetchYouTubeTitle(rawUrl);
+    if (yt) return yt;
+  }
+
+  try {
+    const res = await fetch(rawUrl, {
+      credentials: "omit",
+      redirect: "follow",
+      headers: { Accept: "text/html,application/xhtml+xml" },
+    });
+    if (!res.ok) return null;
+    const html = await readHead(res);
+    return extractTitle(html);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchYouTubeTitle(rawUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://www.youtube.com/oembed?url=${encodeURIComponent(rawUrl)}&format=json`,
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { title?: unknown };
+    return typeof data.title === "string" ? cleanTitle(data.title) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Reads just enough of the response to cover <head> (where titles live). */
+async function readHead(res: Response, maxBytes = 200_000): Promise<string> {
+  const reader = res.body?.getReader();
+  if (!reader) return res.text();
+  const decoder = new TextDecoder();
+  let html = "";
+  let received = 0;
+  try {
+    while (received < maxBytes) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      html += decoder.decode(value, { stream: true });
+      if (/<\/head>/i.test(html)) break;
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } catch {
+      /* ignore */
+    }
+  }
+  return html;
+}
+
+function extractTitle(html: string): string | null {
+  const meta =
+    matchMetaContent(html, "og:title") ??
+    matchMetaContent(html, "twitter:title");
+  if (meta) return meta;
+
+  const m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (m?.[1]) {
+    const t = cleanTitle(decodeEntities(m[1]));
+    if (t) return t;
+  }
+  return null;
+}
+
+function matchMetaContent(html: string, key: string): string | null {
+  const tag = html.match(
+    new RegExp(`<meta[^>]*(?:property|name)=["']${key}["'][^>]*>`, "i"),
+  )?.[0];
+  if (!tag) return null;
+  const content = tag.match(/content=["']([^"']*)["']/i)?.[1];
+  if (!content) return null;
+  const t = cleanTitle(decodeEntities(content));
+  return t || null;
+}
+
+function cleanTitle(s: string): string {
+  return s.replace(/\s+/g, " ").trim().slice(0, 300);
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;|&#0?39;|&#x27;/gi, "'")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) =>
+      String.fromCodePoint(parseInt(h, 16)),
+    );
 }

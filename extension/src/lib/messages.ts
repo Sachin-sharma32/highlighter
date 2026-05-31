@@ -15,6 +15,7 @@ export type ExtMessage =
   | { type: "GET_SETTINGS" }
   | { type: "GET_COLORS" }
   | { type: "SET_HIGHLIGHTING_ENABLED"; payload: { enabled: boolean } }
+  | { type: "FETCH_LINK_META"; payload: { url: string } }
   | { type: "SIGN_OUT" };
 
 // Sent from popup/sidepanel to content script via chrome.tabs.sendMessage

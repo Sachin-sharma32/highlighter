@@ -10,6 +10,7 @@ import {
 } from "./marks";
 import { attachMessageListener } from "./messages";
 import { attachSelectionListeners } from "./selection";
+import { ensureTodoWidget } from "./todo";
 import { isInsideShadowHost } from "./shadow";
 import { bootstrapSettings } from "./settings";
 import { openEditCardFromMark, scheduleToolbarPosition } from "./toolbar";
@@ -18,6 +19,9 @@ import {
   positionYouTubePlayerButton,
   scheduleYouTubePlayerButtonMount,
 } from "./youtube";
+
+// The floating todo widget is available on every page, including the dashboard.
+ensureTodoWidget();
 
 if (!isDashboardUrl(location.href)) {
   bootstrapSettings();
