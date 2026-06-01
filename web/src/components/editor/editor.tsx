@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoFocusExtension, ClearEditorExtension } from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
+import { ClickableLinkExtension, LinkExtension } from "@lexical/link";
 import { CheckListExtension, ListExtension } from "@lexical/list";
 import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionComposer";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
@@ -37,6 +38,7 @@ import {
   Heading1 as Heading1Icon,
   Heading2 as Heading2Icon,
   Heading3 as Heading3Icon,
+  Link as LinkIcon,
   List as ListIcon,
   ListOrdered as ListOrderedIcon,
   ListTodo as ListTodoIcon,
@@ -45,6 +47,7 @@ import {
 } from "lucide-react";
 
 import { ContentEditable } from "@/components/editor/editor-ui/content-editable";
+import { InsertLinkDialog } from "@/components/editor/plugins/link/insert-link-dialog";
 import { CodeHighlightPlugin } from "@/components/editor/plugins/code-highlight-plugin";
 import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin";
 import { BulletedListPickerPlugin } from "@/components/editor/plugins/picker/bulleted-list-picker-plugin";
@@ -52,6 +55,7 @@ import { CheckListPickerPlugin } from "@/components/editor/plugins/picker/check-
 import { CodePickerPlugin } from "@/components/editor/plugins/picker/code-picker-plugin";
 import { HeadingPickerPlugin } from "@/components/editor/plugins/picker/heading-picker-plugin";
 import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/numbered-list-picker-plugin";
+import { LinkPickerPlugin } from "@/components/editor/plugins/picker/link-picker-plugin";
 import { ParagraphPickerPlugin } from "@/components/editor/plugins/picker/paragraph-picker-plugin";
 import { QuotePickerPlugin } from "@/components/editor/plugins/picker/quote-picker-plugin";
 import { ToolbarPlugin } from "@/components/editor/plugins/toolbar/toolbar-plugin";
@@ -90,7 +94,7 @@ function ToolbarButton({
 }
 
 function ToolbarButtons() {
-  const { activeEditor, blockType } = useToolbarContext();
+  const { activeEditor, blockType, showModal } = useToolbarContext();
 
   function setHeading(level: HeadingTagType) {
     if (blockType === level) {
@@ -164,6 +168,23 @@ function ToolbarButtons() {
         if ($isRangeSelection(next)) next.insertRawText(text);
       }
     });
+  }
+
+  function insertLink() {
+    let initialText = "";
+    activeEditor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        initialText = selection.getTextContent();
+      }
+    });
+    showModal("Insert Link", (onClose) => (
+      <InsertLinkDialog
+        editor={activeEditor}
+        onClose={onClose}
+        initialText={initialText}
+      />
+    ));
   }
 
   function toggleList(type: "bullet" | "number" | "check") {
@@ -247,6 +268,10 @@ function ToolbarButtons() {
       >
         <CodeIcon className="size-4" />
       </ToolbarButton>
+      <span className="mx-1 h-5 w-px bg-rule" />
+      <ToolbarButton active={false} title="Link" onClick={insertLink}>
+        <LinkIcon className="size-4" />
+      </ToolbarButton>
     </div>
   );
 }
@@ -277,6 +302,8 @@ export function Editor({
           RichTextExtension,
           configExtension(ListExtension, { shouldPreserveNumbering: false }),
           CheckListExtension,
+          LinkExtension,
+          ClickableLinkExtension,
           AutoFocusExtension,
           ClearEditorExtension,
           HistoryExtension,
@@ -323,6 +350,7 @@ export function Editor({
                 CheckListPickerPlugin(),
                 QuotePickerPlugin(),
                 CodePickerPlugin(),
+                LinkPickerPlugin(),
               ]}
             />
           </div>
