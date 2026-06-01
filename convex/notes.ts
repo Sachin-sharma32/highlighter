@@ -66,12 +66,22 @@ export const create = mutation({
     title: v.optional(v.string()),
     content: v.optional(v.string()),
     type: v.optional(v.union(v.literal("note"), v.literal("whiteboard"))),
+    collectionId: v.optional(v.id("collections")),
   },
-  handler: async (ctx, { title, content, type }) => {
+  handler: async (ctx, { title, content, type, collectionId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw NOT_AUTHENTICATED();
     const noteType = type ?? "note";
     await assertCanCreateNote(ctx, userId, noteType);
+    if (collectionId) {
+      const collection = await ctx.db.get(collectionId);
+      if (!collection || collection.userId !== userId) {
+        throw appError(
+          "NOT_FOUND",
+          "That collection no longer exists. Refresh the page and try again.",
+        );
+      }
+    }
     const now = Date.now();
     const fallbackTitle =
       noteType === "whiteboard" ? "Untitled whiteboard" : "Untitled note";
@@ -80,6 +90,7 @@ export const create = mutation({
       title: title?.trim() || fallbackTitle,
       content: content ?? "",
       type: noteType,
+      collectionId,
       createdAt: now,
       updatedAt: now,
     });

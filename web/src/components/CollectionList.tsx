@@ -1,10 +1,23 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { FileText, PenLine, Scissors, StickyNote, Trash2 } from "lucide-react";
+import {
+  FileText,
+  PenLine,
+  Plus,
+  Scissors,
+  StickyNote,
+  Trash2,
+} from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { friendlyErrorMessage } from "@/lib/errors";
 import { previewFromContent } from "@/lib/noteContent";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { formatClipTime } from "@/lib/youtube";
@@ -106,6 +119,7 @@ export function CollectionList() {
 
   const removeHighlight = useMutation(api.highlights.remove);
   const removeNote = useMutation(api.notes.remove);
+  const createNote = useMutation(api.notes.create);
   const [pendingDeleteHighlight, setPendingDeleteHighlight] =
     useState<Id<"highlights"> | null>(null);
   const [pendingDeleteNote, setPendingDeleteNote] = useState<ListNote | null>(
@@ -122,6 +136,22 @@ export function CollectionList() {
         friendlyErrorMessage(
           err,
           "We couldn’t delete that highlight. Please try again.",
+        ),
+      );
+    }
+  }
+
+  async function handleCreate(type: NoteType) {
+    try {
+      const id = await createNote({ type, collectionId });
+      setSelectedNote(id);
+    } catch (err) {
+      toast.error(
+        friendlyErrorMessage(
+          err,
+          type === "whiteboard"
+            ? "We couldn’t create that whiteboard. Please try again."
+            : "We couldn’t create that note. Please try again.",
         ),
       );
     }
@@ -154,7 +184,34 @@ export function CollectionList() {
           <h2 className="m-0 font-display text-[22px] font-medium tracking-tight text-ink">
             {collectionName}
           </h2>
-          <span className="font-mono text-[11px] text-ink-4">{total}</span>
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-[11px] text-ink-4">{total}</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                data-testid="new-note-button"
+                title="New"
+                className="flex items-center gap-1 rounded-md border border-rule bg-paper-2 px-2 py-1 font-mono text-[10px] text-ink-3 hover:text-ink"
+              >
+                <Plus size={11} /> New
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[160px]">
+                <DropdownMenuItem
+                  data-testid="new-note-option"
+                  onSelect={() => void handleCreate("note")}
+                >
+                  <FileText size={14} className="mr-2" />
+                  Note
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  data-testid="new-whiteboard-option"
+                  onSelect={() => void handleCreate("whiteboard")}
+                >
+                  <PenLine size={14} className="mr-2" />
+                  Whiteboard
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
