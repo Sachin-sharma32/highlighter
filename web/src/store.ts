@@ -14,6 +14,9 @@ interface AppStore {
   activeDomain: string | null;
   selectedHighlightId: Id<"highlights"> | null;
   selectedNoteId: Id<"notes"> | null;
+  // Which detail pane to show when both a highlight and a note can be selected
+  // in the same view (e.g. a collection that contains both).
+  lastSelectedKind: "highlight" | "note";
   commandPaletteOpen: boolean;
   searchQuery: string;
   pricingModalOpen: boolean;
@@ -35,6 +38,7 @@ export const useAppStore = create<AppStore>((set) => ({
   activeDomain: null,
   selectedHighlightId: null,
   selectedNoteId: null,
+  lastSelectedKind: "highlight",
   commandPaletteOpen: false,
   searchQuery: "",
   pricingModalOpen: false,
@@ -46,6 +50,7 @@ export const useAppStore = create<AppStore>((set) => ({
       activeDomain: null,
       selectedHighlightId: null,
       selectedNoteId: null,
+      lastSelectedKind: "highlight",
     }),
   setActiveTag: (tag) =>
     set({
@@ -57,8 +62,18 @@ export const useAppStore = create<AppStore>((set) => ({
     }),
   setActiveDomain: (domain) =>
     set({ activeDomain: domain, activeTag: null, selectedHighlightId: null }),
-  setSelectedHighlight: (id) => set({ selectedHighlightId: id }),
-  setSelectedNote: (id) => set({ selectedNoteId: id }),
+  setSelectedHighlight: (id) =>
+    set(
+      id
+        ? { selectedHighlightId: id, lastSelectedKind: "highlight" }
+        : { selectedHighlightId: id },
+    ),
+  setSelectedNote: (id) =>
+    set(
+      id
+        ? { selectedNoteId: id, lastSelectedKind: "note" }
+        : { selectedNoteId: id },
+    ),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setSearchQuery: (q) => set({ searchQuery: q }),
   setPricingModalOpen: (open) => set({ pricingModalOpen: open }),

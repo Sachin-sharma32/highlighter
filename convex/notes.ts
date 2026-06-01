@@ -17,15 +17,29 @@ const NOTE_NOT_FOUND = () =>
   );
 
 export const list = query({
-  args: { search: v.optional(v.string()) },
-  handler: async (ctx, { search }) => {
+  args: {
+    search: v.optional(v.string()),
+    collectionId: v.optional(v.id("collections")),
+  },
+  handler: async (ctx, { search, collectionId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
-    const notes = await ctx.db
-      .query("notes")
-      .withIndex("by_user_updatedAt", (q) => q.eq("userId", userId))
-      .order("desc")
-      .collect();
+    let notes;
+    if (collectionId) {
+      notes = await ctx.db
+        .query("notes")
+        .withIndex("by_user_collection", (q) =>
+          q.eq("userId", userId).eq("collectionId", collectionId),
+        )
+        .collect();
+      notes.sort((a, b) => b.updatedAt - a.updatedAt);
+    } else {
+      notes = await ctx.db
+        .query("notes")
+        .withIndex("by_user_updatedAt", (q) => q.eq("userId", userId))
+        .order("desc")
+        .collect();
+    }
     if (!search) return notes;
     const needle = search.toLowerCase();
     return notes.filter(
@@ -87,6 +101,21 @@ export const update = mutation({
     if (title !== undefined) patch.title = title;
     if (content !== undefined) patch.content = content;
     await ctx.db.patch(id, patch);
+  },
+});
+
+export const setCollection = mutation({
+  args: {
+    id: v.id("notes"),
+    // Omit (or pass undefined) to remove the note from any collection.
+    collectionId: v.optional(v.id("collections")),
+  },
+  handler: async (ctx, { id, collectionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw NOT_AUTHENTICATED();
+    const note = await ctx.db.get(id);
+    if (!note || note.userId !== userId) throw NOTE_NOT_FOUND();
+    await ctx.db.patch(id, { collectionId, updatedAt: Date.now() });
   },
 });
 

@@ -7,7 +7,13 @@ import {
   useState,
 } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Maximize2, Minimize2, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  Folder,
+  Maximize2,
+  Minimize2,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { SerializedEditorState } from "lexical";
 import { api } from "../../../../convex/_generated/api";
@@ -15,7 +21,12 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { useAppStore } from "@/store";
 import { friendlyErrorMessage } from "@/lib/errors";
 import { Editor } from "@/components/editor/editor";
-import { firstLineFromContent } from "@/lib/noteContent";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 
 const Whiteboard = lazy(() => import("./Whiteboard"));
@@ -27,7 +38,13 @@ type DetailNote = {
   title: string;
   content: string;
   type?: NoteType;
+  collectionId?: Id<"collections">;
   updatedAt: number;
+};
+
+type Collection = {
+  _id: Id<"collections">;
+  name: string;
 };
 
 const SAVE_DEBOUNCE_MS = 600;
@@ -48,16 +65,23 @@ export function NoteDetail() {
     selectedNoteId ? { id: selectedNoteId } : "skip",
   ) as DetailNote | null | undefined;
   const update = useMutation(api.notes.update);
+  const setCollection = useMutation(api.notes.setCollection);
   const remove = useMutation(api.notes.remove);
+  const collections = (useQuery(api.collections.list) ?? []) as Collection[];
 
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [collectionOpen, setCollectionOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isWhiteboard = note?.type === "whiteboard";
+  const fallbackTitle = isWhiteboard ? "Untitled whiteboard" : "Untitled note";
+  const currentCollection = collections.find(
+    (c) => c._id === note?.collectionId,
+  );
 
   useEffect(() => {
     if (!note) return;
@@ -112,11 +136,13 @@ export function NoteDetail() {
       if (!note) return;
       if (titleTimer.current) clearTimeout(titleTimer.current);
       const noteId = note._id;
+      const fallback =
+        note.type === "whiteboard" ? "Untitled whiteboard" : "Untitled note";
       titleTimer.current = setTimeout(async () => {
         try {
           await update({
             id: noteId,
-            title: next.trim() || "Untitled whiteboard",
+            title: next.trim() || fallback,
           });
           setSavedAt(Date.now());
         } catch (err) {
@@ -127,6 +153,31 @@ export function NoteDetail() {
       }, 500);
     },
     [note, update],
+  );
+
+  const handleCollectionChange = useCallback(
+    async (value: string) => {
+      if (!note) return;
+      setCollectionOpen(false);
+      try {
+        await setCollection({
+          id: note._id,
+          collectionId:
+            value === "none" ? undefined : (value as Id<"collections">),
+        });
+        toast.success(
+          value === "none" ? "Removed from collection" : "Added to collection",
+        );
+      } catch (err) {
+        toast.error(
+          friendlyErrorMessage(
+            err,
+            "Couldn’t change the collection. Please try again.",
+          ),
+        );
+      }
+    },
+    [note, setCollection],
   );
 
   const handleWhiteboardChange = useCallback(
@@ -170,10 +221,9 @@ export function NoteDetail() {
   function scheduleContentSave(serialized: SerializedEditorState) {
     if (contentTimer.current) clearTimeout(contentTimer.current);
     const content = JSON.stringify(serialized);
-    const title = firstLineFromContent(serialized) || "Untitled note";
     contentTimer.current = setTimeout(async () => {
       try {
-        await update({ id: note!._id, content, title });
+        await update({ id: note!._id, content });
         setSavedAt(Date.now());
       } catch (err) {
         toast.error(
@@ -210,17 +260,57 @@ export function NoteDetail() {
       data-testid="note-detail"
     >
       <div className="flex shrink-0 items-center gap-3 border-b border-rule px-4 py-2">
-        {isWhiteboard ? (
-          <input
-            data-testid="whiteboard-title-input"
-            value={titleDraft}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Untitled whiteboard"
-            className="min-w-0 flex-1 truncate border-0 bg-transparent p-0 font-display text-sm font-medium text-ink outline-none placeholder:text-ink-4 focus:outline-none"
-          />
-        ) : (
-          <span className="flex-1" />
-        )}
+        <input
+          data-testid={
+            isWhiteboard ? "whiteboard-title-input" : "note-title-input"
+          }
+          value={titleDraft}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          placeholder={fallbackTitle}
+          className="min-w-0 flex-1 truncate border-0 bg-transparent p-0 font-display text-sm font-medium text-ink outline-none placeholder:text-ink-4 focus:outline-none"
+        />
+        <Popover open={collectionOpen} onOpenChange={setCollectionOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              data-testid="note-collection-trigger"
+              className="inline-flex h-[22px] shrink-0 items-center gap-1 rounded-full border border-rule bg-paper-2 px-2 text-[11px] text-ink-2 hover:border-ink-4"
+            >
+              <Folder size={10} className="text-ink-4" />
+              <span className="max-w-[140px] truncate">
+                {currentCollection?.name ?? "No collection"}
+              </span>
+              <ChevronDown size={10} className="text-ink-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-48 p-1">
+            <button
+              type="button"
+              onClick={() => void handleCollectionChange("none")}
+              className={cn(
+                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-paper-2",
+                !note.collectionId && "font-medium text-ink",
+              )}
+            >
+              <Folder size={11} className="text-ink-4" /> No collection
+            </button>
+            {collections.map((collection) => (
+              <button
+                key={collection._id}
+                type="button"
+                onClick={() => void handleCollectionChange(collection._id)}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-paper-2",
+                  note.collectionId === collection._id &&
+                    "font-medium text-ink",
+                )}
+              >
+                <Folder size={11} className="text-ink-4" />{" "}
+                <span className="truncate">{collection.name}</span>
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
         <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
           {savedAt ? "Saved" : isWhiteboard ? "Whiteboard" : "Editing"}
         </span>

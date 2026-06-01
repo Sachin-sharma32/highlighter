@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/command";
 import { Sparkles, FileText, Folder, PenLine, NotebookPen } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { firstLineFromContent, previewFromContent } from "@/lib/noteContent";
+import { previewFromContent } from "@/lib/noteContent";
 
 type CommandHighlight = {
   _id: Id<"highlights">;
@@ -91,18 +91,12 @@ export function CommandPalette() {
 
   function noteLabel(n: CommandNote) {
     if (n.type === "whiteboard") return n.title || "Untitled whiteboard";
-    return firstLineFromContent(n.content) || n.title || "Untitled note";
+    return n.title || "Untitled note";
   }
 
   function notePreview(n: CommandNote) {
     if (n.type === "whiteboard") return "Whiteboard";
-    const preview = previewFromContent(n.content);
-    const first = firstLineFromContent(n.content);
-    if (!preview) return "";
-    if (first && preview.startsWith(first)) {
-      return preview.slice(first.length).replace(/^[\s·]+/, "");
-    }
-    return preview;
+    return previewFromContent(n.content);
   }
 
   return (

@@ -82,6 +82,16 @@ export const remove = mutation({
         await ctx.db.patch(h._id, { collectionIds });
       }
     }
+    // Unlink notes from this collection
+    const notes = await ctx.db
+      .query("notes")
+      .withIndex("by_user_collection", (q) =>
+        q.eq("userId", userId).eq("collectionId", id),
+      )
+      .collect();
+    for (const n of notes) {
+      await ctx.db.patch(n._id, { collectionId: undefined });
+    }
     await ctx.db.delete(id);
   },
 });

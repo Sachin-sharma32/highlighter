@@ -49,11 +49,13 @@ export default defineSchema({
     title: v.string(),
     content: v.string(),
     type: v.optional(v.union(v.literal("note"), v.literal("whiteboard"))),
+    collectionId: v.optional(v.id("collections")),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_updatedAt", ["userId", "updatedAt"]),
+    .index("by_user_updatedAt", ["userId", "updatedAt"])
+    .index("by_user_collection", ["userId", "collectionId"]),
 
   todos: defineTable({
     userId: v.id("users"),

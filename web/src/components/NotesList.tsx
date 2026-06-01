@@ -4,7 +4,7 @@ import { Plus, Trash2, FileText, PenLine } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { friendlyErrorMessage } from "@/lib/errors";
-import { firstLineFromContent, previewFromContent } from "@/lib/noteContent";
+import { previewFromContent } from "@/lib/noteContent";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,16 +41,12 @@ function noteTitle(n: ListNote) {
   if (n.type === "whiteboard") {
     return n.title || "Untitled whiteboard";
   }
-  return firstLineFromContent(n.content) || "Untitled note";
+  return n.title || "Untitled note";
 }
 
 function notePreview(n: ListNote) {
   if (n.type === "whiteboard") return "Whiteboard";
-  const first = firstLineFromContent(n.content);
-  const full = previewFromContent(n.content);
-  if (!first) return "";
-  const rest = full.startsWith(first) ? full.slice(first.length).trim() : full;
-  return rest.replace(/^·\s*/, "");
+  return previewFromContent(n.content);
 }
 
 export function NotesList() {

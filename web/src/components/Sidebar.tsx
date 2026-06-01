@@ -47,6 +47,11 @@ type SidebarHighlight = {
   url: string;
 };
 
+type SidebarNote = {
+  _id: Id<"notes">;
+  collectionId?: Id<"collections">;
+};
+
 type SidebarTag = {
   tag: string;
   count: number;
@@ -173,7 +178,8 @@ export function Sidebar() {
   const collections = (useQuery(api.collections.list) ??
     []) as SidebarCollection[];
   const allTags = (useQuery(api.highlights.allTags) ?? []) as SidebarTag[];
-  const notesCountTotal = (useQuery(api.notes.list, {}) ?? []).length;
+  const allNotes = (useQuery(api.notes.list, {}) ?? []) as SidebarNote[];
+  const notesCountTotal = allNotes.length;
   const rawHighlights = useQuery(api.highlights.list, {});
   const allHighlights = useMemo(
     () => (rawHighlights ?? []) as SidebarHighlight[],
@@ -298,7 +304,9 @@ export function Sidebar() {
                   collection={col}
                   count={
                     allHighlights.filter((h) => h.collectionId === col._id)
-                      .length || undefined
+                      .length +
+                      allNotes.filter((n) => n.collectionId === col._id)
+                        .length || undefined
                   }
                   active={activeCollectionId === col._id && !activeDomain}
                   onSelect={() => setActiveCollection(col._id)}
