@@ -48,6 +48,7 @@ import {
 
 import { ContentEditable } from "@/components/editor/editor-ui/content-editable";
 import { InsertLinkDialog } from "@/components/editor/plugins/link/insert-link-dialog";
+import { FloatingLinkEditorPlugin } from "@/components/editor/plugins/link/floating-link-editor-plugin";
 import { CodeHighlightPlugin } from "@/components/editor/plugins/code-highlight-plugin";
 import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin";
 import { BulletedListPickerPlugin } from "@/components/editor/plugins/picker/bulleted-list-picker-plugin";
@@ -336,6 +337,7 @@ export function Editor({
               className="min-h-full px-6 py-4 outline-none"
             />
             <CodeHighlightPlugin />
+            <FloatingLinkEditorPlugin />
             <MarkdownShortcutPlugin
               transformers={[UNORDERED_LIST, ORDERED_LIST, CHECK_LIST]}
             />

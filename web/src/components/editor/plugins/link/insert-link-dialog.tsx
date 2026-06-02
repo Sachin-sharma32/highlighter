@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /** Prepend a protocol so bare hosts like "example.com" become valid links. */
-function normalizeUrl(url: string): string {
+export function normalizeUrl(url: string): string {
   const trimmed = url.trim();
   if (/^[a-z][a-z\d+.-]*:/i.test(trimmed) || trimmed.startsWith("#")) {
     return trimmed;

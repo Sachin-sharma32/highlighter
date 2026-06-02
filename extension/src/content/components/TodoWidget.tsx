@@ -527,15 +527,17 @@ export function TodoWidget() {
   };
 
   // Active todos are sorted by due date (soonest first); todos without a due
-  // date fall to the end. Completed ones are split off into a collapsible
-  // section, newest completion first.
-  const activeTodos = useMemo(
-    () =>
-      todos
-        .filter((t) => !t.done)
-        .sort((a, b) => (a.dueAt ?? Infinity) - (b.dueAt ?? Infinity)),
-    [todos],
-  );
+  // date fall to the end. The list only surfaces today's work: anything due by
+  // the end of today (including overdue tasks that have rolled over) — future
+  // todos stay hidden until their day arrives. Completed ones are split off
+  // into a collapsible section, newest completion first.
+  const activeTodos = useMemo(() => {
+    const todayEnd = endOfDay(now);
+    return todos
+      .filter((t) => !t.done)
+      .filter((t) => t.dueAt == null || t.dueAt <= todayEnd)
+      .sort((a, b) => (a.dueAt ?? Infinity) - (b.dueAt ?? Infinity));
+  }, [todos, now]);
   const completedTodos = useMemo(
     () =>
       todos
