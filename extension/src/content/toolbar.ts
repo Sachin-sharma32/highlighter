@@ -43,7 +43,6 @@ let host: HTMLElement | null = null;
 let root: Root | null = null;
 let anchor: Anchor | null = null;
 let positionFrame: number | null = null;
-let onAfterDismiss: (() => void) | null = null;
 let copiedState = false;
 let copiedTimer: number | null = null;
 
@@ -101,9 +100,6 @@ function mountHost(extraClass: string) {
 }
 
 export function dismissToolbar() {
-  onAfterDismiss?.();
-  onAfterDismiss = null;
-
   if (copiedTimer != null) {
     window.clearTimeout(copiedTimer);
     copiedTimer = null;
