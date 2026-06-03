@@ -97,6 +97,14 @@ function endOfDay(ts: number = Date.now()): number {
   return d.getTime();
 }
 
+/** Start of the given day (defaults to today) — 00:00 local time. A todo
+ *  completed before this is from a previous day and is swept automatically. */
+function startOfDay(ts: number = Date.now()): number {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
 /** A compact relative label for a due date, plus whether it's overdue. */
 function formatDue(
   dueAt: number,
@@ -382,6 +390,34 @@ export function TodoWidget() {
       updateTodoRemote(remote);
     }
   };
+
+  // Sweep completed todos left over from a previous day. A todo completed
+  // today stays in the Completed section until the day rolls over, then it's
+  // removed everywhere (local cache + Convex when paired). Ones completed
+  // before timestamps existed (no completedAt) are left alone.
+  const pruneStaleCompleted = useCallback(() => {
+    const dayStart = startOfDay();
+    setTodos((prev) => {
+      const stale = prev.filter(
+        (t) => t.done && t.completedAt != null && t.completedAt < dayStart,
+      );
+      if (stale.length === 0) return prev;
+      const next = prev.filter((t) => !stale.includes(t));
+      void chrome.storage.local.set({ [STORAGE_KEY]: next });
+      if (pairedRef.current) {
+        stale.forEach((t) => deleteTodoRemote(t.id));
+      }
+      return next;
+    });
+  }, []);
+
+  // Run the sweep on mount and once a minute thereafter so completed todos
+  // clear shortly after midnight even if the widget is just sitting open.
+  useEffect(() => {
+    pruneStaleCompleted();
+    const id = window.setInterval(pruneStaleCompleted, 60_000);
+    return () => window.clearInterval(id);
+  }, [pruneStaleCompleted]);
 
   // Resolve page titles for any links that don't have one yet.
   useEffect(() => {
