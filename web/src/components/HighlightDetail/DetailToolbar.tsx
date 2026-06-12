@@ -48,7 +48,7 @@ export function DetailToolbar({
       <button
         onClick={onDelete}
         title="Delete highlight"
-        className="flex h-7 w-7 items-center justify-center rounded-md text-ink-4 transition-colors hover:text-red"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-ink-4 transition-all duration-150 hover:bg-paper-2 hover:text-red-500 active:scale-95"
       >
         <Trash2 size={13} />
       </button>

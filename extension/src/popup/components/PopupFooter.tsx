@@ -1,4 +1,4 @@
-import { BookOpen, Download, RefreshCw, Terminal } from "lucide-react";
+import { BookOpen, Download, PanelRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PopupFooterProps {
@@ -34,7 +34,7 @@ export function PopupFooter({
         variant="outline"
         size="icon"
       >
-        <Terminal size={12} />
+        <PanelRight size={12} />
       </Button>
       <Button onClick={onRefresh} title="Refresh" variant="outline" size="icon">
         <RefreshCw size={12} />

@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
 import { friendlyErrorMessage } from "@/lib/errors";
 
 export default function TestSignIn() {
   const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+
+  // signIn() resolves before the Convex socket finishes authenticating;
+  // navigating on resolve would bounce off RequireAuth back to /signin.
+  useEffect(() => {
+    if (isAuthenticated) navigate("/", { replace: true });
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (!import.meta.env.DEV) {
@@ -18,22 +26,16 @@ export default function TestSignIn() {
     const email = searchParams.get("email")?.trim() || "test@marginalia.dev";
     let cancelled = false;
 
-    void signIn("playwright", { email })
-      .then(() => {
-        if (!cancelled) {
-          navigate("/", { replace: true });
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(
-            friendlyErrorMessage(
-              err,
-              "We couldn’t sign in the test user. Make sure `convex dev` is running.",
-            ),
-          );
-        }
-      });
+    void signIn("playwright", { email }).catch((err: unknown) => {
+      if (!cancelled) {
+        setError(
+          friendlyErrorMessage(
+            err,
+            "We couldn’t sign in the test user. Make sure `convex dev` is running.",
+          ),
+        );
+      }
+    });
 
     return () => {
       cancelled = true;

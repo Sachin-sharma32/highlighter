@@ -1,16 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
 import { Button } from "@/components/ui/button";
 
 const DEV_SIGN_IN_EMAIL = "local@marginalia.dev";
 
 export default function SignIn() {
   const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
   const navigate = useNavigate();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSigningInLocal, setIsSigningInLocal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // signIn() resolves before the Convex socket finishes authenticating, so
+  // navigating immediately would bounce back here. Navigate once auth lands.
+  useEffect(() => {
+    if (isAuthenticated) navigate("/", { replace: true });
+  }, [isAuthenticated, navigate]);
 
   async function handleGoogleSignIn() {
     setError(null);
@@ -30,7 +38,7 @@ export default function SignIn() {
     setIsSigningInLocal(true);
     try {
       await signIn("playwright", { email: DEV_SIGN_IN_EMAIL });
-      navigate("/", { replace: true });
+      // Navigation happens in the isAuthenticated effect above.
     } catch {
       setError(
         "Local dev sign-in failed. Ensure `convex dev` is running and `VITE_CONVEX_URL` is set.",
@@ -41,11 +49,24 @@ export default function SignIn() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-paper-2">
-      <div className="flex flex-col items-center gap-8 p-12 rounded-xl bg-paper border border-rule shadow-[var(--shadow-2)] w-[400px]">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-paper-2">
+      {/* Oversized editorial quotation mark, set into the paper */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-[480px] select-none font-display text-[480px] leading-none text-paper-3"
+      >
+        &ldquo;
+      </span>
+      {/* Faint margin rule down the page, like a notebook */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-1/2 hidden w-px -translate-x-[300px] bg-rule md:block"
+      />
+
+      <div className="relative flex w-[420px] animate-fade-up flex-col items-center gap-8 rounded-2xl border border-rule bg-paper p-12 shadow-paper-3">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center rounded-lg text-white text-xl font-medium w-9 h-9 bg-ink font-display shadow-[0_0_0_2px_var(--accent-color)]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink font-display text-xl font-medium text-white shadow-[0_0_0_2px_var(--accent-color)]">
             M
           </div>
           <span className="font-display text-[20px] font-medium tracking-tight text-ink">
@@ -54,16 +75,17 @@ export default function SignIn() {
         </div>
 
         <div className="text-center">
-          <p className="font-display text-[26px] font-medium tracking-tight text-ink mb-2">
+          <p className="mb-2.5 font-display text-[28px] font-medium tracking-tight text-ink">
             Welcome back
           </p>
-          <p className="text-sm text-ink-3">
-            Sign in to access your highlights
+          <p className="text-sm leading-relaxed text-ink-3">
+            The web is your book.{" "}
+            <span className="h whitespace-nowrap">Write in the margins.</span>
           </p>
         </div>
 
         <Button
-          className="w-full gap-2 h-10 bg-ink text-paper rounded-lg"
+          className="h-10 w-full gap-2 rounded-lg bg-ink text-paper shadow-paper-1 transition-all duration-150 ease-out hover:bg-ink-2 hover:shadow-paper-2 active:scale-[0.99]"
           disabled={isSigningIn || isSigningInLocal}
           onClick={() => void handleGoogleSignIn()}
         >

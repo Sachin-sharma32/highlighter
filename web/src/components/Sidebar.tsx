@@ -67,7 +67,7 @@ function hostnameOf(url: string): string {
 
 function SectionLabel({ label }: { label: string }) {
   return (
-    <div className="px-3.5 pb-1.5 pt-3.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4">
+    <div className="px-4 pb-1.5 pt-4 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-4">
       {label}
     </div>
   );
@@ -92,16 +92,24 @@ function NavItem({
     <button
       onClick={onClick}
       data-testid={testId}
-      className={`flex w-full items-center gap-2.5 border-l-2 px-3.5 py-1.5 text-left text-[13px] transition-colors ${
+      className={`mx-2 flex w-[calc(100%-16px)] items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-[13px] transition-all duration-150 ease-out ${
         active
-          ? "border-accent bg-paper font-medium text-ink"
-          : "border-transparent text-ink-3"
+          ? "bg-paper font-medium text-ink shadow-paper-1"
+          : "text-ink-3 hover:bg-paper-3 hover:text-ink-2"
       }`}
     >
-      <span className={active ? "text-accent-2" : "text-ink-4"}>{icon}</span>
+      <span
+        className={`transition-colors duration-150 ${active ? "text-accent-2" : "text-ink-4"}`}
+      >
+        {icon}
+      </span>
       <span className="flex-1 truncate">{label}</span>
       {count !== undefined && (
-        <span className="font-mono text-[10px] text-ink-4">{count}</span>
+        <span
+          className={`font-mono text-[10px] tabular-nums ${active ? "text-ink-3" : "text-ink-4"}`}
+        >
+          {count}
+        </span>
       )}
     </button>
   );
@@ -122,24 +130,30 @@ function CollectionNavItem({
 }) {
   return (
     <div
-      className={`group flex w-full items-center border-l-2 transition-colors ${
+      className={`group mx-2 flex w-[calc(100%-16px)] items-center rounded-lg transition-all duration-150 ease-out ${
         active
-          ? "border-accent bg-paper font-medium text-ink"
-          : "border-transparent text-ink-3"
+          ? "bg-paper font-medium text-ink shadow-paper-1"
+          : "text-ink-3 hover:bg-paper-3 hover:text-ink-2"
       }`}
       data-testid={`collection-item-${collection._id}`}
     >
       <button
         type="button"
         onClick={onSelect}
-        className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-1.5 text-left text-[13px]"
+        className="flex min-w-0 flex-1 items-center gap-2.5 px-2.5 py-[7px] text-left text-[13px]"
       >
-        <span className={active ? "text-accent-2" : "text-ink-4"}>
+        <span
+          className={`transition-colors duration-150 ${active ? "text-accent-2" : "text-ink-4"}`}
+        >
           <Folder size={13} />
         </span>
         <span className="flex-1 truncate">{collection.name}</span>
         {count !== undefined && (
-          <span className="font-mono text-[10px] text-ink-4">{count}</span>
+          <span
+            className={`font-mono text-[10px] tabular-nums ${active ? "text-ink-3" : "text-ink-4"}`}
+          >
+            {count}
+          </span>
         )}
       </button>
       <DropdownMenu>
@@ -254,7 +268,7 @@ export function Sidebar() {
           <Button
             onClick={() => setDialogOpen(true)}
             data-testid="new-collection-button"
-            className="w-full gap-1.5 rounded-lg bg-ink text-xs font-medium text-paper hover:bg-ink-2"
+            className="w-full gap-1.5 rounded-lg bg-ink text-xs font-medium text-paper shadow-paper-1 transition-all duration-150 ease-out hover:bg-ink-2 hover:shadow-paper-2 active:scale-[0.98]"
             size="sm"
           >
             <Plus size={12} /> New collection
@@ -321,7 +335,7 @@ export function Sidebar() {
             <>
               <button
                 onClick={() => setDomainsExpanded(!domainsExpanded)}
-                className="flex w-full items-center gap-1 px-3.5 pb-1.5 pt-3.5 text-left font-mono text-[10px] uppercase tracking-[0.08em] text-ink-4"
+                className="flex w-full items-center gap-1 px-4 pb-1.5 pt-4 text-left font-mono text-[10px] uppercase tracking-[0.1em] text-ink-4 transition-colors hover:text-ink-3"
               >
                 {domainsExpanded ? (
                   <ChevronDown size={10} />
@@ -348,16 +362,16 @@ export function Sidebar() {
           {allTags.length > 0 && (
             <>
               <SectionLabel label="Tags" />
-              <div className="flex flex-wrap gap-1 px-3.5 pb-3">
+              <div className="flex flex-wrap gap-1 px-4 pb-3">
                 {allTags.slice(0, 12).map(({ tag, count }) => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => setActiveTag(tag)}
-                    className={`cursor-pointer rounded-[3px] border px-1.5 py-0.5 font-mono text-[10px] ${
+                    className={`cursor-pointer rounded-full border px-2 py-0.5 font-mono text-[10px] transition-all duration-150 ease-out ${
                       activeTag === tag
                         ? "border-accent bg-accent-tint text-ink"
-                        : "border-rule bg-paper text-ink-3"
+                        : "border-rule bg-paper text-ink-3 hover:border-rule-2 hover:text-ink-2"
                     }`}
                   >
                     #{tag} <span className="text-ink-4">{count}</span>
@@ -369,8 +383,11 @@ export function Sidebar() {
         </div>
 
         {/* Sync status */}
-        <div className="flex items-center gap-1.5 border-t border-rule px-3.5 py-2.5 font-mono text-xs text-ink-4">
-          <span className="size-1.5 rounded-full bg-hl-sage" />
+        <div className="flex items-center gap-2 border-t border-rule px-4 py-2.5 font-mono text-[11px] text-ink-4">
+          <span className="relative flex size-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-hl-sage-ink opacity-40 [animation-duration:2.5s]" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-hl-sage-ink opacity-70" />
+          </span>
           Synced
         </div>
       </div>

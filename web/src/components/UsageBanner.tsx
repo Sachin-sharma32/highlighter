@@ -15,28 +15,30 @@ export function UsageBanner() {
 
   return (
     <div
-      className={`flex h-[42px] shrink-0 items-center gap-4 border-b border-rule px-6 ${
-        isHigh ? "bg-red-50" : "bg-paper-2"
+      className={`flex h-[40px] shrink-0 items-center gap-4 border-b border-rule px-6 ${
+        isHigh
+          ? "bg-[color-mix(in_oklab,var(--paper-2),oklch(60%_0.2_20)_10%)]"
+          : "bg-paper-2"
       }`}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
         <span
-          className={`font-mono text-[10px] uppercase tracking-[0.06em] ${
-            isHigh ? "text-red-600" : "text-ink-4"
+          className={`font-mono text-[10px] uppercase tracking-[0.08em] ${
+            isHigh ? "text-hl-rose-ink" : "text-ink-4"
           }`}
         >
           {used} / {usage.limit} units used
         </span>
-        <div className="h-1.5 max-w-[200px] flex-1 overflow-hidden rounded-full bg-rule">
+        <div className="h-[5px] max-w-[180px] flex-1 overflow-hidden rounded-full bg-rule">
           <div
-            className={`h-full rounded-full transition-all ${
-              isHigh ? "bg-[oklch(65%_0.2_25)]" : "bg-[oklch(70%_0.14_145)]"
+            className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+              isHigh ? "bg-hl-rose-ink" : "bg-hl-sage-ink"
             }`}
             style={{ width: `${pct}%` }}
           />
         </div>
         <span
-          className={`font-mono text-[10px] ${isHigh ? "text-red-600" : "text-ink-4"}`}
+          className={`font-mono text-[10px] tabular-nums ${isHigh ? "text-hl-rose-ink" : "text-ink-4"}`}
         >
           {pct}%
         </span>
@@ -44,7 +46,7 @@ export function UsageBanner() {
 
       <button
         onClick={() => setPricingModalOpen(true)}
-        className="flex h-7 items-center gap-1.5 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 px-3.5 text-xs font-medium text-white shadow-md transition-all hover:scale-[1.02]"
+        className="flex h-7 items-center gap-1.5 rounded-full bg-accent-2 px-3.5 text-xs font-medium text-paper shadow-paper-1 transition-all duration-150 ease-out hover:brightness-110 hover:shadow-paper-2 active:scale-[0.98]"
       >
         <Zap size={12} />
         Upgrade to Premium

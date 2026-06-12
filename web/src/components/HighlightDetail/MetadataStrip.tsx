@@ -58,8 +58,10 @@ export function MetadataStrip({
             title={c}
             style={{ background: HL_COLORS[c] }}
             className={cn(
-              "h-4 w-4 rounded-[3px] border transition-transform hover:scale-110",
-              color === c ? "border-ink" : "border-transparent",
+              "h-4 w-4 rounded-full transition-all duration-150 ease-spring hover:scale-125",
+              color === c
+                ? "scale-110 ring-1 ring-ink ring-offset-2 ring-offset-paper"
+                : "ring-1 ring-[oklch(0%_0_0_/_0.08)]",
             )}
           />
         ))}

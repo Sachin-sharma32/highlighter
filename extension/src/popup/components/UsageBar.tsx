@@ -19,9 +19,9 @@ export function UsageBar({ usage }: UsageBarProps) {
           {Math.round(ratio * 100)}%
         </span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-rule">
+      <div className="h-[5px] overflow-hidden rounded-full bg-rule">
         <div
-          className={`h-full rounded-full transition-all ${isHigh ? "bg-red-500" : "bg-emerald-500"}`}
+          className={`h-full rounded-full transition-[width] duration-500 ease-out ${isHigh ? "bg-hl-rose-ink" : "bg-hl-sage-ink"}`}
           style={{ width: `${percent}%` }}
         />
       </div>

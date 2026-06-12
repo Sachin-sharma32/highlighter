@@ -56,10 +56,9 @@ const tokens = {
     },
   },
   boxShadow: {
-    "paper-1": "0 1px 2px rgba(50,30,10,0.04), 0 2px 6px rgba(50,30,10,0.05)",
-    "paper-2": "0 2px 4px rgba(50,30,10,0.05), 0 8px 24px rgba(50,30,10,0.08)",
-    "paper-3":
-      "0 4px 12px rgba(50,30,10,0.08), 0 24px 60px rgba(50,30,10,0.12)",
+    "paper-1": "var(--shadow-1)",
+    "paper-2": "var(--shadow-2)",
+    "paper-3": "var(--shadow-3)",
   },
   borderRadius: {
     sm: "6px",
@@ -67,6 +66,40 @@ const tokens = {
     lg: "16px",
     xl: "22px",
     "2xl": "28px",
+  },
+  transitionTimingFunction: {
+    // Soft deceleration for entrances and hovers
+    out: "cubic-bezier(0.22, 1, 0.36, 1)",
+    // Slight overshoot for playful pops (swatches, toggles)
+    spring: "cubic-bezier(0.34, 1.4, 0.64, 1)",
+  },
+  keyframes: {
+    "fade-up": {
+      from: { opacity: "0", transform: "translateY(6px)" },
+      to: { opacity: "1", transform: "translateY(0)" },
+    },
+    "fade-in": {
+      from: { opacity: "0" },
+      to: { opacity: "1" },
+    },
+    "scale-in": {
+      from: { opacity: "0", transform: "scale(0.97)" },
+      to: { opacity: "1", transform: "scale(1)" },
+    },
+    shimmer: {
+      from: { backgroundPosition: "200% 0" },
+      to: { backgroundPosition: "-200% 0" },
+    },
+    "draw-line": {
+      from: { backgroundSize: "0% 100%" },
+      to: { backgroundSize: "100% 100%" },
+    },
+  },
+  animation: {
+    "fade-up": "fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both",
+    "fade-in": "fade-in 0.25s ease both",
+    "scale-in": "scale-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both",
+    shimmer: "shimmer 1.8s linear infinite",
   },
 };
 

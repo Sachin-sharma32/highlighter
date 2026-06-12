@@ -1,4 +1,3 @@
-import { Loader2 } from "lucide-react";
 import type { Highlight, Scope } from "../types";
 import { HighlightRow } from "./HighlightRow";
 
@@ -44,23 +43,42 @@ export function HighlightList({
 
 function Loading() {
   return (
-    <div className="flex justify-center pt-10">
-      <Loader2 size={18} className="animate-spin text-ink-4" />
+    <div className="space-y-3 pt-3">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="space-y-2 py-1">
+          <div className="skeleton h-3 w-full" />
+          <div className="skeleton h-3 w-3/4" />
+        </div>
+      ))}
     </div>
   );
 }
 
 function EmptyState({ scope }: { scope: Scope }) {
   return (
-    <div className="pt-10 text-center text-xs leading-6 text-ink-4">
+    <div className="animate-fade-up pt-8 text-center text-xs leading-6 text-ink-4">
+      {/* A page in miniature, with one marked line */}
+      <div
+        aria-hidden
+        className="mx-auto mb-4 w-28 space-y-2 rounded-lg border border-rule bg-paper-2 p-3 shadow-paper-1"
+      >
+        <div className="h-1.5 w-full rounded-full bg-paper-3" />
+        <div className="h-1.5 w-4/5 rounded-full bg-paper-3" />
+        <div className="h-1.5 w-11/12 rounded-full bg-hl-amber" />
+        <div className="h-1.5 w-3/5 rounded-full bg-paper-3" />
+      </div>
       {scope === "page" ? (
         <>
-          <p>No highlights on this page yet.</p>
-          <p className="mt-1">Select text to start highlighting.</p>
+          <p className="font-display text-[13px] text-ink-3">
+            Nothing marked on this page
+          </p>
+          <p className="mt-1">Select any text to start highlighting.</p>
         </>
       ) : (
         <>
-          <p>No highlights saved yet.</p>
+          <p className="font-display text-[13px] text-ink-3">
+            No highlights saved yet
+          </p>
           <p className="mt-1">
             Highlights you save across the web will appear here.
           </p>

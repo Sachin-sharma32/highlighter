@@ -121,25 +121,58 @@ export function HighlightDetail() {
   if (!selectedHighlightId) {
     return (
       <div className="flex flex-1 items-center justify-center bg-paper">
-        <p
-          data-testid="highlight-detail-empty"
-          className="text-[13px] text-ink-4"
-        >
-          Select a highlight to read it here
-        </p>
+        <div className="flex animate-fade-up flex-col items-center gap-4 text-center">
+          <span
+            aria-hidden
+            className="font-display text-[64px] leading-none text-paper-3 select-none"
+          >
+            &ldquo;
+          </span>
+          <p
+            data-testid="highlight-detail-empty"
+            className="m-0 -mt-6 text-[13px] text-ink-4"
+          >
+            Select a highlight to read it here
+          </p>
+          <div className="mt-2 flex items-center gap-3 font-mono text-[10px] text-ink-4">
+            <span className="flex items-center gap-1">
+              <kbd>J</kbd>
+              <kbd>K</kbd> navigate
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd>1</kbd>–<kbd>5</kbd> recolour
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd>C</kbd> copy
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!highlight) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-paper">
-        <p
-          data-testid="highlight-detail-loading"
-          className="text-[13px] text-ink-4"
-        >
-          Loading…
-        </p>
+      <div
+        data-testid="highlight-detail-loading"
+        className="flex flex-1 flex-col bg-paper"
+      >
+        <div className="h-11 shrink-0 border-b border-rule" />
+        <div className="flex-1 px-14 py-10">
+          <div className="mx-auto max-w-[560px] space-y-6">
+            <div className="skeleton h-2.5 w-1/3" />
+            <div className="space-y-3 border-y border-rule py-7">
+              <div className="skeleton h-5 w-full" />
+              <div className="skeleton h-5 w-11/12" />
+              <div className="skeleton h-5 w-2/3" />
+            </div>
+            <div className="flex gap-2">
+              <div className="skeleton h-5 w-24" />
+              <div className="skeleton h-5 w-16" />
+            </div>
+            <div className="skeleton h-28 w-full" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -286,15 +319,24 @@ export function HighlightDetail() {
       />
 
       <div className="noscroll flex-1 overflow-y-auto px-14 py-10">
-        <div className="mx-auto max-w-[560px]">
+        <div
+          key={highlight._id}
+          className="mx-auto max-w-[560px] animate-fade-up"
+        >
           <SourceMetadata highlight={highlight} />
 
           <YouTubeClipPlayer highlight={highlight} />
 
           <blockquote
             data-testid="highlight-detail-quote"
-            className="m-0 border-y border-rule py-7 font-display text-[24px] leading-[1.38] tracking-[-0.015em] text-ink"
+            className="relative m-0 border-y border-rule py-7 font-display text-[25px] leading-[1.42] tracking-[-0.015em] text-ink"
           >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -left-9 top-4 font-display text-[56px] leading-none text-paper-3 select-none"
+            >
+              &ldquo;
+            </span>
             <span className={hlClass}>{highlightDisplayText(highlight)}</span>
           </blockquote>
 

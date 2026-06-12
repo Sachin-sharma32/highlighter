@@ -24,7 +24,7 @@ export function HighlightRow({
   return (
     <div
       data-testid="popup-highlight-row"
-      className={`group relative flex w-full gap-2.5 py-2 ${withDivider ? "border-b border-rule" : ""}`}
+      className={`group relative flex w-full gap-2.5 py-2 transition-colors duration-150 hover:bg-paper-2 ${withDivider ? "border-b border-rule" : ""}`}
     >
       <div className="absolute right-0 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         <button
@@ -44,10 +44,10 @@ export function HighlightRow({
       </div>
       <button
         onClick={() => onOpen(highlight)}
-        className="flex min-w-0 flex-1 gap-2.5 pr-12 text-left hover:bg-paper-2"
+        className="flex min-w-0 flex-1 gap-2.5 pr-12 text-left"
       >
         <div
-          className={`w-[3px] shrink-0 rounded-sm ${HL_BG_CLASS[highlight.color]}`}
+          className={`w-[3px] shrink-0 rounded-full ${HL_BG_CLASS[highlight.color]}`}
         />
         <div className="min-w-0 flex-1">
           <p className="overflow-hidden font-display text-[12.5px] leading-[1.45] text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">

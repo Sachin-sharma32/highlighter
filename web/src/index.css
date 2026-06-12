@@ -63,6 +63,115 @@
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.005em;
   }
+
+  /* Text selection picks up the marker accent */
+  ::selection {
+    background: var(--accent-tint);
+    color: var(--ink);
+  }
+
+  /* One consistent, visible focus treatment everywhere */
+  :focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Motion primitives (plain CSS so utilities below can reference them
+   regardless of which Tailwind animate-* classes are in use) */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@layer utilities {
+  /* Skeleton shimmer for loading states */
+  .skeleton {
+    border-radius: 6px;
+    background: linear-gradient(
+      90deg,
+      var(--paper-2) 25%,
+      var(--paper-3) 50%,
+      var(--paper-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  /* Staggered list entrances — apply to direct children */
+  .stagger-children > * {
+    animation: fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger-children > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .stagger-children > *:nth-child(2) {
+    animation-delay: 25ms;
+  }
+  .stagger-children > *:nth-child(3) {
+    animation-delay: 50ms;
+  }
+  .stagger-children > *:nth-child(4) {
+    animation-delay: 75ms;
+  }
+  .stagger-children > *:nth-child(5) {
+    animation-delay: 100ms;
+  }
+  .stagger-children > *:nth-child(6) {
+    animation-delay: 125ms;
+  }
+  .stagger-children > *:nth-child(7) {
+    animation-delay: 150ms;
+  }
+  .stagger-children > *:nth-child(8) {
+    animation-delay: 175ms;
+  }
+  .stagger-children > *:nth-child(n + 9) {
+    animation-delay: 200ms;
+  }
 }
 
 :root {
@@ -196,6 +305,19 @@
   text-decoration: underline dotted;
   text-decoration-color: rgba(0, 0, 0, 0.35);
   text-underline-offset: 3px;
+}
+
+/* Keyboard cap */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--rule-2);
+  background: var(--paper);
+  color: var(--ink-3);
+  box-shadow: 0 1px 0 var(--rule-2);
+  line-height: 1;
 }
 
 .noscroll::-webkit-scrollbar {

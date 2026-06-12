@@ -87,13 +87,15 @@ export function HighlightList() {
     activeCollectionId as string,
   );
 
-  const highlights = (useQuery(api.highlights.list, {
+  const rawHighlights = useQuery(api.highlights.list, {
     collectionId: isSpecial
       ? undefined
       : (activeCollectionId as Id<"collections">),
     filter: activeCollectionId === "notes" ? "notes" : undefined,
     search: searchQuery || undefined,
-  }) ?? []) as ListHighlight[];
+  });
+  const isLoading = rawHighlights === undefined;
+  const highlights = (rawHighlights ?? []) as ListHighlight[];
 
   const remove = useMutation(api.highlights.remove);
   const [pendingDeleteId, setPendingDeleteId] =
@@ -139,12 +141,12 @@ export function HighlightList() {
       data-testid="highlight-list"
     >
       {/* Header */}
-      <div className="border-b border-rule px-4 pb-2.5 pt-3.5">
-        <div className="mb-1 flex items-baseline justify-between">
+      <div className="border-b border-rule px-4 pb-3 pt-4">
+        <div className="flex items-baseline justify-between">
           <h2 className="m-0 font-display text-[22px] font-medium tracking-tight text-ink">
             {title}
           </h2>
-          <span className="font-mono text-[11px] text-ink-4">
+          <span className="rounded-full border border-rule bg-paper-2 px-2 py-px font-mono text-[10px] tabular-nums text-ink-4">
             {filtered.length}
           </span>
         </div>
@@ -152,69 +154,108 @@ export function HighlightList() {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
-        {filtered.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
-            <p className="text-[13px] text-ink-4">No highlights yet.</p>
-            <p className="text-xs text-ink-4">
-              {activeCollectionId === "inbox"
-                ? "Highlights you save with the extension will appear here."
-                : "Select text on any page with the extension to add highlights."}
-            </p>
+        {isLoading ? (
+          <div className="space-y-px p-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="space-y-2 py-3">
+                <div className="flex justify-between gap-2">
+                  <div className="skeleton h-2.5 w-2/5" />
+                  <div className="skeleton h-2.5 w-8" />
+                </div>
+                <div className="skeleton h-3.5 w-full" />
+                <div className="skeleton h-3.5 w-3/4" />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex h-full animate-fade-up flex-col items-center justify-center gap-5 px-8 text-center">
+            {/* A page in miniature, with one marked line */}
+            <div
+              aria-hidden
+              className="w-36 space-y-2.5 rounded-lg border border-rule bg-paper-2 p-4 shadow-paper-1"
+            >
+              <div className="h-1.5 w-full rounded-full bg-paper-3" />
+              <div className="h-1.5 w-4/5 rounded-full bg-paper-3" />
+              <div className="h-1.5 w-11/12 rounded-full bg-hl-amber" />
+              <div className="h-1.5 w-3/5 rounded-full bg-paper-3" />
+            </div>
+            <div>
+              <p className="m-0 mb-1 font-display text-[15px] text-ink-2">
+                Nothing marked yet
+              </p>
+              <p className="m-0 text-xs leading-relaxed text-ink-4">
+                {activeCollectionId === "inbox"
+                  ? "Highlights you save with the extension will land here."
+                  : "Select text on any page with the extension to add highlights."}
+              </p>
+            </div>
           </div>
         ) : (
-          filtered.map((h) => (
-            <div
-              key={h._id}
-              data-testid="highlight-row"
-              data-highlight-id={h._id}
-              className={`group flex w-full gap-2.5 border-b border-rule text-left transition-colors ${
-                h._id === selectedHighlightId
-                  ? "border-l-2 border-l-accent bg-paper-2"
-                  : "border-l-2 border-l-transparent"
-              }`}
-            >
-              <button
-                onClick={() => setSelectedHighlight(h._id)}
-                className="flex min-w-0 flex-1 gap-2.5 px-4 py-3 text-left"
+          <div className="stagger-children">
+            {filtered.map((h) => (
+              <div
+                key={h._id}
+                data-testid="highlight-row"
+                data-highlight-id={h._id}
+                className={`group relative flex w-full gap-2.5 border-b border-rule text-left transition-colors duration-150 ${
+                  h._id === selectedHighlightId
+                    ? "bg-paper-2"
+                    : "hover:bg-[color-mix(in_oklab,var(--paper),var(--paper-2)_60%)]"
+                }`}
               >
-                <div
-                  className={`w-[3px] shrink-0 rounded-sm ${COLOR_BAR[h.color] ?? COLOR_BAR.amber}`}
+                {/* Accent rail for the selected row */}
+                <span
+                  className={`absolute inset-y-0 left-0 w-[2px] bg-accent transition-opacity duration-150 ${
+                    h._id === selectedHighlightId ? "opacity-100" : "opacity-0"
+                  }`}
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-1.5 truncate text-xs text-ink-3">
-                      {h.sourceType === "youtube" && (
-                        <Scissors size={11} className="shrink-0 text-accent" />
-                      )}
-                      <span className="truncate">{h.title}</span>
+                <button
+                  onClick={() => setSelectedHighlight(h._id)}
+                  className="flex min-w-0 flex-1 gap-2.5 px-4 py-3 text-left"
+                >
+                  <div
+                    className={`w-[3px] shrink-0 rounded-full ${COLOR_BAR[h.color] ?? COLOR_BAR.amber}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-1.5 truncate text-xs text-ink-3">
+                        {h.sourceType === "youtube" && (
+                          <Scissors
+                            size={11}
+                            className="shrink-0 text-accent"
+                          />
+                        )}
+                        <span className="truncate">{h.title}</span>
+                      </div>
+                      <div className="shrink-0 font-mono text-[10px] tabular-nums text-ink-4">
+                        {timeAgo(h.createdAt)}
+                      </div>
                     </div>
-                    <div className="shrink-0 font-mono text-[10px] text-ink-4">
-                      {timeAgo(h.createdAt)}
-                    </div>
+                    <p
+                      data-testid="highlight-row-text"
+                      className="overflow-hidden font-display text-sm leading-snug text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]"
+                    >
+                      {highlightDisplayText(h)}
+                    </p>
+                    {h.note && (
+                      <div className="mt-1.5 flex items-center gap-1 text-[10px] text-ink-4">
+                        <StickyNote size={10} />
+                        <span>note</span>
+                      </div>
+                    )}
                   </div>
-                  <p
-                    data-testid="highlight-row-text"
-                    className="overflow-hidden font-display text-sm leading-snug text-ink [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]"
-                  >
-                    {highlightDisplayText(h)}
-                  </p>
-                  {h.note && (
-                    <div className="mt-1 flex items-center gap-1 text-ink-4">
-                      <StickyNote size={10} />
-                    </div>
-                  )}
-                </div>
-              </button>
-              {/* Quick delete button */}
-              <button
-                onClick={() => setPendingDeleteId(h._id)}
-                title="Delete highlight"
-                className="flex shrink-0 items-center justify-center rounded p-1 pr-3 text-ink-4 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          ))
+                </button>
+                {/* Quick delete button */}
+                <button
+                  onClick={() => setPendingDeleteId(h._id)}
+                  title="Delete highlight"
+                  className="flex shrink-0 items-center justify-center rounded p-1 pr-3 text-ink-4 opacity-0 transition-all duration-150 hover:text-red-500 group-hover:opacity-100"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
       <ConfirmDeleteDialog

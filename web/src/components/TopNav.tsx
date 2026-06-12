@@ -60,10 +60,13 @@ export function TopNav() {
           <button
             onClick={() => setCommandPaletteOpen(true)}
             data-testid="topnav-search-button"
-            className="flex h-8 w-[420px] max-w-full items-center gap-2 rounded-full border border-rule bg-paper-2 px-3 text-sm text-ink-4 transition-colors"
+            className="group flex h-8 w-[420px] max-w-full items-center gap-2 rounded-full border border-rule bg-paper-2 px-3 text-sm text-ink-4 transition-all duration-200 ease-out hover:border-rule-2 hover:bg-paper hover:shadow-paper-1"
           >
-            <Search size={13} />
-            <span className="flex-1 text-left text-xs">
+            <Search
+              size={13}
+              className="transition-colors group-hover:text-ink-3"
+            />
+            <span className="flex-1 text-left text-xs transition-colors group-hover:text-ink-3">
               Search highlights, sources, notes…
             </span>
             <kbd className="rounded border border-rule-2 bg-paper px-1.5 py-px font-mono text-[10px] text-ink-3">
@@ -75,7 +78,7 @@ export function TopNav() {
         {/* Ask Marginalia (placeholder) */}
         <button
           onClick={() => setAiDialogOpen(true)}
-          className="flex h-[30px] items-center gap-1.5 rounded-lg border border-rule px-3 text-xs text-ink-2 transition-colors"
+          className="flex h-[30px] items-center gap-1.5 rounded-lg border border-rule px-3 text-xs text-ink-2 transition-all duration-200 ease-out hover:border-[oklch(62%_0.16_40_/_0.4)] hover:bg-accent-tint hover:text-ink"
         >
           <Sparkles size={12} className="text-accent-2" />
           Ask Marginalia
@@ -84,7 +87,7 @@ export function TopNav() {
         {/* Avatar / menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="h-[30px] w-[30px] overflow-hidden rounded-full">
+            <button className="h-[30px] w-[30px] overflow-hidden rounded-full ring-[oklch(62%_0.16_40_/_0.5)] ring-offset-1 ring-offset-paper transition-shadow duration-200 hover:ring-2">
               <Avatar className="h-[30px] w-[30px]">
                 <AvatarImage src={user?.image ?? ""} />
                 <AvatarFallback className="bg-[oklch(70%_0.08_40)] text-[12px] font-medium text-paper">
