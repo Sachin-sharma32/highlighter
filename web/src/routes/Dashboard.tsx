@@ -16,31 +16,47 @@ const SPECIAL_VIEWS = ["inbox", "all", "notes", "custom-notes"];
 export default function Dashboard() {
   const activeCollectionId = useAppStore((s) => s.activeCollectionId);
   const lastSelectedKind = useAppStore((s) => s.lastSelectedKind);
+  const selectedHighlightId = useAppStore((s) => s.selectedHighlightId);
+  const selectedNoteId = useAppStore((s) => s.selectedNoteId);
   const isNotes = activeCollectionId === "custom-notes";
   const isCollection = !SPECIAL_VIEWS.includes(activeCollectionId as string);
 
+  // On phones we can only show one pane at a time. `detailOpen` decides whether
+  // the list (false) or the detail (true) takes over the single mobile column.
+  // From `md` up both panes are always visible, so the flag is purely advisory.
   let content;
+  let detailOpen: boolean;
   if (isNotes) {
+    detailOpen = selectedNoteId !== null;
     content = (
       <>
-        <NotesList />
-        <NoteDetail />
+        <NotesList mobileHidden={detailOpen} />
+        <NoteDetail mobileHidden={!detailOpen} />
       </>
     );
   } else if (isCollection) {
     // A collection can hold both highlights and notes; show the matching
     // detail pane for whichever the user selected last.
+    const noteSelected = lastSelectedKind === "note";
+    detailOpen = noteSelected
+      ? selectedNoteId !== null
+      : selectedHighlightId !== null;
     content = (
       <>
-        <CollectionList />
-        {lastSelectedKind === "note" ? <NoteDetail /> : <HighlightDetail />}
+        <CollectionList mobileHidden={detailOpen} />
+        {noteSelected ? (
+          <NoteDetail mobileHidden={!detailOpen} />
+        ) : (
+          <HighlightDetail mobileHidden={!detailOpen} />
+        )}
       </>
     );
   } else {
+    detailOpen = selectedHighlightId !== null;
     content = (
       <>
-        <HighlightList />
-        <HighlightDetail />
+        <HighlightList mobileHidden={detailOpen} />
+        <HighlightDetail mobileHidden={!detailOpen} />
       </>
     );
   }
@@ -49,7 +65,7 @@ export default function Dashboard() {
     <div className="flex h-screen flex-col overflow-hidden bg-paper">
       <TopNav />
       <UsageBanner />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         <Sidebar />
         {content}
       </div>

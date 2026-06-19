@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -11,6 +12,7 @@ import { IconBtn } from "./IconBtn";
 export function DetailToolbar({
   hasPrevious,
   hasNext,
+  onBack,
   onPrevious,
   onNext,
   onCopy,
@@ -20,6 +22,7 @@ export function DetailToolbar({
 }: {
   hasPrevious: boolean;
   hasNext: boolean;
+  onBack?: () => void;
   onPrevious: () => void;
   onNext: () => void;
   onCopy: () => void;
@@ -28,7 +31,17 @@ export function DetailToolbar({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex h-11 shrink-0 items-center gap-1.5 border-b border-rule px-5">
+    <div className="flex h-11 shrink-0 items-center gap-1.5 border-b border-rule px-3 sm:px-5">
+      {/* Back to the list — only the single-column mobile layout needs it. */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          aria-label="Back to list"
+          className="mr-0.5 flex h-7 items-center gap-1 rounded-md px-1.5 text-xs text-ink-3 transition-colors hover:bg-paper-2 hover:text-ink md:hidden"
+        >
+          <ArrowLeft size={15} />
+        </button>
+      )}
       <IconBtn onClick={onPrevious} disabled={!hasPrevious}>
         <ChevronLeft size={13} />
       </IconBtn>

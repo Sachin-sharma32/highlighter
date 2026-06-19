@@ -21,6 +21,8 @@ interface AppStore {
   searchQuery: string;
   pricingModalOpen: boolean;
   connectExtensionModalOpen: boolean;
+  // Mobile/tablet: the sidebar collapses to an off-canvas drawer.
+  sidebarOpen: boolean;
   setActiveCollection: (id: ActiveCollection) => void;
   setActiveTag: (tag: string | null) => void;
   setActiveDomain: (domain: string | null) => void;
@@ -30,6 +32,8 @@ interface AppStore {
   setSearchQuery: (q: string) => void;
   setPricingModalOpen: (open: boolean) => void;
   setConnectExtensionModalOpen: (open: boolean) => void;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -43,6 +47,7 @@ export const useAppStore = create<AppStore>((set) => ({
   searchQuery: "",
   pricingModalOpen: false,
   connectExtensionModalOpen: false,
+  sidebarOpen: false,
   setActiveCollection: (id) =>
     set({
       activeCollectionId: id,
@@ -51,6 +56,8 @@ export const useAppStore = create<AppStore>((set) => ({
       selectedHighlightId: null,
       selectedNoteId: null,
       lastSelectedKind: "highlight",
+      // Selecting a destination closes the mobile drawer.
+      sidebarOpen: false,
     }),
   setActiveTag: (tag) =>
     set({
@@ -59,9 +66,15 @@ export const useAppStore = create<AppStore>((set) => ({
       activeDomain: null,
       selectedHighlightId: null,
       selectedNoteId: null,
+      sidebarOpen: false,
     }),
   setActiveDomain: (domain) =>
-    set({ activeDomain: domain, activeTag: null, selectedHighlightId: null }),
+    set({
+      activeDomain: domain,
+      activeTag: null,
+      selectedHighlightId: null,
+      sidebarOpen: false,
+    }),
   setSelectedHighlight: (id) =>
     set(
       id
@@ -79,4 +92,6 @@ export const useAppStore = create<AppStore>((set) => ({
   setPricingModalOpen: (open) => set({ pricingModalOpen: open }),
   setConnectExtensionModalOpen: (open) =>
     set({ connectExtensionModalOpen: open }),
+  setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 }));

@@ -15,7 +15,7 @@ export function UsageBanner() {
 
   return (
     <div
-      className={`flex h-[40px] shrink-0 items-center gap-4 border-b border-rule px-6 ${
+      className={`flex h-[40px] shrink-0 items-center gap-3 border-b border-rule px-3 sm:gap-4 sm:px-6 ${
         isHigh
           ? "bg-[color-mix(in_oklab,var(--paper-2),oklch(60%_0.2_20)_10%)]"
           : "bg-paper-2"
@@ -46,10 +46,11 @@ export function UsageBanner() {
 
       <button
         onClick={() => setPricingModalOpen(true)}
-        className="flex h-7 items-center gap-1.5 rounded-full bg-accent-2 px-3.5 text-xs font-medium text-paper shadow-paper-1 transition-all duration-150 ease-out hover:brightness-110 hover:shadow-paper-2 active:scale-[0.98]"
+        className="flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-accent-2 px-3 text-xs font-medium text-paper shadow-paper-1 transition-all duration-150 ease-out hover:brightness-110 hover:shadow-paper-2 active:scale-[0.98] sm:px-3.5"
       >
-        <Zap size={12} />
-        Upgrade to Premium
+        <Zap size={12} className="shrink-0" />
+        <span className="hidden sm:inline">Upgrade to Premium</span>
+        <span className="sm:hidden">Upgrade</span>
       </button>
     </div>
   );

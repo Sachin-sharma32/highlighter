@@ -188,6 +188,8 @@ export function Sidebar() {
     setActiveCollection,
     setActiveTag,
     setActiveDomain,
+    sidebarOpen,
+    setSidebarOpen,
   } = useAppStore();
   const collections = (useQuery(api.collections.list) ??
     []) as SidebarCollection[];
@@ -259,8 +261,18 @@ export function Sidebar() {
 
   return (
     <>
+      {/* Backdrop for the off-canvas drawer (mobile/tablet only). */}
       <div
-        className="flex w-60 flex-col overflow-hidden border-r border-rule bg-paper-2"
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden
+        className={`absolute inset-0 z-30 bg-black/30 backdrop-blur-[1px] transition-opacity duration-200 lg:hidden ${
+          sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+      <div
+        className={`absolute inset-y-0 left-0 z-40 flex w-64 flex-col overflow-hidden border-r border-rule bg-paper-2 shadow-paper-3 transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-60 lg:translate-x-0 lg:shadow-none ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
         data-testid="sidebar"
       >
         {/* New collection button */}

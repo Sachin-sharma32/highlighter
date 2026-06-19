@@ -73,7 +73,11 @@ function highlightDisplayText(highlight: ListHighlight) {
   return highlight.text;
 }
 
-export function HighlightList() {
+export function HighlightList({
+  mobileHidden = false,
+}: {
+  mobileHidden?: boolean;
+}) {
   const {
     activeCollectionId,
     activeTag,
@@ -137,7 +141,7 @@ export function HighlightList() {
 
   return (
     <div
-      className="flex w-[360px] flex-col overflow-hidden border-r border-rule bg-paper"
+      className={`${mobileHidden ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col overflow-hidden border-r border-rule bg-paper md:w-[300px] lg:w-[340px] xl:w-[380px]`}
       data-testid="highlight-list"
     >
       {/* Header */}

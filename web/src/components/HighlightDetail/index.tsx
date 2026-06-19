@@ -22,7 +22,11 @@ import {
   type ListHighlight,
 } from "./lib";
 
-export function HighlightDetail() {
+export function HighlightDetail({
+  mobileHidden = false,
+}: {
+  mobileHidden?: boolean;
+}) {
   const {
     activeCollectionId,
     activeTag,
@@ -32,6 +36,9 @@ export function HighlightDetail() {
     searchQuery,
     setCommandPaletteOpen,
   } = useAppStore();
+  // Below `md` the detail is the only visible column, so it must not be hidden
+  // by the same-axis display rules the list uses.
+  const rootShow = mobileHidden ? "hidden md:flex" : "flex";
   const isSpecial = ["inbox", "all", "notes"].includes(
     activeCollectionId as string,
   );
@@ -120,7 +127,9 @@ export function HighlightDetail() {
 
   if (!selectedHighlightId) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-paper">
+      <div
+        className={`${rootShow} flex-1 items-center justify-center bg-paper`}
+      >
         <div className="flex animate-fade-up flex-col items-center gap-4 text-center">
           <span
             aria-hidden
@@ -155,10 +164,10 @@ export function HighlightDetail() {
     return (
       <div
         data-testid="highlight-detail-loading"
-        className="flex flex-1 flex-col bg-paper"
+        className={`${rootShow} flex-1 flex-col bg-paper`}
       >
         <div className="h-11 shrink-0 border-b border-rule" />
-        <div className="flex-1 px-14 py-10">
+        <div className="flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-14 lg:py-10">
           <div className="mx-auto max-w-[560px] space-y-6">
             <div className="skeleton h-2.5 w-1/3" />
             <div className="space-y-3 border-y border-rule py-7">
@@ -295,12 +304,13 @@ export function HighlightDetail() {
 
   return (
     <div
-      className="flex flex-1 flex-col overflow-hidden bg-paper"
+      className={`${rootShow} flex-1 flex-col overflow-hidden bg-paper`}
       data-testid="highlight-detail"
     >
       <DetailToolbar
         hasPrevious={Boolean(previousHighlightId)}
         hasNext={Boolean(nextHighlightId)}
+        onBack={() => setSelectedHighlight(null)}
         onPrevious={() =>
           previousHighlightId && setSelectedHighlight(previousHighlightId)
         }
@@ -318,7 +328,7 @@ export function HighlightDetail() {
         onConfirm={() => void handleDelete()}
       />
 
-      <div className="noscroll flex-1 overflow-y-auto px-14 py-10">
+      <div className="noscroll flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-14 lg:py-10">
         <div
           key={highlight._id}
           className="mx-auto max-w-[560px] animate-fade-up"
@@ -329,11 +339,11 @@ export function HighlightDetail() {
 
           <blockquote
             data-testid="highlight-detail-quote"
-            className="relative m-0 border-y border-rule py-7 font-display text-[25px] leading-[1.42] tracking-[-0.015em] text-ink"
+            className="relative m-0 border-y border-rule py-6 font-display text-[20px] leading-[1.42] tracking-[-0.015em] text-ink sm:py-7 sm:text-[22px] lg:text-[25px]"
           >
             <span
               aria-hidden
-              className="pointer-events-none absolute -left-9 top-4 font-display text-[56px] leading-none text-paper-3 select-none"
+              className="pointer-events-none absolute -left-9 top-4 hidden font-display text-[56px] leading-none text-paper-3 select-none lg:block"
             >
               &ldquo;
             </span>

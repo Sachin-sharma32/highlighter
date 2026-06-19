@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useMutation, useQuery } from "convex/react";
 import {
+  ArrowLeft,
   ChevronDown,
   Folder,
   Maximize2,
@@ -58,8 +59,13 @@ function parseSerialized(raw: string): SerializedEditorState | undefined {
   }
 }
 
-export function NoteDetail() {
+export function NoteDetail({
+  mobileHidden = false,
+}: {
+  mobileHidden?: boolean;
+}) {
   const { selectedNoteId, setSelectedNote } = useAppStore();
+  const rootShow = mobileHidden ? "hidden md:flex" : "flex";
   const note = useQuery(
     api.notes.byId,
     selectedNoteId ? { id: selectedNoteId } : "skip",
@@ -202,7 +208,9 @@ export function NoteDetail() {
 
   if (!selectedNoteId) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-paper">
+      <div
+        className={`${rootShow} flex-1 items-center justify-center bg-paper`}
+      >
         <p data-testid="note-detail-empty" className="text-[13px] text-ink-4">
           Select a note to edit it here
         </p>
@@ -212,7 +220,9 @@ export function NoteDetail() {
 
   if (!note) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-paper">
+      <div
+        className={`${rootShow} flex-1 items-center justify-center bg-paper`}
+      >
         <p className="text-[13px] text-ink-4">Loading…</p>
       </div>
     );
@@ -255,11 +265,19 @@ export function NoteDetail() {
       className={
         isFullscreen
           ? "fixed inset-0 z-50 flex flex-col overflow-hidden bg-paper"
-          : "flex flex-1 flex-col overflow-hidden bg-paper"
+          : `${rootShow} flex-1 flex-col overflow-hidden bg-paper`
       }
       data-testid="note-detail"
     >
-      <div className="flex shrink-0 items-center gap-3 border-b border-rule px-4 py-2">
+      <div className="flex shrink-0 items-center gap-2 border-b border-rule px-3 py-2 sm:gap-3 sm:px-4">
+        {/* Back to the list — single-column mobile layout only. */}
+        <button
+          onClick={() => setSelectedNote(null)}
+          aria-label="Back to list"
+          className="-ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-paper-2 hover:text-ink md:hidden"
+        >
+          <ArrowLeft size={15} />
+        </button>
         <input
           data-testid={
             isWhiteboard ? "whiteboard-title-input" : "note-title-input"

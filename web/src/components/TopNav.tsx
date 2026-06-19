@@ -1,7 +1,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sparkles, LogOut, Link2, Settings } from "lucide-react";
+import { Search, Sparkles, LogOut, Link2, Settings, Menu } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAppStore } from "@/store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,7 +24,8 @@ export function TopNav() {
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
   const user = useQuery(api.users.currentUser);
-  const { setCommandPaletteOpen, setConnectExtensionModalOpen } = useAppStore();
+  const { setCommandPaletteOpen, setConnectExtensionModalOpen, toggleSidebar } =
+    useAppStore();
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
 
   const initials = user?.name
@@ -39,37 +40,50 @@ export function TopNav() {
   return (
     <>
       <div
-        className="flex h-[52px] shrink-0 items-center gap-3 border-b border-rule bg-paper px-6"
+        className="flex h-[52px] shrink-0 items-center gap-2 border-b border-rule bg-paper px-3 sm:gap-3 sm:px-6"
         data-testid="topnav"
       >
+        {/* Hamburger — toggles the sidebar drawer below the lg breakpoint. */}
+        <button
+          onClick={toggleSidebar}
+          aria-label="Toggle sidebar"
+          data-testid="topnav-menu-button"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-3 transition-colors hover:bg-paper-2 hover:text-ink lg:hidden"
+        >
+          <Menu size={18} />
+        </button>
+
         {/* Logo */}
-        <div className="mr-2 flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 sm:mr-2">
           <div
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-ink font-display text-base font-medium text-paper shadow-[0_0_0_1.5px_var(--accent-color)]"
             data-testid="topnav-logo"
           >
             M
           </div>
-          <span className="font-display text-[15px] font-medium tracking-[-0.02em] text-ink">
+          <span className="hidden font-display text-[15px] font-medium tracking-[-0.02em] text-ink sm:inline">
             Marginalia
           </span>
         </div>
 
         {/* Search */}
-        <div className="flex flex-1 justify-center">
+        <div className="flex min-w-0 flex-1 justify-center">
           <button
             onClick={() => setCommandPaletteOpen(true)}
             data-testid="topnav-search-button"
-            className="group flex h-8 w-[420px] max-w-full items-center gap-2 rounded-full border border-rule bg-paper-2 px-3 text-sm text-ink-4 transition-all duration-200 ease-out hover:border-rule-2 hover:bg-paper hover:shadow-paper-1"
+            className="group flex h-8 w-[420px] min-w-0 max-w-full items-center gap-2 rounded-full border border-rule bg-paper-2 px-3 text-sm text-ink-4 transition-all duration-200 ease-out hover:border-rule-2 hover:bg-paper hover:shadow-paper-1"
           >
             <Search
               size={13}
-              className="transition-colors group-hover:text-ink-3"
+              className="shrink-0 transition-colors group-hover:text-ink-3"
             />
-            <span className="flex-1 text-left text-xs transition-colors group-hover:text-ink-3">
-              Search highlights, sources, notes…
+            <span className="flex-1 truncate text-left text-xs transition-colors group-hover:text-ink-3">
+              <span className="hidden sm:inline">
+                Search highlights, sources, notes…
+              </span>
+              <span className="sm:hidden">Search…</span>
             </span>
-            <kbd className="rounded border border-rule-2 bg-paper px-1.5 py-px font-mono text-[10px] text-ink-3">
+            <kbd className="hidden rounded border border-rule-2 bg-paper px-1.5 py-px font-mono text-[10px] text-ink-3 sm:inline">
               ⌘K
             </kbd>
           </button>
@@ -78,10 +92,11 @@ export function TopNav() {
         {/* Ask Marginalia (placeholder) */}
         <button
           onClick={() => setAiDialogOpen(true)}
-          className="flex h-[30px] items-center gap-1.5 rounded-lg border border-rule px-3 text-xs text-ink-2 transition-all duration-200 ease-out hover:border-[oklch(62%_0.16_40_/_0.4)] hover:bg-accent-tint hover:text-ink"
+          aria-label="Ask Marginalia"
+          className="flex h-[30px] shrink-0 items-center gap-1.5 rounded-lg border border-rule px-2.5 text-xs text-ink-2 transition-all duration-200 ease-out hover:border-[oklch(62%_0.16_40_/_0.4)] hover:bg-accent-tint hover:text-ink sm:px-3"
         >
           <Sparkles size={12} className="text-accent-2" />
-          Ask Marginalia
+          <span className="hidden md:inline">Ask Marginalia</span>
         </button>
 
         {/* Avatar / menu */}

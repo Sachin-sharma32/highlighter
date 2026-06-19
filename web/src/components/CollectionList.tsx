@@ -92,7 +92,11 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
-export function CollectionList() {
+export function CollectionList({
+  mobileHidden = false,
+}: {
+  mobileHidden?: boolean;
+}) {
   const {
     activeCollectionId,
     selectedHighlightId,
@@ -176,7 +180,7 @@ export function CollectionList() {
 
   return (
     <div
-      className="flex w-[360px] flex-col overflow-hidden border-r border-rule bg-paper"
+      className={`${mobileHidden ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col overflow-hidden border-r border-rule bg-paper md:w-[300px] lg:w-[340px] xl:w-[380px]`}
       data-testid="collection-list"
     >
       <div className="border-b border-rule px-4 pb-2.5 pt-3.5">
