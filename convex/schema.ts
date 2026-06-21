@@ -50,6 +50,7 @@ export default defineSchema({
     content: v.string(),
     type: v.optional(v.union(v.literal("note"), v.literal("whiteboard"))),
     collectionId: v.optional(v.id("collections")),
+    starred: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

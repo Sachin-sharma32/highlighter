@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
-import { AutoFocusExtension, ClearEditorExtension } from "@lexical/extension";
+import {
+  AutoFocusExtension,
+  ClearEditorExtension,
+  TabIndentationExtension,
+} from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
 import { ClickableLinkExtension, LinkExtension } from "@lexical/link";
 import { CheckListExtension, ListExtension } from "@lexical/list";
@@ -40,6 +44,7 @@ import {
   Heading3 as Heading3Icon,
   Link as LinkIcon,
   List as ListIcon,
+  ListCollapse as ListCollapseIcon,
   ListOrdered as ListOrderedIcon,
   ListTodo as ListTodoIcon,
   Quote as QuoteIcon,
@@ -51,10 +56,17 @@ import { InsertLinkDialog } from "@/components/editor/plugins/link/insert-link-d
 import { FloatingLinkEditorPlugin } from "@/components/editor/plugins/link/floating-link-editor-plugin";
 import { CodeHighlightPlugin } from "@/components/editor/plugins/code-highlight-plugin";
 import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin";
+import { ListCommandsPlugin } from "@/components/editor/plugins/list-commands-plugin";
+import { CollapsiblePlugin } from "@/components/editor/plugins/collapsible/collapsible-plugin";
+import { INSERT_COLLAPSIBLE_COMMAND } from "@/components/editor/plugins/collapsible/insert-collapsible-command";
+import { CollapsibleContainerNode } from "@/components/editor/plugins/collapsible/collapsible-container-node";
+import { CollapsibleContentNode } from "@/components/editor/plugins/collapsible/collapsible-content-node";
+import { CollapsibleTitleNode } from "@/components/editor/plugins/collapsible/collapsible-title-node";
 import { BulletedListPickerPlugin } from "@/components/editor/plugins/picker/bulleted-list-picker-plugin";
 import { CheckListPickerPlugin } from "@/components/editor/plugins/picker/check-list-picker-plugin";
 import { CodePickerPlugin } from "@/components/editor/plugins/picker/code-picker-plugin";
 import { HeadingPickerPlugin } from "@/components/editor/plugins/picker/heading-picker-plugin";
+import { CollapsiblePickerPlugin } from "@/components/editor/plugins/picker/collapsible-picker-plugin";
 import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/numbered-list-picker-plugin";
 import { LinkPickerPlugin } from "@/components/editor/plugins/picker/link-picker-plugin";
 import { ParagraphPickerPlugin } from "@/components/editor/plugins/picker/paragraph-picker-plugin";
@@ -202,6 +214,11 @@ function ToolbarButtons() {
     }
   }
 
+  function insertToggle() {
+    activeEditor.focus();
+    activeEditor.dispatchCommand(INSERT_COLLAPSIBLE_COMMAND, undefined);
+  }
+
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-rule px-3 py-1.5">
       <ToolbarButton
@@ -253,6 +270,9 @@ function ToolbarButtons() {
         onClick={() => toggleList("check")}
       >
         <ListTodoIcon className="size-4" />
+      </ToolbarButton>
+      <ToolbarButton active={false} title="Toggle list" onClick={insertToggle}>
+        <ListCollapseIcon className="size-4" />
       </ToolbarButton>
       <span className="mx-1 h-5 w-px bg-rule" />
       <ToolbarButton
@@ -308,10 +328,17 @@ export function Editor({
           AutoFocusExtension,
           ClearEditorExtension,
           HistoryExtension,
+          TabIndentationExtension,
         ],
         name: "@shadcn-editor",
         namespace: "NoteEditor",
-        nodes: [CodeNode, CodeHighlightNode],
+        nodes: [
+          CodeNode,
+          CodeHighlightNode,
+          CollapsibleContainerNode,
+          CollapsibleTitleNode,
+          CollapsibleContentNode,
+        ],
         $initialEditorState(editor) {
           if (initialState.serialized) {
             const parsed = editor.parseEditorState(initialState.serialized);
@@ -338,6 +365,8 @@ export function Editor({
             />
             <CodeHighlightPlugin />
             <FloatingLinkEditorPlugin />
+            <ListCommandsPlugin />
+            <CollapsiblePlugin />
             <MarkdownShortcutPlugin
               transformers={[UNORDERED_LIST, ORDERED_LIST, CHECK_LIST]}
             />
@@ -350,6 +379,7 @@ export function Editor({
                 NumberedListPickerPlugin(),
                 BulletedListPickerPlugin(),
                 CheckListPickerPlugin(),
+                CollapsiblePickerPlugin(),
                 QuotePickerPlugin(),
                 CodePickerPlugin(),
                 LinkPickerPlugin(),

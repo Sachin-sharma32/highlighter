@@ -8,6 +8,20 @@ type ActiveCollection =
   | "notes"
   | "custom-notes";
 
+export type NotesSort = "created" | "updated";
+
+const NOTES_SORT_KEY = "marginalia.notesSort";
+
+function loadNotesSort(): NotesSort {
+  try {
+    return localStorage.getItem(NOTES_SORT_KEY) === "updated"
+      ? "updated"
+      : "created";
+  } catch {
+    return "created";
+  }
+}
+
 interface AppStore {
   activeCollectionId: ActiveCollection;
   activeTag: string | null;
@@ -19,6 +33,7 @@ interface AppStore {
   lastSelectedKind: "highlight" | "note";
   commandPaletteOpen: boolean;
   searchQuery: string;
+  notesSort: NotesSort;
   pricingModalOpen: boolean;
   connectExtensionModalOpen: boolean;
   // Mobile/tablet: the sidebar collapses to an off-canvas drawer.
@@ -30,6 +45,7 @@ interface AppStore {
   setSelectedNote: (id: Id<"notes"> | null) => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSearchQuery: (q: string) => void;
+  setNotesSort: (sort: NotesSort) => void;
   setPricingModalOpen: (open: boolean) => void;
   setConnectExtensionModalOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
@@ -45,6 +61,7 @@ export const useAppStore = create<AppStore>((set) => ({
   lastSelectedKind: "highlight",
   commandPaletteOpen: false,
   searchQuery: "",
+  notesSort: loadNotesSort(),
   pricingModalOpen: false,
   connectExtensionModalOpen: false,
   sidebarOpen: false,
@@ -89,6 +106,14 @@ export const useAppStore = create<AppStore>((set) => ({
     ),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setSearchQuery: (q) => set({ searchQuery: q }),
+  setNotesSort: (sort) => {
+    try {
+      localStorage.setItem(NOTES_SORT_KEY, sort);
+    } catch {
+      // Ignore storage failures (private mode, etc.); the in-memory value still applies.
+    }
+    set({ notesSort: sort });
+  },
   setPricingModalOpen: (open) => set({ pricingModalOpen: open }),
   setConnectExtensionModalOpen: (open) =>
     set({ connectExtensionModalOpen: open }),

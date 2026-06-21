@@ -20,26 +20,26 @@ export const list = query({
   args: {
     search: v.optional(v.string()),
     collectionId: v.optional(v.id("collections")),
+    // How to order the list. Defaults to creation time so editing a note
+    // doesn't move it around; "updated" sorts by last-edited.
+    sort: v.optional(v.union(v.literal("created"), v.literal("updated"))),
   },
-  handler: async (ctx, { search, collectionId }) => {
+  handler: async (ctx, { search, collectionId, sort }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
-    let notes;
-    if (collectionId) {
-      notes = await ctx.db
-        .query("notes")
-        .withIndex("by_user_collection", (q) =>
-          q.eq("userId", userId).eq("collectionId", collectionId),
-        )
-        .collect();
-      notes.sort((a, b) => b.updatedAt - a.updatedAt);
-    } else {
-      notes = await ctx.db
-        .query("notes")
-        .withIndex("by_user_updatedAt", (q) => q.eq("userId", userId))
-        .order("desc")
-        .collect();
-    }
+    const notes = collectionId
+      ? await ctx.db
+          .query("notes")
+          .withIndex("by_user_collection", (q) =>
+            q.eq("userId", userId).eq("collectionId", collectionId),
+          )
+          .collect()
+      : await ctx.db
+          .query("notes")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .collect();
+    const sortKey = sort === "updated" ? "updatedAt" : "createdAt";
+    notes.sort((a, b) => b[sortKey] - a[sortKey]);
     if (!search) return notes;
     const needle = search.toLowerCase();
     return notes.filter(
@@ -127,6 +127,19 @@ export const setCollection = mutation({
     const note = await ctx.db.get(id);
     if (!note || note.userId !== userId) throw NOTE_NOT_FOUND();
     await ctx.db.patch(id, { collectionId, updatedAt: Date.now() });
+  },
+});
+
+export const setStarred = mutation({
+  args: { id: v.id("notes"), starred: v.boolean() },
+  handler: async (ctx, { id, starred }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw NOT_AUTHENTICATED();
+    const note = await ctx.db.get(id);
+    if (!note || note.userId !== userId) throw NOTE_NOT_FOUND();
+    // Starring is metadata only — deliberately does not bump updatedAt so it
+    // never reorders the "last edited" sort.
+    await ctx.db.patch(id, { starred });
   },
 });
 
