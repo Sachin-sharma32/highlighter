@@ -93,33 +93,53 @@ export class CollapsibleTitleNode extends ElementNode {
     return paragraph;
   }
 
-  // Backspace at the very start of the title unwraps the toggle: the title and
-  // any body blocks are lifted out as plain paragraphs in place.
+  // Backspace at the very start of the title removes / unwraps the toggle.
   collapseAtStart(): boolean {
-    const container = this.getParentOrThrow();
-    if (!$isCollapsibleContainerNode(container)) {
-      return false;
-    }
+    return $collapseCollapsibleAtStart(this);
+  }
+}
 
-    const titleParagraph = $createParagraphNode();
-    for (const child of this.getChildren()) {
-      titleParagraph.append(child);
-    }
-    container.insertBefore(titleParagraph);
+/**
+ * Backspace at the very start of a toggle's title. A fully empty toggle is
+ * deleted outright (leaving a single empty paragraph in its place); otherwise
+ * the toggle is unwrapped — the title text becomes a paragraph and the body
+ * blocks follow it, so nothing is lost.
+ */
+export function $collapseCollapsibleAtStart(
+  title: CollapsibleTitleNode,
+): boolean {
+  const container = title.getParent();
+  if (!$isCollapsibleContainerNode(container)) {
+    return false;
+  }
+  const content = title.getNextSibling();
+  const titleEmpty = title.getTextContent().trim() === "";
+  const contentEmpty = $isCollapsibleContentNode(content)
+    ? content.getChildren().every((b) => b.getTextContent().trim() === "")
+    : true;
 
-    let cursor: LexicalNode = titleParagraph;
-    const content = this.getNextSibling();
-    if ($isCollapsibleContentNode(content)) {
-      for (const block of content.getChildren()) {
-        cursor.insertAfter(block);
-        cursor = block;
-      }
-    }
-
-    container.remove();
-    titleParagraph.selectStart();
+  if (titleEmpty && contentEmpty) {
+    const paragraph = $createParagraphNode();
+    container.replace(paragraph);
+    paragraph.selectStart();
     return true;
   }
+
+  const titleParagraph = $createParagraphNode();
+  for (const child of title.getChildren()) {
+    titleParagraph.append(child);
+  }
+  container.insertBefore(titleParagraph);
+  let cursor: LexicalNode = titleParagraph;
+  if ($isCollapsibleContentNode(content)) {
+    for (const block of content.getChildren()) {
+      cursor.insertAfter(block);
+      cursor = block;
+    }
+  }
+  container.remove();
+  titleParagraph.selectStart();
+  return true;
 }
 
 export function $createCollapsibleTitleNode(): CollapsibleTitleNode {
