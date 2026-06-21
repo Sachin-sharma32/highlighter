@@ -22,6 +22,7 @@ import {
   $getSelection,
   $isElementNode,
   $isRangeSelection,
+  FORMAT_TEXT_COMMAND,
   type EditorState,
   type SerializedEditorState,
   configExtension,
@@ -38,10 +39,12 @@ import {
   INSERT_UNORDERED_LIST_COMMAND,
 } from "@lexical/list";
 import {
+  Bold as BoldIcon,
   Code as CodeIcon,
   Heading1 as Heading1Icon,
   Heading2 as Heading2Icon,
   Heading3 as Heading3Icon,
+  Italic as ItalicIcon,
   Link as LinkIcon,
   List as ListIcon,
   ListCollapse as ListCollapseIcon,
@@ -49,6 +52,7 @@ import {
   ListTodo as ListTodoIcon,
   Quote as QuoteIcon,
   Type as TypeIcon,
+  Underline as UnderlineIcon,
 } from "lucide-react";
 
 import { ContentEditable } from "@/components/editor/editor-ui/content-editable";
@@ -107,7 +111,13 @@ function ToolbarButton({
 }
 
 function ToolbarButtons() {
-  const { activeEditor, blockType, showModal } = useToolbarContext();
+  const { activeEditor, blockType, isBold, isItalic, isUnderline, showModal } =
+    useToolbarContext();
+
+  function toggleFormat(format: "bold" | "italic" | "underline") {
+    activeEditor.focus();
+    activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
+  }
 
   function setHeading(level: HeadingTagType) {
     if (blockType === level) {
@@ -221,6 +231,28 @@ function ToolbarButtons() {
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-rule px-3 py-1.5">
+      <ToolbarButton
+        active={isBold}
+        title="Bold (Ctrl+B)"
+        onClick={() => toggleFormat("bold")}
+      >
+        <BoldIcon className="size-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        active={isItalic}
+        title="Italic (Ctrl+I)"
+        onClick={() => toggleFormat("italic")}
+      >
+        <ItalicIcon className="size-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        active={isUnderline}
+        title="Underline (Ctrl+U)"
+        onClick={() => toggleFormat("underline")}
+      >
+        <UnderlineIcon className="size-4" />
+      </ToolbarButton>
+      <span className="mx-1 h-5 w-px bg-rule" />
       <ToolbarButton
         active={blockType === "paragraph"}
         title="Paragraph"

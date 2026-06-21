@@ -8,6 +8,9 @@ const Context = createContext<{
   $updateToolbar: () => void;
   blockType: string;
   setBlockType: (blockType: string) => void;
+  isBold: boolean;
+  isItalic: boolean;
+  isUnderline: boolean;
   showModal: (
     title: string,
     showModal: (onClose: () => void) => JSX.Element,
@@ -17,6 +20,9 @@ const Context = createContext<{
   $updateToolbar: () => {},
   blockType: "paragraph",
   setBlockType: () => {},
+  isBold: false,
+  isItalic: false,
+  isUnderline: false,
   showModal: () => {},
 });
 
@@ -25,6 +31,9 @@ export function ToolbarContext({
   $updateToolbar,
   blockType,
   setBlockType,
+  isBold,
+  isItalic,
+  isUnderline,
   showModal,
   children,
 }: {
@@ -32,6 +41,9 @@ export function ToolbarContext({
   $updateToolbar: () => void;
   blockType: string;
   setBlockType: (blockType: string) => void;
+  isBold: boolean;
+  isItalic: boolean;
+  isUnderline: boolean;
   showModal: (
     title: string,
     showModal: (onClose: () => void) => JSX.Element,
@@ -45,6 +57,9 @@ export function ToolbarContext({
         $updateToolbar,
         blockType,
         setBlockType,
+        isBold,
+        isItalic,
+        isUnderline,
         showModal,
       }}
     >
