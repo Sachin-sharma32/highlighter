@@ -1,4 +1,8 @@
-body {
+/* The side panel is user-resizable, so every layout ancestor must be fluid and
+   fill the panel at any width (it shares popup.css, which sizes the popup). */
+html,
+body,
+#root {
   margin: 0;
   width: 100%;
   height: 100vh;

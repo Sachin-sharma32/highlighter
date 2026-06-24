@@ -135,14 +135,14 @@ export function PricingModal() {
 
   return (
     <Dialog open={pricingModalOpen} onOpenChange={setPricingModalOpen}>
-      <DialogContent className="max-w-[640px] overflow-hidden rounded-2xl p-0">
+      <DialogContent className="max-h-[90vh] max-w-[640px] overflow-y-auto rounded-2xl p-0">
         {/* Header */}
-        <div className="bg-gradient-to-b from-violet-50 to-transparent px-8 pb-4 pt-8 text-center">
+        <div className="bg-gradient-to-b from-violet-50 to-transparent px-5 pb-4 pt-7 text-center sm:px-8 sm:pt-8">
           <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700">
             <Crown size={12} />
             Choose your plan
           </div>
-          <h2 className="m-0 font-display text-[28px] font-semibold tracking-tight text-ink">
+          <h2 className="m-0 font-display text-[22px] font-semibold tracking-tight text-ink sm:text-[28px]">
             Unlock your full reading potential
           </h2>
           <p className="mx-auto mt-2 max-w-[440px] text-sm text-ink-3">
@@ -175,7 +175,7 @@ export function PricingModal() {
         </div>
 
         {/* Plans */}
-        <div className="grid grid-cols-2 gap-4 px-8 pb-8 pt-2">
+        <div className="grid grid-cols-1 gap-4 px-5 pb-6 pt-2 sm:grid-cols-2 sm:px-8 sm:pb-8">
           {/* Free */}
           <div className="flex flex-col rounded-xl border border-rule bg-paper p-5">
             <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-4">

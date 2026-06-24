@@ -85,18 +85,18 @@ export default function Settings() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-paper text-ink">
-      <aside className="w-[218px] shrink-0 border-r border-rule bg-paper-2 px-3 py-5">
+    <div className="flex h-screen flex-col overflow-hidden bg-paper text-ink md:flex-row">
+      <aside className="flex shrink-0 flex-col gap-2 border-b border-rule bg-paper-2 px-3 py-3 md:w-[218px] md:gap-0 md:border-b-0 md:border-r md:py-5">
         <button
           onClick={() => navigate("/")}
-          className="mb-5 flex items-center gap-2 rounded px-2 py-1 text-xs text-ink-4"
+          className="flex items-center gap-2 self-start rounded px-2 py-1 text-xs text-ink-4 md:mb-5"
         >
           <ChevronLeft size={13} /> Dashboard
         </button>
-        <div className="px-2 pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-4">
+        <div className="hidden px-2 pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-4 md:block">
           Settings
         </div>
-        <nav className="flex flex-col gap-1">
+        <nav className="-mx-1 flex flex-row gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:mx-0 md:flex-col md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
           <NavButton
             active={activeTab === "appearance"}
             icon={<Moon size={13} />}
@@ -130,7 +130,7 @@ export default function Settings() {
         </nav>
       </aside>
 
-      <main className="flex-1 overflow-y-auto px-10 py-9">
+      <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 md:px-10 md:py-9">
         <div className="max-w-[658px]">
           {activeTab === "colors" && (
             <ColorsTab colors={colors} updateColors={updateColors} />

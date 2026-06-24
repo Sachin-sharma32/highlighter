@@ -15,7 +15,7 @@ export function NavButton({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors",
+        "flex shrink-0 items-center gap-3 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm transition-colors",
         active
           ? "bg-paper text-ink shadow-paper-1"
           : "bg-transparent text-ink-3",

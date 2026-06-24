@@ -13,9 +13,19 @@
 html,
 body,
 #root {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* The popup is a fixed-size window. The side panel shares this stylesheet but
+   is user-resizable, so it must stay fluid (the rules above) and fill whatever
+   width Chrome gives it. Scoping the fixed size to `body.popup` keeps both
+   surfaces correct regardless of stylesheet load order. */
+body.popup,
+body.popup #root {
   width: 380px;
   height: 520px;
-  overflow: hidden;
 }
 
 body {
